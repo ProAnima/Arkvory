@@ -1,5 +1,5 @@
 import './confine.js';
-import { readFile, lstat, open } from 'node:fs/promises';
+import { readFile, lstat, open, unlink } from 'node:fs/promises';
 import {
   activateLicence,
   createOfflineRequest,
@@ -134,7 +134,7 @@ async function status(env: LicenceEnvironment, json: boolean): Promise<boolean> 
     const effectiveTime = licenceIso(overview.effectiveTime);
     console.log(
       JSON.stringify(
-        { installation, effectiveTime, clockRollback, pendingRequests, licences },
+        { installation, effectiveTime, clockRollback, pendingRequests, licenses: licences },
         null,
         2,
       ),
@@ -161,15 +161,21 @@ async function status(env: LicenceEnvironment, json: boolean): Promise<boolean> 
   return true;
 }
 
-async function writeRequest(path: string | undefined, text: string): Promise<void> {
+/**
+ * Opens the request file first (`wx`: an earlier request is never overwritten), so a refused
+ * file leaves no pending request behind; a failed request leaves no empty file.
+ */
+async function writeRequest(path: string | undefined, make: () => Promise<string>) {
   if (path === undefined) throw new LicenceCommandError('Pass the request file in --out');
-  // `wx`: an earlier request file is never overwritten.
   const file = await open(path, 'wx', 0o644);
   try {
-    await file.writeFile(text, 'utf8');
-  } finally {
+    await file.writeFile(await make(), 'utf8');
+  } catch (error) {
     await file.close();
+    await unlink(path).catch(() => undefined);
+    throw error;
   }
+  await file.close();
 }
 
 async function targets(env: LicenceEnvironment, id: string | undefined, online: boolean) {
@@ -223,11 +229,14 @@ async function run(command: string, args: readonly string[]): Promise<boolean> {
         return await status(env, flags.has('json'));
       case 'request': {
         const key = await keyOf(options.get('--key-file'));
-        const request = await createOfflineRequest(env, {
-          keySha256: licenceKeyDigest(key),
-          installation: installationOf(configuration),
+        const installation = installationOf(configuration);
+        await writeRequest(options.get('--out'), async () => {
+          const request = await createOfflineRequest(env, {
+            keySha256: licenceKeyDigest(key),
+            installation,
+          });
+          return `${JSON.stringify(request, null, 2)}\n`;
         });
-        await writeRequest(options.get('--out'), `${JSON.stringify(request, null, 2)}\n`);
         console.log(
           'Request written; it holds no secret. Upload it in your ProAnimaStudio account',
         );

@@ -25,6 +25,8 @@ export interface RoleCommand {
   readonly service: boolean;
 }
 
+const LICENSE_COMMANDS = ['activate', 'refresh', 'deactivate', 'status', 'request', 'install'];
+
 /** Roles the installers register as supervised services (ADR 0031, ADR 0057). */
 export const serviceRoles = ['api', 'worker', 'backup'] as const;
 
@@ -44,6 +46,13 @@ export function roleCommand(role: string, args: readonly string[] = []): RoleCom
       argv: ['vault', 'init', vault, '--no-encryption'],
       service: false,
     };
+  }
+  if (role === 'license') {
+    // `arkvory license …` (ADR 0078, R2): the deployment tool parsed and checked the arguments.
+    const [command] = args;
+    if (!command || !LICENSE_COMMANDS.includes(command) || args.some((a) => /[\r\n\0]/.test(a)))
+      throw new Error('license expects one of its commands');
+    return { entry: 'apps/worker/dist/license.js', argv: [...args], service: false };
   }
   if (args.length) throw new Error('Service roles take no arguments');
   switch (role) {
@@ -106,8 +115,21 @@ export async function launch(root: string, role: string, args: readonly string[]
     join(root, 'config/runtime.json'),
     role,
     args,
-    moduleEnvironment(root),
+    { ...moduleEnvironment(root), ...licenseEnvironment(root) },
   );
+}
+
+/**
+ * Where licensing lives on a native installation (ADR 0078, R2): the activation secrets in
+ * `config/licenses` (outside the database and backups), the hub settings and the install id. The
+ * worker refreshes activations with them; `arkvory license` uses the same paths.
+ */
+export function licenseEnvironment(root: string): Record<string, string> {
+  return {
+    ARKVORY_LICENSE_DIR: inside(root, 'config', 'licenses'),
+    ARKVORY_HUB_FILE: inside(root, 'config', 'hub.json'),
+    ARKVORY_INSTALL_ID_FILE: inside(root, 'config', 'install-id'),
+  };
 }
 
 /**
