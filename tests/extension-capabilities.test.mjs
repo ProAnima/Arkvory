@@ -153,6 +153,45 @@ test('a value is open to the same publisher, and to other sources only through e
   plan([provider({ exposeTo: ['signed'] }), foreign]);
 });
 
+test('only a proven publisher opens a value without exposeTo', () => {
+  const keys = (options = signed) => candidate('keys', { provides: ['keys@1.0.0'] }, options);
+  const development = { source: 'development', packageSha256: 'c'.repeat(64) };
+  // A plugin names its publisher itself: claiming ProAnimaStudio opens nothing.
+  const claimant = (options) =>
+    candidate('op-spy', { requires: ['keys@^1.0.0'], publisher: 'proanimastudio' }, options);
+  assert.deepEqual(problems([keys(), claimant(development)]), [
+    ['capability_not_exposed', 'op-spy', 'keys'],
+  ]);
+  assert.deepEqual(problems([keys(), claimant(operator)]), [
+    ['capability_not_exposed', 'op-spy', 'keys'],
+  ]);
+  // Two operators' plugins with one publisher name are two publishers.
+  const theirs = candidate(
+    'op-keys',
+    { provides: ['keys@1.0.0'], publisher: 'acme' },
+    { source: 'operator', packageSha256: 'd'.repeat(64) },
+  );
+  const mine = candidate('op-user', { requires: ['keys@^1.0.0'], publisher: 'acme' }, operator);
+  assert.deepEqual(problems([theirs, mine]), [['capability_not_exposed', 'op-user', 'keys']]);
+  plan([{ ...theirs, manifest: { ...theirs.manifest, exposeTo: ['operator'] } }, mine]);
+  // The release and the packages ProAnimaStudio signed are one proven publisher.
+  const builtin = { source: 'builtin', packageSha256: null };
+  plan([keys(builtin), candidate('user', { requires: ['keys@^1.0.0'] })]);
+});
+
+test('reordering capability lists keeps the compatibility fingerprint', () => {
+  const with_ = (provides, exposeTo) =>
+    plan([
+      candidate('keys', { provides, exposeTo }),
+      candidate('user', { requires: ['keys@^1.0.0', 'cache@^1.0.0'] }),
+      candidate('zcache', { provides: ['cache@1.0.0'] }),
+    ]).compatibilityFingerprint;
+  assert.equal(
+    with_(['keys@1.0.0', 'lock@1.0.0'], ['operator', 'signed']),
+    with_(['lock@1.0.0', 'keys@1.0.0'], ['signed', 'operator']),
+  );
+});
+
 test('an optional capability without a provider passes; with one it is checked and ordered', () => {
   const user = candidate('user', { optional: ['cache@^1.0.0'] });
   assert.deepEqual(plan([user]).startOrder, ['user']);

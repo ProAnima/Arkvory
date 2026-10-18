@@ -187,6 +187,23 @@ export function capabilityContract(
     assert.ok(token.ok);
     await token.stop();
     assert.ok(log.includes('counter-user:error:capability_invalid'), log.join());
+    // A value whose check throws is another shape too: the provider never picks the error.
+    log.length = 0;
+    const hostile = new Proxy(
+      {},
+      {
+        get() {
+          throw Object.assign(new Error('chosen by the provider'), { code: 'provider_chosen' });
+        },
+      },
+    );
+    const throwing = await started(await open(t), [
+      counterProvider(log, '1.0.0', hostile),
+      counterConsumer(log, '^1.0.0'),
+    ]);
+    assert.ok(throwing.ok);
+    await throwing.stop();
+    assert.ok(log.includes('counter-user:error:capability_invalid'), log.join());
   });
 
   void test(`${name}: an optional capability without a provider is null`, async (t) => {

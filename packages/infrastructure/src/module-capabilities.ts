@@ -39,6 +39,18 @@ function parsed(list: readonly string[], parse: (text: string) => CapabilityEntr
  * a stopped provider through the core. The plan already matched versions, exposure and roles;
  * here the consumer's token is checked against the provider's version and the value's shape.
  */
+/**
+ * The consumer's own check of a value: a check that throws (a value whose getters throw, say)
+ * is a value of another shape too, so the provider never chooses the error the consumer sees.
+ */
+function fits<T>(token: CapabilityToken<T>, value: unknown): value is T {
+  try {
+    return token.check(value);
+  } catch {
+    return false;
+  }
+}
+
 export class CapabilityRegistry {
   private readonly offers = new Map<string, Offer>();
 
@@ -87,7 +99,7 @@ export class CapabilityRegistry {
         if (range === null || !satisfiesCaret(range, offer.version))
           throw new ModuleServiceError('capability_invalid', 'Incompatible capability version');
         const value = offer.value.value;
-        if (!token.check(value))
+        if (!fits(token, value))
           throw new ModuleServiceError('capability_invalid', 'Capability value has another shape');
         return value;
       },
