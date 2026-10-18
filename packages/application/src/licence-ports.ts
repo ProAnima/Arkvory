@@ -154,6 +154,8 @@ export interface LicenceVerifier {
 export interface StoredActivation {
   readonly activationId: string;
   readonly licenceId: string;
+  /** The installation id of the kept token. */
+  readonly installation: string;
   readonly activation: 'online' | 'offline';
   readonly token: string;
   readonly seq: number;

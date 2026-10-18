@@ -172,6 +172,28 @@ test('a replayed or foreign answer is refused; the rotated secret is kept', asyn
   assert.equal(replay.outcome, 'failed');
   assert.equal(replay.code, 'answer_invalid');
   assert.equal((await secretFile(f, activationId)).secret, 'S'.repeat(43));
+  // A signed token of this request, seq and activation, but bound to another installation.
+  const nonce = 'FixedRefreshNonce001';
+  const licenceId = [...f.hub.licences.values()][0].licenceId;
+  const foreign = f.authority.token({
+    activationId,
+    licenceId,
+    nonce,
+    seq: 7,
+    installation: 'other-install-1',
+  });
+  f.hub.next.push({
+    status: 200,
+    body: { token: foreign, activationSecret: 'T'.repeat(43), activationId },
+  });
+  const moved = await refreshLicence({ ...f.env, nonce: () => nonce }, activationId);
+  assert.equal(moved.code, 'answer_invalid');
+  assert.equal((await secretFile(f, activationId)).secret, 'T'.repeat(43));
+  assert.equal(
+    (await licenceOverview(f.env)).licences[0].status.state,
+    'valid',
+    'the kept token stays',
+  );
   // An unsigned refusal revokes nothing and is not retried until an administrator acts.
   f.hub.next.push({ status: 403, body: { code: 'licence_expired', message: 'x', details: {} } });
   const refusal = await refreshLicence(f.env, activationId);

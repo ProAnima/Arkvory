@@ -68,6 +68,7 @@ export async function migrateLicences(client: PoolClient): Promise<void> {
 interface ActivationRow {
   activation_id: string;
   licence_id: string;
+  installation: string;
   activation: 'online' | 'offline';
   token: string;
   seq: string;
@@ -82,7 +83,7 @@ interface ActivationRow {
   mismatch_since: Date | null;
 }
 
-const COLUMNS = `activation_id, licence_id, activation, token, seq::text AS seq, revocation,
+const COLUMNS = `activation_id, licence_id, installation, activation, token, seq::text AS seq, revocation,
   pending_nonce, pending_seq::text AS pending_seq, pending_since, last_refresh_at, failure, failures,
   next_attempt_at, mismatch_since`;
 const time = (value: Date | null) => (value === null ? null : value.getTime());
@@ -92,6 +93,7 @@ function activationOf(row: ActivationRow): StoredActivation {
   return {
     activationId: row.activation_id,
     licenceId: row.licence_id,
+    installation: row.installation,
     activation: row.activation,
     token: row.token,
     seq: Number(row.seq),

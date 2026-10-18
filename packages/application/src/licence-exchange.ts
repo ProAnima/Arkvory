@@ -187,6 +187,8 @@ async function accepted(
     token.activationId === row.activationId &&
     answer.activationId === row.activationId &&
     token.nonce === sent.nonce &&
+    token.licenceId === row.licenceId &&
+    token.installation === row.installation &&
     token.seq > row.seq;
   // The answer came over verified TLS, so the hub has retired the secret that was sent: keep
   // the new one even when the document is refused, or the next refresh would look like a clone.
