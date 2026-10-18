@@ -46,10 +46,15 @@ export {
   type RevocationList,
 } from './revocations.js';
 export {
+  CLIENT_ENTRY,
   DATA_CLASSES,
   PACKAGE_LIMITS,
+  PACKAGE_SIDES,
   checkCompatibility,
+  parseModuleFields,
   parsePackageManifest,
+  type PackageEntryRole,
+  type PackageSide,
   type CompatibilityHost,
   type DataClass,
   type PackageFields,
