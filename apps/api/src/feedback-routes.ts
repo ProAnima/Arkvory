@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
+import { ArkvoryError, retentionObject, requireAdministrator } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import { feedbackLimits, readFeedbackRequest } from '@proanima/arkvory-contracts';
 import { platform, release } from 'node:os';
@@ -23,11 +23,7 @@ export function registerFeedbackRoutes(
   forwarder: FeedbackForwarder,
 ) {
   const administrator = (r: FastifyRequest) => {
-    const actor = principal(r);
-    if (actor.managed || actor.administrator !== true)
-      throw new ArkvoryError('forbidden', 'Administrator required', {
-        reason: 'administrator_required',
-      });
+    requireAdministrator(principal(r));
   };
   app.post('/api/v1/feedback', { bodyLimit }, async (r, reply) => {
     principal(r);
