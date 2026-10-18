@@ -79,3 +79,13 @@ export {
   type ModuleSet,
   type RetainedPackage,
 } from './module-set.js';
+export {
+  ModuleAccessError,
+  aclProblem,
+  packageTree,
+  unsafeAcl,
+  unsafeEntries,
+  unsafeForUser,
+  type AclEntry,
+  type ModuleAccessProblem,
+} from './package-access.js';

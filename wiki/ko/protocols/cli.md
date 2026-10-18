@@ -282,7 +282,7 @@ claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 | `module revocations FILE`                                 | 서명된 폐기 목록을 저장합니다(인터넷에 연결되지 않은 컴퓨터용)            |
 
 - **위치.** 모듈은 CLI 폴더(`ARKVORY_CLI_HOME`, 기본값 `~/.config/arkvory`)의 `modules` 폴더에 사용자별로 설치됩니다. 새 모듈은 활성화하기 전까지 비활성 상태입니다.
-- **확인.** ProAnimaStudio 모듈 키로 서명되고 이 클라이언트용으로 빌드된 패키지만 허용됩니다. 명령이 모듈을 사용하기 전에 `arkvoryctl`은 서명과 모든 파일을 다시 확인하고, 다른 사용자가 파일을 변경할 수 없는지도 확인합니다(Linux와 macOS: 본인 소유, 다른 사용자가 쓸 수 없음, 링크 없음). 폐기된 버전은 절대 로드되지 않습니다. 확인에 실패한 모듈은 stderr에 보고되고(`client module ID VERSION not loaded (code)`) 제외되며, 명령은 그 모듈 없이 계속 진행됩니다.
+- **확인.** ProAnimaStudio 모듈 키로 서명되고 이 클라이언트용으로 빌드된 패키지만 허용됩니다. 명령이 모듈을 사용하기 전에 `arkvoryctl`은 서명과 모든 파일을 다시 확인하고, 다른 사용자가 파일을 변경할 수 없는지도 확인합니다(Linux와 macOS: 본인 소유, 다른 사용자가 쓸 수 없음, 링크 없음; Windows: 링크나 정션 없음, 소유자와 액세스 규칙이 본인과 관리자만 변경을 허용함, 아니면 `module_access`). 폐기된 버전은 절대 로드되지 않습니다. 확인에 실패한 모듈은 stderr에 보고되고(`client module ID VERSION not loaded (code)`) 제외되며, 명령은 그 모듈 없이 계속 진행됩니다.
 - **폐기.** `module install`에는 최신 폐기 목록이 필요합니다. 패키지에 더 새로운 목록이 들어 있을 수 있으며, 그렇지 않으면 `module revocations`로 저장하세요. `--allow-stale-revocations`를 지정하면 그래도 설치하며, 결과에 그 사실이 표시됩니다.
 - **코드.** 모듈의 코드는 자체 파일과 Node 내장 모듈만 로드할 수 있습니다. 콘텐츠를 옮기는 명령만 모듈을 로드합니다: `upload`, `download`, `put`, `get`, `packages publish`, `packages download`, `tree`.
 - **전송 확장.** 모듈의 확장은 서버가 `GET /api/v1/capabilities`의 `transfer`에서 같은 확장을 제공할 때만 사용됩니다. 클라이언트는 결과를 직접 확인합니다: 모든 다운로드의 크기와 SHA-256, 모든 업로드의 게시된 체크섬. `--transfer auto`에서는 확장이 거절하거나 실패하면 클라이언트가 자체 전송으로 전환합니다. `--transfer strict`에서는 대신 실패합니다(`transfer_unavailable`, 종료 코드 4). `--transfer core`는 모듈을 로드하지 않습니다. `--verbose`는 각 전송이 어떤 방식으로 진행되었는지 보여 줍니다.

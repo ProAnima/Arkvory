@@ -65,6 +65,14 @@ export const treeExplanations: Readonly<Record<string, readonly [string, string]
     'With --transfer strict, no client module transfer the server offers was available.',
     'При --transfer strict не нашлось расширения передачи, которое предлагает сервер.',
   ],
+  module_access: [
+    'Another account may change the modules folder or a module, or it holds a link. Keep the CLI folder private to you.',
+    'Каталог модулей или модуль может изменить другая учётная запись, либо в нём ссылка. Закройте каталог CLI для других.',
+  ],
+  module_access_unverified: [
+    'The access rules of the modules folder could not be read (Windows PowerShell). No module was loaded.',
+    'Не удалось прочитать права каталога модулей (Windows PowerShell). Модули не загружены.',
+  ],
   invalid_module_set: [
     'modules/installed.json in the CLI folder is damaged. Reinstall the modules.',
     'Файл modules/installed.json в каталоге CLI повреждён. Установите модули заново.',

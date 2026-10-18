@@ -7,7 +7,7 @@ import {
 } from '@proanima/arkvory-signing';
 import type { PackageHost } from '@proanima/arkvory-signing';
 import { CliError } from '../errors.js';
-import { checkModuleAccess } from './module-access.js';
+import { checkPackageAccess, checkSharedAccess } from './module-access.js';
 import { ClientLoadError, importClientModule } from './module-import.js';
 import {
   clientHost,
@@ -46,10 +46,9 @@ async function loadOne(
   context: { readonly signal: AbortSignal; readonly clientVersion: string },
   revoked: (id: string, version: string) => boolean,
 ): Promise<readonly TransferExtension[]> {
+  // The caller checked access first: while only this user can change the files, nobody else
+  // changes them between the hash check and the import.
   const directory = layout.unpacked(module.id, module.version);
-  // Access first: while only this user can change the files, nobody else changes them between
-  // the hash check and the import.
-  await checkModuleAccess(layout.directory, directory);
   const signed = await verifyInstalledModule(directory, host, 'load');
   const { manifest } = signed;
   if (
@@ -78,29 +77,40 @@ export async function loadClientModules(
   options: { readonly home?: string; readonly host?: PackageHost } = {},
 ): Promise<LoadedModules> {
   const layout = moduleLayout(options.home);
-  const set = await readModuleSet(layout);
-  const enabled = set.modules.filter((module) => enabledFor(module, profile));
-  if (enabled.length === 0) return { extensions: [], loaded: [], refused: [] };
+  // Nothing enabled: nothing is trusted, so nothing needs checking (no access check runs).
+  const first = await readModuleSet(layout);
+  if (!first.modules.some((module) => enabledFor(module, profile))) return NONE;
+  let enabled: readonly ClientModuleEntry[] = first.modules.filter((m) => enabledFor(m, profile));
+  const refuseAll = (error: unknown): LoadedModules => ({
+    extensions: [],
+    loaded: [],
+    refused: enabled.map((m) => ({ id: m.id, version: m.version, code: codeOf(error) })),
+  });
   const host = options.host ?? clientHost();
-  const context = { signal, clientVersion: process.env['ARKVORY_CLI_VERSION'] ?? 'development' };
   let revoked: (id: string, version: string) => boolean;
+  let failed: ReadonlyMap<string, string>;
   try {
+    await checkSharedAccess(layout);
+    // Read again after the check: what is used is what nobody else could change.
+    enabled = (await readModuleSet(layout)).modules.filter((m) => enabledFor(m, profile));
+    // A list the keys no longer verify could hide a revocation: nothing is loaded.
     const list = await readStoredRevocations(layout, host);
     revoked = (id, version) => revocationOf(list, id, version) !== null;
+    failed = await checkPackageAccess(
+      layout.directory,
+      enabled.map((m) => layout.unpacked(m.id, m.version)),
+    );
   } catch (error) {
-    // A list the keys no longer verify could hide a revocation: nothing is loaded.
-    const code = codeOf(error);
-    return {
-      extensions: [],
-      loaded: [],
-      refused: enabled.map((m) => ({ id: m.id, version: m.version, code })),
-    };
+    return refuseAll(error);
   }
+  const context = { signal, clientVersion: process.env['ARKVORY_CLI_VERSION'] ?? 'development' };
   const extensions: TransferExtension[] = [];
   const loaded: { id: string; version: string }[] = [];
   const refused: RefusedModule[] = [];
   for (const module of enabled) {
     try {
+      const problem = failed.get(layout.unpacked(module.id, module.version));
+      if (problem !== undefined) throw new CliError(problem, 7);
       extensions.push(...(await loadOne(layout, module, host, context, revoked)));
       loaded.push({ id: module.id, version: module.version });
     } catch (error) {
@@ -109,3 +119,5 @@ export async function loadClientModules(
   }
   return { extensions, loaded, refused };
 }
+
+const NONE: LoadedModules = { extensions: [], loaded: [], refused: [] };

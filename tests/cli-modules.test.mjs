@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chmod, mkdir, readFile, rename, symlink, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { chmod, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { inspectModulePackage } from '../packages/signing/dist/index.js';
+import { inspectModulePackage, unsafeForUser } from '../packages/signing/dist/index.js';
 import { parseArguments } from '../apps/cli/dist/arguments.js';
 import { moduleCommand } from '../apps/cli/dist/modules/module-command.js';
 import { loadClientModules } from '../apps/cli/dist/modules/module-loader.js';
@@ -10,7 +11,9 @@ import { clientHost } from '../apps/cli/dist/modules/module-store.js';
 import {
   manifestOf,
   moduleManifestOf,
+  openToEveryone,
   packageEntries,
+  protectRoot,
   revocationList,
   temporaryDirectory,
   testHost,
@@ -57,6 +60,8 @@ function clientPackage(signer, overrides = {}, files = {}) {
 async function setup(t) {
   const keys = testHost();
   const home = await temporaryDirectory(t, 'arkvory-cli-modules-');
+  // Closed like a user profile: a temporary folder may let other local accounts write.
+  await protectRoot(home);
   const host = clientHost([keys.module.key], NOW);
   const current = revocationList(keys.module, { sequence: 1, entries: [] });
   const revocations = join(home, 'list.json');
@@ -223,20 +228,64 @@ test('client module code resolves only its own package', async (t) => {
   assert.equal(globalThis.outsideRan, undefined);
 });
 
+/** Takes back the access `openToEveryone` gave. */
+function closeAgain(path, mode = 0o644) {
+  if (process.platform !== 'win32') return chmod(path, mode);
+  execFileSync('icacls.exe', [path, '/remove:g', '*S-1-1-0'], { windowsHide: true });
+}
+
 test('module files others may change, or a linked package directory, are refused before any code runs', async (t) => {
   const { keys, home, run, load, revocations } = await setup(t);
   await run('revocations', revocations);
   await run('install', await writePackage(home, clientPackage(keys.module)), '--yes');
   await run('enable', 'sample');
   const directory = join(home, 'modules', 'sample', '1.0.0');
-  if (process.platform !== 'win32') {
-    await chmod(join(directory, 'files', 'main.mjs'), 0o666);
-    assert.equal((await load()).refused[0].code, 'module_access');
-    await chmod(join(directory, 'files', 'main.mjs'), 0o644);
+  // On Windows by its access rules, as the server loader reads them (ADR 0078, 3.3).
+  for (const path of [
+    join(directory, 'files', 'main.mjs'),
+    join(home, 'modules', 'installed.json'),
+    join(home, 'modules', 'module-revocations.json'),
+  ]) {
+    await openToEveryone(path);
+    assert.deepEqual(
+      (await load()).refused.map((m) => m.code),
+      ['module_access'],
+      path,
+    );
+    await closeAgain(path, path.endsWith('.json') ? 0o600 : 0o644);
   }
+  assert.deepEqual((await load()).refused, []);
+  // A link or junction anywhere in the package, not only at its top.
+  const outside = join(home, 'outside');
+  await mkdir(outside);
+  const inner = join(directory, 'files', 'more');
+  await symlink(outside, inner, process.platform === 'win32' ? 'junction' : 'dir');
+  assert.equal((await load()).refused[0].code, 'module_access');
+  await rm(inner, { recursive: false, force: true });
   // The package directory replaced by a link (a junction on Windows) to the same files.
   const moved = join(home, 'elsewhere');
   await rename(directory, moved);
   await symlink(moved, directory, process.platform === 'win32' ? 'junction' : 'dir');
   assert.equal((await load()).refused[0].code, 'module_access');
+});
+
+test('an access check that cannot run loads no client module', async (t) => {
+  const { keys, home, run, load, revocations } = await setup(t);
+  await run('revocations', revocations);
+  await run('install', await writePackage(home, clientPackage(keys.module)), '--yes');
+  await run('enable', 'sample');
+  if (process.platform !== 'win32') {
+    // Without PowerShell the Windows check cannot run: unverified, never safe.
+    await assert.rejects(unsafeForUser([home], 'win32'), { code: 'access_unverified' });
+    return;
+  }
+  const saved = process.env['SystemRoot'];
+  t.after(() => {
+    process.env['SystemRoot'] = saved;
+  });
+  process.env['SystemRoot'] = join(home, 'no-windows');
+  assert.deepEqual(
+    (await load()).refused.map((m) => m.code),
+    ['module_access_unverified'],
+  );
 });
