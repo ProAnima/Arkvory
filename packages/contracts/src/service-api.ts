@@ -404,6 +404,27 @@ export const servicePaths = {
               },
             },
           },
+          transfer: {
+            type: 'array',
+            maxItems: 256,
+            description:
+              'Transfer protocols of the enabled modules this gateway runs (ADR 0079, 5.2). A client uses one only with an extension of the same name and a common version; otherwise the core transfer.',
+            items: {
+              type: 'object',
+              required: ['name', 'versions', 'module', 'prefix'],
+              properties: {
+                name: { type: 'string', pattern: '^[a-z][a-z0-9-]{1,31}$' },
+                versions: {
+                  type: 'array',
+                  minItems: 1,
+                  maxItems: 16,
+                  items: { type: 'string', maxLength: 64 },
+                },
+                module: { type: 'string', pattern: '^[a-z][a-z0-9-]{1,31}$' },
+                prefix: { type: 'string', pattern: '^/api/ext/', maxLength: 600 },
+              },
+            },
+          },
         },
       },
       undefined,
