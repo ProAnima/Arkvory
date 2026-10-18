@@ -10,7 +10,13 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { RemoteSsh, discoverHost } from '../apps/deploy/dist/remote-ssh.js';
 import { remoteInput, remoteOwner } from '../apps/deploy/dist/remote-model.js';
-import { inspectTarget, installCommand, remoteNode } from '../apps/deploy/dist/remote-target.js';
+import {
+  inspectTarget,
+  installCommand,
+  makeRemoteStage,
+  remoteNode,
+  removeRemoteStage,
+} from '../apps/deploy/dist/remote-target.js';
 import { createRemoteWizard } from '../apps/deploy/dist/remote-server.js';
 import { openTunnel } from '../apps/deploy/dist/remote-tunnel.js';
 import { RemoteWorkflow } from '../apps/deploy/dist/remote-workflow.js';
@@ -224,6 +230,45 @@ test('closing release download aborts its stream and removes partial bytes', asy
   await assert.rejects(access(path), { code: 'ENOENT' });
 });
 
+/** The script of a generated `powershell.exe -EncodedCommand` line. */
+const decoded = (command) => Buffer.from(command.split(' ').at(-1), 'base64').toString('utf16le');
+
+test('Windows Remote Setup creates its stage protected in one step and removes only its files', async () => {
+  const commands = [];
+  const ssh = { exec: async (command) => void commands.push(command) };
+  const target = { platform: 'windows', packaging: 'exe', installed: false };
+  const id = '12345678-90ab-4cde-8f01-234567890abc';
+  const stage = await makeRemoteStage(ssh, target, id);
+  assert.equal(stage, 'C:/ProgramData/ArkvoryRemote-' + id);
+  const create = decoded(commands[0]);
+  // An existing path stops; owner and protected DACL are part of the creating call; the result
+  // is checked afterwards, so a directory someone else made in between is refused.
+  const order = [
+    "if (Test-Path -LiteralPath $stage) { throw 'Remote stage exists' }",
+    "$sd.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'))",
+    '$sd.SetAccessRuleProtection($true,$false)',
+    "foreach ($sid in @('S-1-5-18','S-1-5-32-544'))",
+    '[IO.Directory]::CreateDirectory($stage,$sd)',
+    "throw 'Remote stage is not protected'",
+  ].map((text) => create.indexOf(text));
+  assert.ok(
+    order.every((index, i) => index > (order[i - 1] ?? 0)),
+    `order ${order}`,
+  );
+  assert.doesNotMatch(create, /New-Item|icacls/);
+  await assert.rejects(makeRemoteStage(ssh, target, '../x'), { code: 'target' });
+  await removeRemoteStage(ssh, target, stage);
+  const remove = decoded(commands.at(-1));
+  for (const name of ['Arkvory-Setup-x64.exe', 'verified-Arkvory-Setup-x64.exe'])
+    assert.ok(remove.includes(`'${stage}/${name}'`), name);
+  assert.match(remove, /\[IO\.Directory\]::Delete\('[^']+',\$false\)/);
+  assert.doesNotMatch(remove, /-Recurse/);
+  await assert.rejects(removeRemoteStage(ssh, target, 'C:/ProgramData/other'), { code: 'target' });
+  const linux = { platform: 'linux', packaging: 'deb', installed: false };
+  await makeRemoteStage(ssh, linux, id);
+  assert.equal(commands.at(-1), `umask 077; mkdir '/var/tmp/arkvory-remote-${id}'`);
+});
+
 test('remote inputs and command boundaries reject unsafe controls and preserve literal paths', () => {
   for (const [key, value] of [
     ['host', '-oProxyCommand=evil'],
@@ -245,22 +290,32 @@ test('remote inputs and command boundaries reject unsafe controls and preserve l
   assert.ok(command.indexOf('sha256sum --check') < command.indexOf('apt-get install'));
   assert.ok(command.includes("'\\''"));
   assert.throws(() => installCommand(linux, '/tmp/a', 'no hash'));
-  const windows = Buffer.from(
-    installCommand(
-      { ...linux, platform: 'windows', packaging: 'exe' },
-      'C:/ProgramData/a.exe',
-      hash,
-    )
-      .split(' ')
-      .at(-1),
-    'base64',
-  ).toString('utf16le');
+  const exe = { ...linux, platform: 'windows', packaging: 'exe' };
+  const stage =
+    'C:/ProgramData/ArkvoryRemote-' + '0'.repeat(8) + '-0000-4000-8000-' + '0'.repeat(12);
+  // Only the installer inside a stage that makeRemoteStage named is ever run.
+  assert.throws(() => installCommand(exe, 'C:/ProgramData/a.exe', hash), { code: 'target' });
+  assert.throws(() => installCommand(exe, stage + '/other.exe', hash), { code: 'target' });
+  const windows = decoded(installCommand(exe, stage + '/Arkvory-Setup-x64.exe', hash));
   assert.match(windows, /-WindowStyle Hidden/);
-  assert.ok(windows.indexOf('Get-FileHash') < windows.indexOf('Start-Process'));
-  const node = Buffer.from(
-    remoteNode('windows', 'console.log(1)').split(' ').at(-1),
-    'base64',
-  ).toString('utf16le');
+  // The stage is checked, the installer copied into a new file there, hashed through the handle
+  // that stays open, and only that copy runs; the copy is removed on every path.
+  const order = [
+    "AreAccessRulesProtected -or $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne 'S-1-5-32-544'",
+    "'CreateNew'",
+    `$held=[IO.File]::Open($verified,'Open','Read','Read')`,
+    'ComputeHash($held)',
+    `if ($digest -eq '${hash}')`,
+    'Start-Process -FilePath $verified',
+    '} finally { $held.Dispose() }',
+    'Remove-Item -LiteralPath $verified',
+  ].map((text) => windows.indexOf(text));
+  assert.ok(
+    order.every((index, i) => index > (order[i - 1] ?? 0)),
+    `order ${order}`,
+  );
+  assert.ok(windows.includes(`$verified='${stage}/verified-Arkvory-Setup-x64.exe'`));
+  const node = decoded(remoteNode('windows', 'console.log(1)'));
   assert.match(node, /C:\/ProgramData\/ProAnima\/Arkvory\/runtime\/node.exe/);
 });
 

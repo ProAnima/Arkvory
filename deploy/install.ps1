@@ -3,43 +3,178 @@ param([string]$Root = 'C:\ProgramData\ProAnima\Arkvory', [string]$Version = '',
     [ValidateSet('docker','podman')][string]$Engine = 'docker',
     [string]$Config = '', [string]$Artifact = '', [switch]$AutomaticUpdates, [switch]$Pin)
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell 5 draws progress for every block of Invoke-WebRequest and Expand-Archive,
+# which slows the Node.js download and extraction by minutes.
+$ProgressPreference = 'SilentlyContinue'
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $admin = [Security.Principal.WindowsPrincipal]::new($identity)
 # Native services need Administrator. Compose uses the installing user's container engine:
 # Docker Desktop reads bind mounts with that user's token, so the root also grants that user.
 if ($Mode -eq 'windows' -and -not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Run installer as Administrator' }
 $Root = [IO.Path]::GetFullPath($Root)
-New-Item -ItemType Directory -Path $Root -Force | Out-Null
 if ($Root -eq [IO.Path]::GetPathRoot($Root)) { throw 'Use a dedicated installation directory' }
+
+# region code-directories: identical in deploy/protect-windows.ps1 and deploy/install.ps1 (tests/windows-installation.test.mjs).
+$codeDirectories = @('runtime', 'releases', 'config', 'modules')
+$administratorSids = @('S-1-5-18', 'S-1-5-32-544')
+# The attributes of the entry itself, a link included (also a dangling one); $null when absent.
+function Get-EntryAttributes([string]$path) {
+    try { return [IO.File]::GetAttributes($path) }
+    catch [IO.FileNotFoundException], [IO.DirectoryNotFoundException] { return $null }
+}
+function Assert-NotLink([string]$path) {
+    $attributes = Get-EntryAttributes $path
+    if ($null -ne $attributes -and ($attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw "Installation stopped: $path is a link (junction or symbolic link). Replace it with a directory and run the installation again."
+    }
+}
+# Walks without following links: a link anywhere below stops the installation.
+function Assert-NoLinkBelow([string]$directory) {
+    $pending = [Collections.Generic.Stack[IO.DirectoryInfo]]::new()
+    $pending.Push([IO.DirectoryInfo]::new($directory))
+    while ($pending.Count -gt 0) {
+        $current = $pending.Pop()
+        try { $entries = @($current.EnumerateFileSystemInfos()) }
+        catch [UnauthorizedAccessException] { throw "Installation stopped: Administrators cannot list $($current.FullName). Give it to Administrators and run the installation again." }
+        foreach ($entry in $entries) {
+            if ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                throw "Installation stopped: $($entry.FullName) is a link (junction or symbolic link). Installation code must not contain links."
+            }
+            if ($entry -is [IO.DirectoryInfo]) { $pending.Push($entry) }
+        }
+    }
+}
+# Owned by SYSTEM or Administrators, protected, and only they may change it; $readers may read.
+function Test-CodeDirectory([string]$directory, [string[]]$readers) {
+    $acl = [IO.Directory]::GetAccessControl($directory)
+    if (-not $acl.AreAccessRulesProtected) { return $false }
+    if ($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $administratorSids) { return $false }
+    # ReadAndExecute and Synchronize, plus the generic read/execute bits of inherit-only entries.
+    $all = [int64]4294967295
+    $readOnly = [int64]0x001200A9 -bor [int64]2684354560
+    foreach ($rule in $acl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+        $sid = $rule.IdentityReference.Value
+        if ($rule.AccessControlType -ne 'Allow' -or $sid -in $administratorSids) { continue }
+        $rights = [int64][int]$rule.FileSystemRights -band $all
+        if ($sid -notin $readers -or ($rights -band ($all -bxor $readOnly))) { return $false }
+    }
+    return $true
+}
+# Replaces the whole DACL with a protected one of exactly these grants (SID, rights, and
+# 'This folder only' as a third element, else inherited by everything below): explicit rules
+# that another account or an earlier tool left on the directory do not survive.
+function Set-ExactAccess([string]$directory, [object[]]$grants) {
+    $acl = [Security.AccessControl.DirectorySecurity]::new()
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($grant in $grants) {
+        $inheritance = if ($grant.Count -gt 2) { 'None' } else { 'ContainerInherit,ObjectInherit' }
+        $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($grant[0]), $grant[1], $inheritance, 'None', 'Allow'))
+    }
+    [IO.Directory]::SetAccessControl($directory, $acl)
+}
+function Protect-CodeDirectory([string]$directory, [string[]]$readers) {
+    Assert-NotLink $directory
+    # Once protected and owned by Administrators, only they could add entries below it.
+    if (Test-CodeDirectory $directory $readers) { return }
+    # Otherwise entries below may belong to another account, and an owner may always rewrite a
+    # DACL: the whole directory is taken over. Links are refused before and after the walk, so
+    # takeown and icacls stay inside the directory.
+    Assert-NoLinkBelow $directory
+    & takeown.exe /F $directory /A /R | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Cannot take ownership of $directory" }
+    $grants = @($administratorSids | ForEach-Object { , @($_, 'FullControl') }) + @($readers | ForEach-Object { , @($_, 'ReadAndExecute') })
+    Set-ExactAccess $directory $grants
+    # Entries below keep only what they inherit from the protected directory.
+    if (@([IO.Directory]::EnumerateFileSystemEntries($directory) | Select-Object -First 1).Count -gt 0) {
+        & icacls.exe (Join-Path $directory '*') /reset /T /C /Q | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "Cannot reset permissions below $directory" }
+    }
+    Assert-NoLinkBelow $directory
+}
+# endregion code-directories
+
+Assert-NotLink $Root
+New-Item -ItemType Directory -Path $Root -Force | Out-Null
 foreach ($entry in Get-ChildItem -LiteralPath $Root -Force) {
     if ($entry.Name -notmatch '^(runtime|releases|github-token\.txt|bootstrap\.[a-zA-Z0-9]+|download-[a-f0-9-]+\.zip)$') {
         throw 'Use a dedicated directory; an existing installation must be managed with manage.mjs'
     }
 }
-$grants = @('*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F')
-if ($Mode -eq 'compose') { $grants += '*' + $identity.User.Value + ':(OI)(CI)F' }
-& icacls.exe $Root /inheritance:r /grant:r @grants | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'Use a dedicated installation directory you are allowed to protect' }
+foreach ($name in @('runtime', 'releases')) { Assert-NotLink (Join-Path $Root $name) }
+if ($Mode -eq 'windows') {
+    # The owner of a directory may always rewrite its DACL: Administrators take the root first.
+    & takeown.exe /F $Root /A | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Use a dedicated installation directory you are allowed to protect' }
+}
+# The DACL is replaced as a whole: explicit rules of whoever created the root do not survive.
+$grants = @(@('S-1-5-18', 'FullControl'), @('S-1-5-32-544', 'FullControl'))
+if ($Mode -eq 'compose') { $grants += , @($identity.User.Value, 'FullControl') }
+try { Set-ExactAccess $Root $grants } catch { throw 'Use a dedicated installation directory you are allowed to protect' }
+$runtime = Join-Path $Root 'runtime'
+New-Item -ItemType Directory -Path $runtime -Force | Out-Null
+# Native services: the code directories belong to Administrators before Node.js runs from them;
+# LocalService reads them (ADR 0031). Compose keeps the grants of the root (ADR 0050).
+if ($Mode -eq 'windows') {
+    foreach ($name in @('runtime', 'releases')) {
+        $path = Join-Path $Root $name
+        if (Test-Path -LiteralPath $path -PathType Container) { Protect-CodeDirectory $path @('S-1-5-19') }
+    }
+}
 $work = Join-Path $Root ('bootstrap.' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
-$node = Join-Path $Root 'runtime/node-v24.21.0-win-x64/node.exe'
-if (-not (Test-Path -LiteralPath $node)) {
+$nodeName = 'node-v24.21.0-win-x64'
+# SHA-256 of node.exe in the pinned archive below (scripts/native-dependencies.mjs pins the same archive).
+$nodeSha256 = 'BA4E6D110E8C1592A1ECD390F6B05F3DA124B13871A5BE62B341A07A853C6C32'
+$nodeEntries = @('CHANGELOG.md', 'LICENSE', 'README.md', 'corepack', 'corepack.cmd', 'install_tools.bat', 'node.exe', 'node_modules', 'nodevars.bat', 'npm', 'npm.cmd', 'npm.ps1', 'npx', 'npx.cmd', 'npx.ps1')
+# A runtime is used only when node.exe has the pinned hash and nothing but the archive's own
+# entries sits beside it: Windows loads libraries from the directory of an executable first.
+function Test-NodeRuntime([string]$directory) {
+    $exe = Join-Path $directory 'node.exe'
+    $attributes = @((Get-EntryAttributes $directory), (Get-EntryAttributes $exe))
+    if ($null -eq $attributes[0] -or $null -eq $attributes[1]) { return $false }
+    if (($attributes[0] -bor $attributes[1]) -band [IO.FileAttributes]::ReparsePoint) { return $false }
+    if (-not ($attributes[0] -band [IO.FileAttributes]::Directory) -or ($attributes[1] -band [IO.FileAttributes]::Directory)) { return $false }
+    foreach ($entry in [IO.DirectoryInfo]::new($directory).EnumerateFileSystemInfos()) { if ($entry.Name -notin $nodeEntries) { return $false } }
+    return (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -eq $nodeSha256
+}
+$current = Join-Path $runtime $nodeName
+$node = Join-Path $current 'node.exe'
+if (-not (Test-NodeRuntime $current)) {
     if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64') { throw 'Native Windows installer currently supports x64' }
     $archive = Join-Path $work 'node.zip'
     # Three attempts with a pause for transient network failures; the checksum decides below.
     foreach ($attempt in 1..3) {
-        try { Invoke-WebRequest 'https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip' -OutFile $archive -UseBasicParsing; break }
+        try { Invoke-WebRequest "https://nodejs.org/dist/v24.21.0/$nodeName.zip" -OutFile $archive -UseBasicParsing; break }
         catch { if ($attempt -eq 3) { throw }; Start-Sleep -Seconds (5 * $attempt) }
     }
     if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne '158F7685B44DE51F6C0DF1D153526CBCD3E1BC739A8DFC607721CEF75DE9E541') { throw 'Node.js checksum mismatch' }
-    $node = Join-Path $Root 'runtime/node-v24.21.0-win-x64/node.exe'
-    # Antivirus scanning can briefly hold a freshly extracted node.exe; retry before failing clearly.
-    foreach ($attempt in 1..3) {
-        Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $Root 'runtime') -Force
-        if (Test-Path -LiteralPath $node) { break }
-        Start-Sleep -Seconds (2 * $attempt)
+    # A fresh directory inside the protected runtime directory; the runtime is switched to it only
+    # after verification. Antivirus scanning can briefly hold a freshly extracted node.exe.
+    # fresh-* directories that an interrupted run left were never run and are removed first;
+    # Directory.Delete removes links without following them.
+    foreach ($stale in [IO.Directory]::GetDirectories($runtime, 'fresh-*')) { [IO.Directory]::Delete($stale, $true) }
+    $fresh = Join-Path $runtime ('fresh-' + [guid]::NewGuid().ToString('N'))
+    try {
+        foreach ($attempt in 1..3) {
+            Expand-Archive -LiteralPath $archive -DestinationPath $fresh -Force
+            if (Test-NodeRuntime (Join-Path $fresh $nodeName)) { break }
+            Start-Sleep -Seconds (2 * $attempt)
+        }
+        if (-not (Test-NodeRuntime (Join-Path $fresh $nodeName))) { throw 'Node.js runtime is incomplete after extraction (node.exe missing or altered); check antivirus quarantine' }
+        if ($null -ne (Get-EntryAttributes $current)) {
+            # Kept for inspection and never run.
+            $aside = Join-Path $runtime ('unverified-' + [guid]::NewGuid().ToString('N'))
+            Move-Item -LiteralPath $current -Destination $aside
+            Write-Warning "The Node.js runtime in $current did not pass verification; it was moved to $aside and replaced"
+        }
+        Move-Item -LiteralPath (Join-Path $fresh $nodeName) -Destination $current
+    } finally {
+        # Empty after the switch; after a failure it holds the rejected extraction. A file that
+        # antivirus still holds must not hide the error above; the next run removes the rest.
+        try { if ($null -ne (Get-EntryAttributes $fresh)) { [IO.Directory]::Delete($fresh, $true) } }
+        catch { Write-Warning "Cannot remove $fresh yet: $($_.Exception.Message)" }
     }
-    if (-not (Test-Path -LiteralPath $node)) { throw 'Node.js runtime is incomplete after extraction (node.exe missing); check antivirus quarantine' }
+    if (-not (Test-NodeRuntime $current)) { throw 'Node.js runtime verification failed' }
 }
 if ($Version -and $Version -notmatch '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$') { throw 'Invalid stable version' }
 if ($Artifact) {

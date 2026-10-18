@@ -68,7 +68,7 @@ The installer deletes the owner file after it creates the account. Never pass a 
 
 The services run without a signed-in user. API, worker and backup agent share the LocalService account. The database runs under NetworkService, so the API account cannot read the database files.
 
-The root grants full control to SYSTEM and Administrators only. LocalService can read the root and can change only `data\`, `logs\` and the update inbox. The recovery key and the other credential files of the installer are readable only by SYSTEM and Administrators.
+The root grants full control to SYSTEM and Administrators only. LocalService can read the root and can change only `data\`, `logs\` and the update inbox. The recovery key and the other credential files of the installer are readable only by SYSTEM and Administrators. The program folders `runtime\`, `releases\`, `config\` and `modules\` belong to Administrators, and only SYSTEM and Administrators can change them. If one of these folders, or a folder inside them, is a junction or a symbolic link, Setup and `install.ps1` stop with an error. Replace it with an ordinary folder and run Setup again.
 
 ## Install with PowerShell and an existing PostgreSQL {#install-with-powershell-and-an-existing-postgresql}
 
@@ -82,7 +82,7 @@ Use this method if your organization already runs PostgreSQL. It creates no mana
 .\install.ps1 -AutomaticUpdates
 ```
 
-The script asks for the PostgreSQL connection URL. The input is hidden. It then downloads Node.js 24.21.0 from `nodejs.org`, checks its SHA-256, and installs the latest stable release.
+The script asks for the PostgreSQL connection URL. The input is hidden. It then downloads Node.js 24.21.0 from `nodejs.org`, checks its SHA-256, and installs the latest stable release. If the root already contains Node.js, the script uses it only when `node.exe` has the expected SHA-256 and the folder holds nothing else. Otherwise it downloads Node.js again and moves the old folder to `runtime\unverified-…`.
 
 Instead of the prompt, you can pass a protected JSON file:
 
