@@ -88,12 +88,15 @@ export function planOrThrow<Context>(
 }
 
 /**
- * Services of ADR 0083 this core implements for modules, each with its contract suite in
- * `extension-testkit`; a module that uses another one is refused (`service_unavailable`).
+ * Services of ADR 0083 this core implements for modules; a module that uses another one is
+ * refused (`service_unavailable`). `routes`: module HTTP routes under `/api/ext/` (N7), served
+ * by the API and read gateways, its suite in `tests/module-routes.test.mjs` (the route host
+ * lives in the API process); the others each with a contract suite in `extension-testkit`.
  * Completion from stored parts is a capability of a storage instance the core builds, not yet a
  * service a module can offer (`staged-completion` waits for storage instances of modules).
  */
 export const PROVIDED_HOST_SERVICES: readonly HostService[] = [
+  'routes',
   'catalog-read',
   'content-read',
   'data-directory',

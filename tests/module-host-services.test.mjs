@@ -11,9 +11,14 @@ import { removeTestDirectory } from './helpers.mjs';
 
 // What the core gives modules (ADR 0083, section 2.4) and the rule that a service enters the
 // contract only with its suite (section 1).
+// `routes` is served by the API process itself, not by an implementation a module could
+// replace: its suite is tests/module-routes.test.mjs and tests/integration/module-routes.test.mjs.
+const HOSTED_IN_THE_API = new Set(['routes']);
+
 test('every host service the core provides has a contract suite in extension-testkit', () => {
   for (const service of PROVIDED_HOST_SERVICES) {
     assert.ok(HOST_SERVICES.includes(service), service);
+    if (HOSTED_IN_THE_API.has(service)) continue;
     const suite = CONTRACT_SUITES[service];
     assert.equal(typeof testkit[suite], 'function', `${service} needs a suite`);
   }

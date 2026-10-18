@@ -54,8 +54,9 @@ export const HOSTED_ROLES: readonly ModuleRole[] = ['api', 'reader'];
  * The decision for a package whose signature and files verified (ADR 0078, 3.3 and 3.4), in this
  * order: it must be the package the host tool installed (same id, version, signing key and data
  * class, a ProAnimaStudio key), no entry of the stored revocation list may name its version,
- * every role must be hosted and it may not declare routes yet. A revoked version is never loaded, whatever its `readOnly`: no point of
- * this release reads module data yet, so the read-only path has nothing to serve (ADR 0078, O5).
+ * every role must be hosted and a module with route prefixes must use the host service `routes`.
+ * A revoked version is never loaded, whatever its `readOnly`: no point of this release reads
+ * module data yet, so the read-only path has nothing to serve (ADR 0078, O5).
  */
 export function admitPackage(
   entry: InstalledModule,
@@ -85,9 +86,10 @@ export function admitPackage(
   if (revoked !== null) return refused('revoked', revoked.reason);
   if (module.roles.some((role) => !HOSTED_ROLES.includes(role)))
     return refused('failed', 'role_unsupported');
-  // Routes of signed modules under /api/ext/ come with ModuleRoute (ADR 0079, X5); a prefix
-  // without routes would stop the contract guard of every process.
-  if (module.routePrefixes.length > 0) return refused('failed', 'routes_unsupported');
+  // Routes under /api/ext/ are served through the host service `routes` (ADR 0079, X5); a prefix
+  // of a module that cannot declare routes would stay without any.
+  if (module.routePrefixes.length > 0 && !module.uses.includes('routes'))
+    return refused('failed', 'routes_unsupported');
   return { entry, directory, manifest: signed.manifest };
 }
 

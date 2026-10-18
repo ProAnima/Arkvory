@@ -71,12 +71,16 @@ export {
   type StoragePlacementRule,
 } from './storage-placement.js';
 export {
+  moduleDocumentSchema,
   moduleOperations,
+  readModuleDocument,
   readSystemModules,
+  readTransferCapabilities,
   systemModulesSchema,
   type SystemModule,
   type SystemModuleHealth,
   type SystemModules,
+  type TransferCapability,
 } from './modules-api.js';
 export {
   downloadSettingsOperations,

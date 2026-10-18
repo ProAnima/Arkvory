@@ -1,5 +1,6 @@
 import type { CatalogRead, ContentRead } from './catalog-read.js';
 import type { ModuleDataDirectory } from './module-files.js';
+import type { ModuleRoutes } from './routes.js';
 
 /**
  * The type of each host service a host implements today (ADR 0083, section 2.4). A module finds
@@ -7,6 +8,7 @@ import type { ModuleDataDirectory } from './module-files.js';
  * a module that declares one this host or the module's roles and source do not offer.
  */
 export interface HostServiceTypes {
+  readonly routes: ModuleRoutes;
   readonly 'catalog-read': CatalogRead;
   readonly 'content-read': ContentRead;
   readonly 'data-directory': ModuleDataDirectory;

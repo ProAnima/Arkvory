@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { ArkvoryError, fieldError, retentionObject } from '@proanima/arkvory-domain';
+import { fieldError, retentionObject, requireAdministrator } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import { readSiteChange, record } from '@proanima/arkvory-contracts';
 import { fleetAuthor } from './fleet-actor.js';
@@ -7,13 +7,6 @@ import type { SiteChangeControl } from './site-change-control.js';
 
 const ROUTE = '/api/v1/system/changes';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-
-function administrator(actor: Principal) {
-  if (actor.managed || actor.administrator !== true)
-    throw new ArkvoryError('forbidden', 'Administrator required', {
-      reason: 'administrator_required',
-    });
-}
 
 function body(value: unknown) {
   let row: Record<string, unknown>;
@@ -48,7 +41,7 @@ export function registerSiteChangeRoutes(
   control: SiteChangeControl,
 ) {
   app.get(ROUTE, async (request) => {
-    administrator(principal(request));
+    requireAdministrator(principal(request));
     retentionObject(request.query, []);
     const status = await control.status();
     const pending = status.pending;
@@ -64,7 +57,7 @@ export function registerSiteChangeRoutes(
   });
   app.post(ROUTE, async (request, reply) => {
     const actor = principal(request);
-    administrator(actor);
+    requireAdministrator(actor);
     retentionObject(request.query, []);
     const { id, change, key } = body(request.body);
     const author = fleetAuthor(request, actor);

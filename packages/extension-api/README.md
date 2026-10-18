@@ -10,7 +10,11 @@
 - `ModuleDescriptor` (`parseConfig`, `describeConfig`, `create`), `ModuleLifecycle` (`start(signal)`, `drain(budgetMs)`, `stop()`, `health()`), `ModuleConfigError`;
 - чистая `planModules(candidates, host)`: дубли, формат, несовместимый API, неизвестная точка включённого модуля (`unknown_kind`), пространство id по источнику (`id_namespace_mismatch`), бюджет длины префикса таблиц (`table_prefix_too_long`), службы `uses` по матрице ролей и источников и по списку хоста (`service_unavailable`), выключенный модуль ядра, незакрытые и неоднозначные `requires`, роли поставщика, циклы, пересечения и владение префиксами маршрутов, метрик и таблиц; порядок запуска и остановки, два отпечатка плана: полный `fingerprint` с версиями ядра и модулей и `compatibilityFingerprint` без версий ядра и встроенных модулей, который сравнивают процессы установки (SHA-256 считает вызывающая сторона). Коды правил — публичный `ModulePlanRuleCode`.
 
-Службы хоста этапов Y4–Y9 ADR 0083 (версия 0.3.0):
+Версия 0.4.0 объединяет маршруты модулей и службы хоста.
+
+Маршруты (этап X5 ADR 0079, этап Y6 ADR 0083, N7 и N12): служба хоста `routes` — `ModuleRoutes` (`add`, `document`, `offerTransfer`), `ModuleRoute` с методом, полным путём под `/api/ext/<id>/v<major>/`, `effect`, `access`, действием ACL репозитория (`MODULE_ROUTE_ACTIONS`), телом (`none`, `json`, `stream`) и пределами; запрос `ModuleRequest` и ответы `json`, `content` (выдаёт ядро), `stream` и `error` (`MODULE_ROUTE_ERRORS`); `ModuleTransferOffer` для `capabilities.transfer`.
+
+Службы хоста этапов Y4–Y9 ADR 0083:
 
 - переносимые типы `ByteRange`, `BlobDescriptor`, `PartRef`, `Page`, `PageRequest` и ошибка служб `ModuleServiceError` с кодами `SERVICE_ERROR_CODES`; `HostServiceTypes`/`HostServices` — типы служб, которые хост реализует;
 - N1: `StagedCompletion` и `StagedObject` — завершение загрузки из частей, принятых хранилищем; размер и SHA-256 проверяет ядро;

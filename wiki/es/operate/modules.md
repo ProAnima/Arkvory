@@ -56,7 +56,7 @@ Un módulo instalado permanece desactivado hasta que usted lo active. Los servic
 3. Reinicie los servicios, como en [Aplicar un cambio](../install/configuration#apply-change).
 4. Compruebe el módulo como administrador global: `GET /api/v1/system/modules` lo muestra con `running: true` y `health.status` `ok` en la API y en cada puerta de enlace de lectura.
 
-La API y las puertas de enlace de lectura ejecutan los módulos. El worker comprueba los mismos módulos y no ejecuta ninguno. Esta versión rechaza los módulos que se ejecutan en el worker o en el agente de copias de seguridad (`role_unsupported`) y los que declaran rutas propias (`routes_unsupported`). Las instalaciones con Docker Compose todavía no cargan módulos.
+La API y las puertas de enlace de lectura ejecutan los módulos. El worker comprueba los mismos módulos y no ejecuta ninguno. Esta versión rechaza los módulos que se ejecutan en el worker o en el agente de copias de seguridad (`role_unsupported`) y los que declaran prefijos de rutas sin servir rutas a través de Arkvory (`routes_unsupported`). Las instalaciones con Docker Compose todavía no cargan módulos.
 
 Antes de que un servicio importe cualquier código de un módulo, vuelve a comprobar el paquete:
 
@@ -81,6 +81,37 @@ Para reparar un paquete cambiado o ausente, instálelo de nuevo. Todos los servi
 Un módulo que guarda índices, cachés o un estado propios obtiene un directorio en el volumen de datos: `module-data/<id>/` en el directorio de almacenamiento `default`. Su parte `data` está pensada para las copias de seguridad; su parte `cache`, no. Arkvory cuenta cada escritura contra el tamaño aprobado, en MiB y en archivos, para ambas partes juntas. Una escritura que lo supera se rechaza (`module_quota_exceeded`) y el módulo sigue funcionando. Sin un tamaño aprobado, el módulo solo puede leer. También se aplica la [reserva del volumen](./storage#disk). En una puerta de enlace de lectura, el módulo lee los mismos archivos y no puede cambiarlos.
 
 Eliminar un módulo conserva su directorio. Elimine `module-data/<id>/` usted mismo cuando ya no necesite los datos. Las copias de seguridad todavía no incluyen los directorios de los módulos.
+
+## Rutas de los módulos {#routes}
+
+Un módulo puede añadir rutas HTTP bajo su propio prefijo `/api/ext/<id>/v<major>/`, por ejemplo `/api/ext/sample/v1/`. Arkvory comprueba cada solicitud antes de que se ejecute código del módulo:
+
+| Comprobación           | Como en `/api/v1`                                                                                                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Credencial             | Las mismas claves, sesiones y tokens; una ruta está abierta a cualquier llamante que haya iniciado sesión o solo al administrador global                                                       |
+| Permiso                | El permiso que nombra la ruta sobre el repositorio de su ruta, como `content.read` o `upload.create`: una clave de servicio lo necesita, una cuenta necesita su permiso de lectura o escritura |
+| Cuerpo de la solicitud | El límite de tamaño de la ruta, los límites de subida, los plazos y el ancho de banda del servidor                                                                                             |
+| Archivos               | Los envía el propio Arkvory: ETag, Range, `If-Range`, 304, la cola de descargas y el ancho de banda de descarga                                                                                |
+
+Los errores tienen el formato de errores de la API. Un módulo nunca ve la credencial ni otros encabezados. Una puerta de enlace de lectura sirve las rutas de lectura de un módulo y responde `read_only` a las demás.
+
+Cada módulo describe sus rutas en un documento OpenAPI, y Arkvory compara ambos cuando el módulo arranca. Un módulo cuyas rutas incumplen las reglas no arranca ni sirve nada; Arkvory sigue funcionando. `GET /api/v1/system/modules` lo muestra con `running: false` y `health.status` `failed`:
+
+| Código                   | Significado                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `routes_invalid`         | Una ruta incumple las reglas, por ejemplo una ruta fuera del prefijo del módulo o un cambio abierto a cualquier llamante con sesión |
+| `openapi_invalid`        | El documento OpenAPI falta o no es válido                                                                                           |
+| `openapi_route_mismatch` | Una ruta no tiene operación en el documento, o una operación no tiene ruta                                                          |
+| `transfer_invalid`       | El módulo ofrece un protocolo de transferencia que no puede ofrecer                                                                 |
+
+Los documentos de las rutas:
+
+| Dirección                                                                                   | Quién puede leerla            | Contenido                                                                                                  |
+| ------------------------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `GET /api/ext/openapi.json`                                                                 | Cualquier llamante con sesión | Las rutas de todos los módulos que ejecuta este servicio, con las operaciones que el llamante puede llamar |
+| [`GET /api/v1/system/modules/{id}/openapi`](../api/reference/system#getSystemModuleOpenApi) | El administrador global       | Las rutas de un módulo                                                                                     |
+
+`/api/v1/openapi.json` nunca enumera rutas de módulos. Un módulo del tipo `transfer` puede ofrecer otra forma de transferir archivos: `GET /api/v1/capabilities` la enumera en `transfer`. Un cliente la usa solo si tiene una extensión que coincide; si no, transfiere los archivos como de costumbre.
 
 ## Actualizar, fijar y volver a una versión anterior {#versions}
 

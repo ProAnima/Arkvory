@@ -56,7 +56,7 @@ Ein installiertes Modul bleibt abgeschaltet, bis Sie es einschalten. Die Dienste
 3. Starten Sie die Dienste neu, wie unter [Eine Änderung anwenden](../install/configuration#apply-change).
 4. Prüfen Sie das Modul als globaler Administrator: `GET /api/v1/system/modules` zeigt es auf der API und auf jedem Lese-Gateway mit `running: true` und `health.status` `ok`.
 
-Die API und die Lese-Gateways führen Module aus. Der Worker prüft dieselben Module und führt keines aus. Diese Version lehnt Module ab, die im Worker oder im Backup-Agenten laufen (`role_unsupported`), und Module mit eigenen Routen (`routes_unsupported`). Docker-Compose-Installationen laden noch keine Module.
+Die API und die Lese-Gateways führen Module aus. Der Worker prüft dieselben Module und führt keines aus. Diese Version lehnt Module ab, die im Worker oder im Backup-Agenten laufen (`role_unsupported`), und Module, die Routenpräfixe deklarieren, ohne Routen über Arkvory zu bedienen (`routes_unsupported`). Docker-Compose-Installationen laden noch keine Module.
 
 Bevor ein Dienst irgendeinen Code eines Moduls importiert, prüft er das Paket erneut:
 
@@ -81,6 +81,37 @@ Um ein geändertes oder fehlendes Paket zu reparieren, installieren Sie es erneu
 Ein Modul, das eigene Indizes, Caches oder einen eigenen Zustand speichert, erhält ein Verzeichnis auf dem Daten-Volume: `module-data/<id>/` im Speicherverzeichnis von `default`. Sein Teil `data` ist für Backups gedacht, sein Teil `cache` nicht. Arkvory rechnet jeden Schreibvorgang auf die genehmigte Größe an, in MiB und in Dateien, für beide Teile zusammen. Ein Schreibvorgang darüber hinaus wird abgelehnt (`module_quota_exceeded`), und das Modul läuft weiter. Ohne genehmigte Größe kann das Modul nur lesen. Die [Reserve des Volumes](./storage#disk) gilt ebenfalls. Auf einem Lese-Gateway liest das Modul dieselben Dateien und kann sie nicht ändern.
 
 Wenn Sie ein Modul entfernen, bleibt sein Verzeichnis erhalten. Löschen Sie `module-data/<id>/` selbst, wenn Sie die Daten nicht mehr brauchen. Backups enthalten Modulverzeichnisse noch nicht.
+
+## Routen von Modulen {#routes}
+
+Ein Modul kann HTTP-Routen unter seinem eigenen Präfix `/api/ext/<id>/v<major>/` hinzufügen, zum Beispiel `/api/ext/sample/v1/`. Arkvory prüft jede Anfrage, bevor Code des Moduls läuft:
+
+| Prüfung      | Wie bei `/api/v1`                                                                                                                                                                             |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Anmeldedaten | Dieselben Schlüssel, Sitzungen und Tokens; eine Route steht jedem angemeldeten Aufrufer offen oder nur dem globalen Administrator                                                             |
+| Berechtigung | Die Berechtigung, die die Route für das Repository in ihrem Pfad nennt, etwa `content.read` oder `upload.create`: ein Dienstschlüssel braucht sie, ein Konto seine Lese- oder Schreibfreigabe |
+| Anfragetext  | Das Größenlimit der Route, die Upload-Limits, Fristen und die Bandbreite des Servers                                                                                                          |
+| Dateien      | Von Arkvory selbst gesendet: ETag, Range, `If-Range`, 304, die Download-Warteschlange und die Download-Bandbreite                                                                             |
+
+Fehler haben das Fehlerformat der API. Ein Modul sieht nie die Anmeldedaten oder andere Header. Ein Lese-Gateway bedient die lesenden Routen eines Moduls und antwortet auf die übrigen mit `read_only`.
+
+Jedes Modul beschreibt seine Routen in einem OpenAPI-Dokument, und Arkvory gleicht beides beim Start des Moduls ab. Ein Modul, dessen Routen gegen die Regeln verstoßen, startet nicht und bedient nichts; Arkvory läuft weiter. `GET /api/v1/system/modules` zeigt es mit `running: false` und `health.status` `failed`:
+
+| Code                     | Bedeutung                                                                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `routes_invalid`         | Eine Route verstößt gegen die Regeln, etwa ein Pfad außerhalb des Modulpräfixes oder eine Änderung, die jedem angemeldeten Aufrufer offensteht |
+| `openapi_invalid`        | Das OpenAPI-Dokument fehlt oder ist ungültig                                                                                                   |
+| `openapi_route_mismatch` | Eine Route hat keine Operation im Dokument, oder eine Operation hat keine Route                                                                |
+| `transfer_invalid`       | Das Modul bietet ein Übertragungsprotokoll an, das es nicht anbieten darf                                                                      |
+
+Die Dokumente der Routen:
+
+| Adresse                                                                                     | Wer sie lesen darf         | Inhalt                                                                                                   |
+| ------------------------------------------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `GET /api/ext/openapi.json`                                                                 | Jeder angemeldete Aufrufer | Die Routen aller Module, die dieser Dienst ausführt, mit den Operationen, die der Aufrufer aufrufen darf |
+| [`GET /api/v1/system/modules/{id}/openapi`](../api/reference/system#getSystemModuleOpenApi) | Der globale Administrator  | Die Routen eines Moduls                                                                                  |
+
+`/api/v1/openapi.json` listet nie Routen von Modulen. Ein Modul der Art `transfer` kann einen anderen Weg zur Dateiübertragung anbieten: `GET /api/v1/capabilities` listet ihn unter `transfer`. Ein Client nutzt ihn nur mit einer passenden Erweiterung; sonst überträgt er Dateien wie gewohnt.
 
 ## Aktualisieren, festhalten, zurückstufen {#versions}
 

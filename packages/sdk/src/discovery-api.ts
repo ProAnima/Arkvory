@@ -7,6 +7,7 @@ import {
   integer,
   items,
   readOperationPage,
+  readTransferCapabilities,
 } from '@proanima/arkvory-contracts';
 import type { OperationQuery } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
@@ -45,6 +46,9 @@ export class DiscoveryApi {
             const row = record(value);
             return { id: text(row['id']), kind: text(row['kind']) };
           });
+    // ADR 0079, 5.2: absent on servers before module routes; extensions compare against it.
+    const transfer =
+      r['transfer'] === undefined ? undefined : readTransferCapabilities(r['transfer']);
     return {
       apiVersions: items(r['apiVersions']).map(text),
       gatewayRole,
@@ -57,6 +61,7 @@ export class DiscoveryApi {
         maxPageSize: integer(limits['maxPageSize']),
       },
       ...(modules === undefined ? {} : { modules }),
+      ...(transfer === undefined ? {} : { transfer }),
     };
   }
   async repositories(options: { after?: string; limit?: number } = {}, signal?: AbortSignal) {

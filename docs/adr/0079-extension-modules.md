@@ -253,7 +253,17 @@
 ## Уточнения реализации (службы хоста ADR 0083, этапы Y4–Y9)
 
 - **`packages/extension-testkit` создан** (0.1.0, роль и allowlist по п. 2: Node, `allowed: ["packages/extension-api"]`; код продукта пакет не импортирует, это проверяют allowlist остальных единиц). В нём наборы служб хоста `staged-completion`, `catalog-read`/`content-read`, `data-directory` и `capability` с тестовыми модулями и `CONTRACT_SUITES`; governance-тест требует набор для каждой службы, которую ядро предоставляет. Наборы `blob-store` и `readability` пока остаются в `tests/contracts/` (тестовое хранилище зависит от `domain`). Подробности — ADR 0083, «Y4, Y5, Y7, Y8, Y9».
-- **`extension-api` 0.3.0**: службы `catalog-read`, `content-read`, `data-directory` реализованы в процессе API (`ApiServices = HostServices`), значения возможностей с версиями (`context.capabilities`), поле манифеста `resources` и необязательные `optional`, `exposeTo`; точка `service`.
+- **`extension-api` 0.4.0** (0.3.0 маршрутов модулей, этап X5, и службы хоста — одна minor-версия после слияния): службы `catalog-read`, `content-read`, `data-directory` реализованы в процессе API (`ApiServices = HostServices`), значения возможностей с версиями (`context.capabilities`), поле манифеста `resources` и необязательные `optional`, `exposeTo`; точка `service`.
+
+## Уточнения реализации (этап X5, серверная часть)
+
+Сделано вместе с этапом Y6 [ADR 0083](0083-core-extension-points.md) (N7, N12); подробности — в его разделе «Реализация», «Y6». Клиентская часть X5 (`TransferExtension` в SDK, клиентские модули в `arkvoryctl`, набор `transfer-extension`) идёт отдельно.
+
+- **`ModuleRoute` и `/api/ext/<id>/`.** Маршруты объявляются через службу хоста `routes` (`uses: ["routes"]`) во время `create`, проверяются сразу после него и обслуживаются ядром: аутентификация, действие ACL репозитория, допуск записи, пределы тел, бюджеты полосы, контракт ошибок, выдача `content` через `createContentSender`. Fastify модулю не виден.
+- **`routes_unsupported` снят** для пакетов, которые используют службу `routes`: `admitPackage` отклоняет только префиксы маршрутов без `uses: ["routes"]` (такой модуль не смог бы объявить маршруты, и префикс остался бы пустым). Нарушение контракта маршрутами, фрагментом или предложением передачи — отказ модуля в процессе (`routes_invalid`, `openapi_invalid`, `openapi_route_mismatch`, `transfer_invalid`), а не всего запуска.
+- **`capabilities.transfer`** — необязательное поле `[{name, versions, module, prefix}]` (форма п. 5.2): предложения `offerTransfer` работающих в ответившем процессе модулей вида `transfer`, имя `[a-z][a-z0-9-]{1,31}`, 1–16 semver-версий без повторов, `prefix` — один из `routePrefixes` модуля. Схема — в `contracts` (`getCapabilities`), SDK отдаёт его в `client.capabilities()`, только если сервер его прислал (`readTransferCapabilities`). Поле есть всегда, пустой список — нет предложений.
+- **OpenAPI модулей.** Фрагмент передаёт код модуля (`routes.document`), а не файл пакета; сводный документ — `GET /api/ext/openapi.json`, документ одного модуля — `GET /api/v1/system/modules/{id}/openapi` (п. 9, аддитивно; SDK `client.system.moduleOpenApi(id)`). Guard контракта сверяет маршруты модуля с объявленными в обе стороны; публичный контракт `/api/v1` от модулей не меняется.
+- **`extension-api` 0.3.0** (новые экспорты ниже 1.0.0 — minor): `ModuleRoute`, `ModuleRoutes`, `ModuleRequest`, `ModuleResponse`, `ModuleTransferOffer`, `MODULE_ROUTE_METHODS`, `MODULE_ROUTE_ACTIONS`, `MODULE_ROUTE_ERRORS` и пределы; модуль с `^0.2.0` получает `incompatible_api`.
 
 ## Последствия
 
@@ -269,7 +279,7 @@
 2. **X2. Хранилище.** `extension-testkit` с наборами `blob-store` и `readability`, `StorageLifecycle`, `StagingArea`, `acceptsWrites`, режим `read-only`, описание `local-storage` в api, worker и backup; типизированная конфигурация worker. Гейты: `quick`, `integration`, `large`.
 3. **X3. Хранилище копий и участники копии и очистки.** Наборы `vault`, `backup-participant`, `gc-participant`; описание `file-vault`. Гейты: `quick`, `integration`, `deployment`.
 4. **X4. Загрузчик внешних модулей и миграции модулей** (вместе с O1–O2 ADR 0078). `arkvory_module_migrations`, карта шагов в журнале и точке копии. Гейты: `quick`, `integration`, `deployment`, `deployment-containers`. Загрузчик сделан; миграции модулей перенесены к разделам модулей в точке копии (O5 ADR 0078), см. «Уточнения реализации (этап X4)».
-5. **X5. Возможности передачи.** `ModuleRoute`, `/api/ext/<id>/`, `capabilities.transfer`, `TransferExtension` в SDK, клиентские модули в `arkvoryctl`, набор `transfer-extension` с тестовым расширением. Гейты: `quick`, `integration`, `native-package`.
+5. **X5. Возможности передачи.** `ModuleRoute`, `/api/ext/<id>/`, `capabilities.transfer`, `TransferExtension` в SDK, клиентские модули в `arkvoryctl`, набор `transfer-extension` с тестовым расширением. Гейты: `quick`, `integration`, `native-package`. Серверная часть сделана вместе с Y6 ADR 0083, см. «Уточнения реализации (этап X5, серверная часть)».
 6. **X6 и далее.** `event-sink` вместе с ADR 0080; провайдеры входа и S3 — по своим ADR.
 
 ## Проверка

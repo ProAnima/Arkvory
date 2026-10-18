@@ -25,6 +25,8 @@ import { registerBackupRoutes } from './backup-routes.js';
 import { registerMirrorRoutes } from './mirror-routes.js';
 import { registerLinkRoutes } from './link-routes.js';
 import { registerProtocolRoutes } from './protocol-routes.js';
+import { registerExtensionRoutes } from './extension-routes.js';
+import type { ModuleRouteSet } from './extension-registry.js';
 
 interface Composition {
   services: ReturnType<typeof createApiServices>;
@@ -36,6 +38,8 @@ interface Composition {
   diagnostics: Pick<DiagnosticLogger, 'write'>;
   /** Enabled modules of this process (ADR 0079): their routes and `capabilities.modules`. */
   modules: readonly { readonly id: string; readonly kind: string }[];
+  /** Routes and transfer offers of running modules (ADR 0083, N7; ADR 0079, 5.2). */
+  extensions: readonly ModuleRouteSet[];
 }
 
 /** Explicit HTTP wiring; the complete composition is never passed into a route handler. */
@@ -49,6 +53,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
     policy,
     diagnostics,
     modules,
+    extensions,
   } = dependencies;
   const { principal, signal } = context;
   const modifying = createUploadAdmission(transfers.uploadGate, context, available);
@@ -65,6 +70,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
     maxObjectBytes: s.service.maxObjectBytes,
     selfRegistration: s.identity.allowRegistration,
     modules,
+    transfer: extensions.flatMap((set) => set.offers),
   });
   registerRepositoryRoutes(app, principal);
   registerArtifactRoutes(app, s.service, principal);
@@ -90,6 +96,24 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
     diagnostics,
     role,
   });
+  registerExtensionRoutes(
+    app,
+    extensions.flatMap((set) => set.routes),
+    {
+      principal,
+      signal,
+      context,
+      modifying,
+      sendContent,
+      bandwidth: transfers.uploadBandwidth,
+      policy,
+      diagnostics,
+      role,
+      downloadGate: transfers.downloadGate,
+      downloadBandwidth: transfers.downloadBandwidth,
+      maxObjectBytes: s.service.maxObjectBytes,
+    },
+  );
   registerStoragePolicyRoutes(app, s.storage, s.storagePolicies, principal);
   registerCleanupRoutes(app, s.cleanup, principal);
   registerPlacementRoutes(app, s.placement, principal);

@@ -27,6 +27,8 @@ import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
 import { apiModules, planApiModules, type ApiModuleContext } from './modules.js';
 import type { ModuleRuntime } from './module-host.js';
+import { ModuleRouteRegistry, type ModuleRouteSet } from './extension-registry.js';
+import type { PlannedModule } from '@proanima/arkvory-extension-api';
 import { ModuleTelemetry } from './module-telemetry.js';
 import { apiHostServices } from './module-services.js';
 
@@ -65,6 +67,8 @@ export class ApiRuntime {
   private ticketRetry: ReturnType<typeof setInterval> | undefined;
   /** The modules of this process (ADR 0079); planned at construction, started last by `start`. */
   readonly modules: ModuleRuntime<ApiModuleContext>;
+  /** What modules declare through the service `routes` (ADR 0083, N7), while they are created. */
+  readonly routes = new ModuleRouteRegistry();
   /** The modules' log and metrics, bound to the process log. */
   readonly telemetry: ModuleTelemetry;
   /** The plan the writer records and read gateways compare with theirs. */
@@ -85,10 +89,10 @@ export class ApiRuntime {
     this.telemetry = new ModuleTelemetry(log, () => performance.now());
     // Module settings and the plan are checked before any pool, storage or timer exists.
     this.modules = installation
-      ? apiModules(this.role, installation, this.telemetry, (module, resources) =>
+      ? apiModules(this.role, installation, this.telemetry, this.routes, (module, resources) =>
           this.hostServices.for(module, resources),
         )
-      : planApiModules(this.role, coreVersion, config.modules, this.telemetry);
+      : planApiModules(this.role, coreVersion, config.modules, this.telemetry, this.routes);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
     this.blobs = localStorageBackends(
@@ -146,6 +150,18 @@ export class ApiRuntime {
         reason: 'module_plan_mismatch',
       });
   };
+
+  /**
+   * The modules that run in this process once `start` is over, and the routes they declared: a
+   * module that failed to load or start here serves nothing.
+   */
+  extensions(): { modules: PlannedModule[]; sets: ModuleRouteSet[] } {
+    const modules = this.modules
+      .states()
+      .filter(({ running }) => running)
+      .map(({ module }) => module);
+    return { modules, sets: this.routes.of(modules.map((m) => m.manifest.id)) };
+  }
 
   async start(): Promise<void> {
     try {

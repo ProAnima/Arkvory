@@ -36,6 +36,20 @@ export const SIGNED_START_BUDGET_MS = 30_000;
 
 class StartTimeout extends Error {}
 
+/**
+ * What a module declared while it was created does not keep the contract (its routes, ADR 0083,
+ * N7). The code is a machine code; the subject names the declaration, never a value.
+ */
+export class ModuleSetupError extends Error {
+  override readonly name = 'ModuleSetupError';
+  constructor(
+    readonly code: string,
+    readonly subject: string,
+  ) {
+    super(`Module setup refused: ${code} at ${subject === '' ? '/' : subject}`);
+  }
+}
+
 /** `work`, or a `StartTimeout` after `budgetMs`; the timer never outlives the race. */
 async function within<T>(work: Promise<T>, budgetMs: number, expired: () => void): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -122,6 +136,11 @@ export interface ModuleProcess<Context> {
    * `capabilities` the values of its `requires` and `optional` (ADR 0083, N13).
    */
   context(module: PlannedModule, signal: ModuleSignal, capabilities: ModuleCapabilities): Context;
+  /**
+   * Checks what the module declared during `create`, before it starts; throws `ModuleSetupError`.
+   * A signed module then fails alone with its code; a built-in module stops the process start.
+   */
+  created?(module: PlannedModule): void;
 }
 
 /**
@@ -200,6 +219,7 @@ export class ModuleRuntime<Context = unknown> {
     const instance = module.create(this.contextOf(planned, signal));
     // Recorded before start: stop() also runs after a failed or cancelled start.
     this.running.push({ id, instance });
+    this.process.created?.(planned);
     await instance.start(signal);
     this.capabilities.offer(planned, instance);
   }
@@ -232,6 +252,14 @@ export class ModuleRuntime<Context = unknown> {
       this.failed.set(id, error instanceof ModuleLoadError ? error.code : 'create_failed');
       return;
     }
+    try {
+      this.process.created?.(planned);
+    } catch (error) {
+      // Created, never started: stopped like a module whose start failed, then reported.
+      await this.stopBounded(instance);
+      this.failed.set(id, error instanceof ModuleSetupError ? error.code : 'create_failed');
+      return;
+    }
     const own = new AbortController();
     const started = { id, instance };
     this.running.push(started);
@@ -245,9 +273,7 @@ export class ModuleRuntime<Context = unknown> {
       if (signal.aborted) throw error;
       const index = this.running.indexOf(started);
       if (index >= 0) this.running.splice(index, 1);
-      // Bounded like the start: a stop that hangs must not hold the process start either.
-      const stopped = Promise.resolve().then(() => instance.stop());
-      await within(stopped, this.startBudgetMs, () => undefined).catch(() => undefined);
+      await this.stopBounded(instance);
       this.failed.set(id, error instanceof StartTimeout ? 'start_timeout' : 'start_failed');
     }
   }
@@ -285,6 +311,12 @@ export class ModuleRuntime<Context = unknown> {
             .catch(() => undefined);
       })());
     return { consistency, thaw };
+  }
+
+  /** Bounded like the start: a stop that hangs must not hold the process start either. */
+  private async stopBounded(instance: ModuleLifecycle): Promise<void> {
+    const stopped = Promise.resolve().then(() => instance.stop());
+    await within(stopped, this.startBudgetMs, () => undefined).catch(() => undefined);
   }
 
   /** Cancels a start in progress; modules already started run until `shutdown`. */

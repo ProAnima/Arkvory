@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
-  ArkvoryError,
   fieldError,
   nestedFields,
   readDownloadOverrides,
   retentionObject,
+  requireAdministrator,
 } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import { fleetAuthor } from './fleet-actor.js';
@@ -12,13 +12,6 @@ import type { DownloadSettingsControl, DownloadSettingsView } from '@proanima/ar
 import { record } from '@proanima/arkvory-contracts';
 
 const ROUTE = '/api/v1/system/downloads/settings';
-
-function administrator(actor: Principal) {
-  if (actor.managed || actor.administrator !== true)
-    throw new ArkvoryError('forbidden', 'Administrator required', {
-      reason: 'administrator_required',
-    });
-}
 
 function change(body: unknown) {
   let row: Record<string, unknown>;
@@ -60,13 +53,13 @@ export function registerDownloadSettingsRoutes(
   control: DownloadSettingsControl,
 ) {
   app.get(ROUTE, async (request) => {
-    administrator(principal(request));
+    requireAdministrator(principal(request));
     retentionObject(request.query, []);
     return wire(await control.view());
   });
   app.put(ROUTE, async (request) => {
     const actor = principal(request);
-    administrator(actor);
+    requireAdministrator(actor);
     retentionObject(request.query, []);
     const { expected, overrides } = change(request.body);
     return wire(await control.change(expected, overrides, fleetAuthor(request, actor)));
