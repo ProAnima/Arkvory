@@ -68,7 +68,7 @@ O instalador exclui o arquivo do proprietário depois de criar a conta. Nunca pa
 
 Os serviços são executados sem nenhum usuário conectado. A API, o worker e o agente de backup compartilham a conta LocalService. O banco de dados é executado sob a conta NetworkService, então a conta da API não consegue ler os arquivos do banco de dados.
 
-A raiz concede controle total somente ao SYSTEM e aos Administradores. O LocalService pode ler a raiz e só pode alterar `data\`, `logs\` e a caixa de entrada de atualizações. A chave de recuperação e os outros arquivos de credenciais do instalador podem ser lidos somente pelo SYSTEM e pelos Administradores.
+A raiz concede controle total somente ao SYSTEM e aos Administradores. O LocalService pode ler a raiz e só pode alterar `data\`, `logs\` e a caixa de entrada de atualizações. A chave de recuperação e os outros arquivos de credenciais do instalador podem ser lidos somente pelo SYSTEM e pelos Administradores. As pastas do programa `runtime\`, `releases\`, `config\` e `modules\` pertencem aos Administradores, e somente o SYSTEM e os Administradores podem alterá-las. Se uma dessas pastas, ou uma pasta dentro delas, for uma junção (junction) ou um link simbólico, o instalador e o `install.ps1` param com um erro. Substitua-a por uma pasta comum e execute o instalador novamente.
 
 ## Instalar com o PowerShell e um PostgreSQL existente {#install-with-powershell-and-an-existing-postgresql}
 
@@ -82,7 +82,7 @@ Use este método se a sua organização já executa um PostgreSQL. Ele não cria
 .\install.ps1 -AutomaticUpdates
 ```
 
-O script pede a URL de conexão do PostgreSQL. A entrada fica oculta. Em seguida, ele baixa o Node.js 24.21.0 de `nodejs.org`, verifica o SHA-256 e instala a versão estável mais recente.
+O script pede a URL de conexão do PostgreSQL. A entrada fica oculta. Em seguida, ele baixa o Node.js 24.21.0 de `nodejs.org`, verifica o SHA-256 e instala a versão estável mais recente. Se a raiz já contiver o Node.js, o script o usa somente quando `node.exe` tem o SHA-256 esperado e a pasta não contém mais nada. Caso contrário, ele baixa o Node.js novamente e move a pasta antiga para `runtime\unverified-…`.
 
 Em vez de digitar no prompt, você pode passar um arquivo JSON protegido:
 

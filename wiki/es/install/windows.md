@@ -68,7 +68,7 @@ El instalador elimina el archivo del propietario después de crear la cuenta. No
 
 Los servicios se ejecutan sin un usuario con sesión iniciada. La API, el worker y el agente de copias de seguridad comparten la cuenta LocalService. La base de datos se ejecuta con NetworkService, por lo que la cuenta de la API no puede leer los archivos de la base de datos.
 
-La raíz concede control total solo a SYSTEM y Administradores. LocalService puede leer la raíz y modificar únicamente `data\`, `logs\` y la bandeja de entrada de actualizaciones. La clave de recuperación y los demás archivos de credenciales del instalador solo pueden leerlos SYSTEM y Administradores.
+La raíz concede control total solo a SYSTEM y Administradores. LocalService puede leer la raíz y modificar únicamente `data\`, `logs\` y la bandeja de entrada de actualizaciones. La clave de recuperación y los demás archivos de credenciales del instalador solo pueden leerlos SYSTEM y Administradores. Las carpetas del programa `runtime\`, `releases\`, `config\` y `modules\` pertenecen a Administradores, y solo SYSTEM y Administradores pueden modificarlas. Si una de estas carpetas, o una carpeta dentro de ellas, es una unión (junction) o un vínculo simbólico, el instalador e `install.ps1` se detienen con un error. Sustitúyala por una carpeta normal y vuelva a ejecutar el instalador.
 
 ## Instalar con PowerShell y un PostgreSQL existente {#install-with-powershell-and-an-existing-postgresql}
 
@@ -82,7 +82,7 @@ Use este método si su organización ya tiene un servidor PostgreSQL en funciona
 .\install.ps1 -AutomaticUpdates
 ```
 
-El script solicita la URL de conexión de PostgreSQL. La entrada está oculta. Después descarga Node.js 24.21.0 de `nodejs.org`, comprueba su SHA-256 e instala la última versión estable.
+El script solicita la URL de conexión de PostgreSQL. La entrada está oculta. Después descarga Node.js 24.21.0 de `nodejs.org`, comprueba su SHA-256 e instala la última versión estable. Si la raíz ya contiene Node.js, el script lo usa solo cuando `node.exe` tiene el SHA-256 esperado y la carpeta no contiene nada más. En caso contrario, vuelve a descargar Node.js y mueve la carpeta anterior a `runtime\unverified-…`.
 
 En lugar de la solicitud, puede pasar un archivo JSON protegido:
 

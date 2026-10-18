@@ -68,7 +68,7 @@ Microsoftランタイムのために再起動が必要だと表示された場�
 
 サービスは、サインインしているユーザーがいなくても実行されます。API、ワーカー、バックアップエージェントは、LocalServiceアカウントを共有します。データベースはNetworkServiceで実行されるため、APIのアカウントはデータベースファイルを読み取れません。
 
-ルートに対するフルコントロールを持つのは、SYSTEMとAdministratorsだけです。LocalServiceはルートを読み取れ、変更できるのは`data\`、`logs\`、更新リクエストの受信フォルダーだけです。回復キーと、インストーラーのその他の資格情報ファイルを読み取れるのは、SYSTEMとAdministratorsだけです。
+ルートに対するフルコントロールを持つのは、SYSTEMとAdministratorsだけです。LocalServiceはルートを読み取れ、変更できるのは`data\`、`logs\`、更新リクエストの受信フォルダーだけです。回復キーと、インストーラーのその他の資格情報ファイルを読み取れるのは、SYSTEMとAdministratorsだけです。プログラム フォルダー`runtime\`、`releases\`、`config\`、`modules\`の所有者はAdministratorsで、変更できるのはSYSTEMとAdministratorsだけです。これらのフォルダー、またはその中のフォルダーがジャンクションやシンボリック リンクの場合、セットアップと`install.ps1`はエラーで停止します。通常のフォルダーに置き換えてから、セットアップをもう一度実行してください。
 
 ## PowerShellと既存のPostgreSQLでインストールする {#install-with-powershell-and-an-existing-postgresql}
 
@@ -82,7 +82,7 @@ Microsoftランタイムのために再起動が必要だと表示された場�
 .\install.ps1 -AutomaticUpdates
 ```
 
-スクリプトは、PostgreSQLの接続URLを尋ねます。入力した内容は表示されません。その後、`nodejs.org`からNode.js 24.21.0をダウンロードし、SHA-256を確認して、最新の安定版リリースをインストールします。
+スクリプトは、PostgreSQLの接続URLを尋ねます。入力した内容は表示されません。その後、`nodejs.org`からNode.js 24.21.0をダウンロードし、SHA-256を確認して、最新の安定版リリースをインストールします。ルートにNode.jsがすでにある場合、スクリプトがそれを使うのは、`node.exe`のSHA-256が想定どおりで、フォルダーにほかのものがないときだけです。そうでない場合は、Node.jsをダウンロードし直し、以前のフォルダーを`runtime\unverified-…`に移動します。
 
 プロンプトの代わりに、保護されたJSONファイルを渡すこともできます。
 

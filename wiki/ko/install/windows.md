@@ -68,7 +68,7 @@ Microsoft 런타임 때문에 다시 시작해야 한다고 Setup이 알려 주�
 
 서비스는 로그인한 사용자 없이 실행됩니다. API, 워커, 백업 에이전트는 LocalService 계정을 공유합니다. 데이터베이스는 NetworkService 계정으로 실행되므로 API 계정은 데이터베이스 파일을 읽을 수 없습니다.
 
-루트에 대한 모든 권한은 SYSTEM과 Administrators에만 부여됩니다. LocalService는 루트를 읽을 수 있으며 `data\`, `logs\`, 업데이트 수신함만 변경할 수 있습니다. 복구 키와 설치 프로그램의 다른 자격 증명 파일은 SYSTEM과 Administrators만 읽을 수 있습니다.
+루트에 대한 모든 권한은 SYSTEM과 Administrators에만 부여됩니다. LocalService는 루트를 읽을 수 있으며 `data\`, `logs\`, 업데이트 수신함만 변경할 수 있습니다. 복구 키와 설치 프로그램의 다른 자격 증명 파일은 SYSTEM과 Administrators만 읽을 수 있습니다. 프로그램 폴더 `runtime\`, `releases\`, `config\`, `modules\`의 소유자는 Administrators이며 SYSTEM과 Administrators만 변경할 수 있습니다. 이 폴더나 그 안의 폴더가 정션(junction) 또는 심볼릭 링크이면 설치 프로그램과 `install.ps1`이 오류와 함께 중지됩니다. 일반 폴더로 바꾼 다음 설치 프로그램을 다시 실행하세요.
 
 ## PowerShell과 기존 PostgreSQL로 설치 {#install-with-powershell-and-an-existing-postgresql}
 
@@ -82,7 +82,7 @@ Microsoft 런타임 때문에 다시 시작해야 한다고 Setup이 알려 주�
 .\install.ps1 -AutomaticUpdates
 ```
 
-스크립트가 PostgreSQL 연결 URL을 묻습니다. 입력한 내용은 화면에 표시되지 않습니다. 이어서 스크립트는 `nodejs.org`에서 Node.js 24.21.0을 다운로드하고 SHA-256을 확인한 다음 최신 안정 릴리스를 설치합니다.
+스크립트가 PostgreSQL 연결 URL을 묻습니다. 입력한 내용은 화면에 표시되지 않습니다. 이어서 스크립트는 `nodejs.org`에서 Node.js 24.21.0을 다운로드하고 SHA-256을 확인한 다음 최신 안정 릴리스를 설치합니다. 루트에 Node.js가 이미 있으면 스크립트는 `node.exe`의 SHA-256이 예상 값과 같고 폴더에 다른 항목이 없을 때만 그것을 사용합니다. 그렇지 않으면 Node.js를 다시 다운로드하고 이전 폴더를 `runtime\unverified-…`로 옮깁니다.
 
 프롬프트 대신 보호된 JSON 파일을 전달할 수도 있습니다.
 
