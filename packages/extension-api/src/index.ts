@@ -52,3 +52,22 @@ export {
   type PlannedModule,
 } from './plan.js';
 export type { ModulePlanRuleCode } from './plan-rules.js';
+export {
+  MODULE_JSON_BODY_LIMIT,
+  MODULE_JSON_RESPONSE_LIMIT,
+  MODULE_ROUTE_ACTIONS,
+  MODULE_ROUTE_ERRORS,
+  MODULE_ROUTE_LIMIT,
+  MODULE_ROUTE_METHODS,
+  MODULE_ROUTE_TIMEOUT_LIMIT_MS,
+  type ModuleRequest,
+  type ModuleRequestBody,
+  type ModuleResponse,
+  type ModuleRoute,
+  type ModuleRouteAction,
+  type ModuleRouteBody,
+  type ModuleRouteError,
+  type ModuleRouteMethod,
+  type ModuleRoutes,
+  type ModuleTransferOffer,
+} from './routes.js';

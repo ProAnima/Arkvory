@@ -73,10 +73,11 @@ export function planOrThrow<Context>(
 }
 
 /**
- * Services of ADR 0083 this core implements for modules. None yet: each arrives with its stage
- * and contract suite, and a module that uses another one is refused (`service_unavailable`).
+ * Services of ADR 0083 this core implements for modules; each arrives with its stage and contract
+ * suite, and a module that uses another one is refused (`service_unavailable`). `routes`: module
+ * HTTP routes under `/api/ext/` (ADR 0083, N7), served by the API and read gateways.
  */
-export const PROVIDED_HOST_SERVICES: readonly HostService[] = [];
+export const PROVIDED_HOST_SERVICES: readonly HostService[] = ['routes'];
 
 export const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
