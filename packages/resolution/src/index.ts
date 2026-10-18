@@ -85,7 +85,9 @@ function permitted(roots: ReadonlySet<string>, url: string): boolean {
  * hooks: it may name a file outside, but loading that file is refused like any other.
  *
  * Call it first: entries import a module that calls it before any other import, so it runs
- * before the code of every library. Idempotent within a thread. Worker threads are not
+ * before the code of every library. Node resolves the static ES module graph of an entry before
+ * evaluating any of it, so those imports pass unchecked: they name only packages the release
+ * ships (ADR 0031, limitations). Idempotent within a thread. Worker threads are not
  * confined; the product starts only the watchdog worker, which resolves nothing.
  */
 export function confineResolution(): void {
