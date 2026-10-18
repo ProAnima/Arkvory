@@ -322,6 +322,7 @@ const entries = [
   'apps/worker/src/main.ts',
   'apps/worker/src/gc.ts',
   'apps/worker/src/scrub.ts',
+  'apps/worker/src/rehome.ts',
   'apps/backup/src/main.ts',
   'apps/deploy/src/main.ts',
   'apps/deploy/src/container.ts',
