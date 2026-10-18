@@ -1,4 +1,4 @@
-import type { ModuleSource } from './context.js';
+import type { ModuleSource } from './sources.js';
 import { MODULE_KINDS, type ModuleManifest } from './manifest.js';
 import {
   parseCaretRange,
@@ -34,6 +34,9 @@ export type ModulePlanRuleCode =
   | 'duplicate_provider'
   | 'missing_requirement'
   | 'requirement_role_mismatch'
+  | 'requirement_version_mismatch'
+  | 'capability_unversioned'
+  | 'capability_not_exposed'
   | 'requirement_cycle';
 
 export interface RuleProblem {

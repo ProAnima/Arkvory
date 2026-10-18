@@ -54,11 +54,13 @@ Die Spalte „Gelesen von“ verwendet diese Namen: **API** ist der HTTP-Server 
 
 ## Speicher und Limits {#storage-and-limits}
 
-| Variable                        | Gelesen von        | Standard     | Bedeutung                                                                                                                                                                                                       |
-| ------------------------------- | ------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_CAPACITY_BYTES`        | API, Worker        | 10 TiB       | Obergrenze in Bytes für alle reservierten Inhalte: veröffentlichte, unfertige Uploads und Inhalte, die auf die Bereinigung warten. Es ist keine Datenträgerprüfung. Der Worker liest sie nur für Spiegelkopien. |
-| `ARKVORY_STORAGE_RESERVE_BYTES` | API, Worker, Agent | `1073741824` | Freier Speicherplatz in Bytes, den Uploads nie verwenden. Er bleibt für die Datenbank, Protokolle und das System reserviert. `0` schaltet die Reserve aus.                                                      |
-| `ARKVORY_MAX_OBJECT_BYTES`      | API                | etwa 10 TiB  | Größtes Objekt in Bytes. Der höchste erlaubte Wert sind 10 000 Teile zu je 1 GiB. Setzen Sie einen niedrigeren Wert, um die Dateigröße zu begrenzen.                                                            |
+| Variable                          | Gelesen von        | Standard           | Bedeutung                                                                                                                                                                                                       |
+| --------------------------------- | ------------------ | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_CAPACITY_BYTES`          | API, Worker        | 10 TiB             | Obergrenze in Bytes für alle reservierten Inhalte: veröffentlichte, unfertige Uploads und Inhalte, die auf die Bereinigung warten. Es ist keine Datenträgerprüfung. Der Worker liest sie nur für Spiegelkopien. |
+| `ARKVORY_STORAGE_RESERVE_BYTES`   | API, Worker, Agent | `1073741824`       | Freier Speicherplatz in Bytes, den Uploads nie verwenden. Er bleibt für die Datenbank, Protokolle und das System reserviert. `0` schaltet die Reserve aus.                                                      |
+| `ARKVORY_STORAGE_RESERVE_INODES`  | API, Worker        | `100000`           | Freie Inodes, die Schreibvorgänge auf keinem Volume verwenden. Dateisysteme ohne Inode-Zählung, etwa NTFS, überspringen diese Prüfung. `0` schaltet sie aus.                                                    |
+| `ARKVORY_REHOME_BYTES_PER_SECOND` | Worker             | `0` (keine Grenze) | Kopiergeschwindigkeit in Bytes pro Sekunde für [Verschiebungen zwischen Volumes](../operate/storage#rehome).                                                                                                    |
+| `ARKVORY_MAX_OBJECT_BYTES`        | API                | etwa 10 TiB        | Größtes Objekt in Bytes. Der höchste erlaubte Wert sind 10 000 Teile zu je 1 GiB. Setzen Sie einen niedrigeren Wert, um die Dateigröße zu begrenzen.                                                            |
 
 ## Übertragungen und Bandbreite {#transfers-and-bandwidth}
 

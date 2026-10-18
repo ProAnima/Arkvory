@@ -1,12 +1,18 @@
 import { open, type FileHandle } from 'node:fs/promises';
 import { isAbsolute } from 'node:path';
 import { MODULE_ID_PATTERN } from '@proanima/arkvory-extension-api';
+import type { ModuleResources } from '@proanima/arkvory-extension-api';
 
 /** The operator's choice for one module (ADR 0079, section 3). */
 export interface ModuleSelection {
   readonly enabled: boolean;
   /** The module's own settings, untrusted until its `parseConfig`; undefined when absent. */
   readonly config: unknown;
+  /**
+   * The data directory the operator approves (ADR 0083, N6), replacing what the manifest asks;
+   * absent keeps the manifest's request.
+   */
+  readonly resources?: ModuleResources;
 }
 
 /** Choices by module id; a module not named keeps its default: enabled, no settings. */
@@ -39,12 +45,34 @@ function fields(value: unknown, path: string, known: readonly string[]): Record<
   return row;
 }
 
+const MAX_DATA_MIB = 1024 * 1024;
+const MAX_DATA_FILES = 10_000_000;
+
+function count(value: unknown, path: string, max: number): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0 || value > max)
+    fail(path);
+  return value;
+}
+
+function resources(value: unknown, path: string): ModuleResources {
+  const row = fields(value, path, ['dataMiB', 'dataFiles']);
+  return {
+    dataMiB: count(row['dataMiB'], `${path}/dataMiB`, MAX_DATA_MIB),
+    dataFiles: count(row['dataFiles'], `${path}/dataFiles`, MAX_DATA_FILES),
+  };
+}
+
 function selection(id: string, value: unknown): ModuleSelection {
   const path = `/modules/${id}`;
-  const row = fields(value, path, ['enabled', 'config']);
+  const row = fields(value, path, ['enabled', 'config', 'resources']);
   const enabled = row['enabled'];
   if (typeof enabled !== 'boolean') fail(`${path}/enabled`);
-  return { enabled, config: row['config'] };
+  const approved = row['resources'];
+  return {
+    enabled,
+    config: row['config'],
+    ...(approved === undefined ? {} : { resources: resources(approved, `${path}/resources`) }),
+  };
 }
 
 /** `{"format": 1, "modules": {"<id>": {"enabled": true, "config": {...}}}}`. */

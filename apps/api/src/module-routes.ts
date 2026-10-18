@@ -1,16 +1,8 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
+import { retentionObject, requireAdministrator } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import { systemModulesSchema, type SystemModules } from '@proanima/arkvory-contracts';
 import type { ModuleRuntime } from './module-host.js';
-
-/** The global administrator of this installation only: the module set shapes its attack surface. */
-function administrator(actor: Principal) {
-  if (actor.managed || actor.administrator !== true)
-    throw new ArkvoryError('forbidden', 'Administrator required', {
-      reason: 'administrator_required',
-    });
-}
 
 type ModuleView = Pick<ModuleRuntime, 'plan' | 'states' | 'refused'>;
 
@@ -60,7 +52,7 @@ export function registerModuleRoutes(
     '/api/v1/system/modules',
     { schema: { response: { 200: systemModulesSchema } } },
     (request) => {
-      administrator(principal(request));
+      requireAdministrator(principal(request));
       retentionObject(request.query, []);
       return Promise.resolve(describeModules(modules));
     },

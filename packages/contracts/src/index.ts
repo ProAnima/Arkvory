@@ -75,7 +75,7 @@ export {
   artifactTreePaths,
   artifactTreeSchema,
   readArtifactTree,
-  readCapabilityOffers,
+  readTreeCapabilities,
   treeCapabilitySchema,
   type ArtifactTree,
   type ArtifactTreeEntry,
@@ -83,12 +83,16 @@ export {
   type TreeCapability,
 } from './tree-api.js';
 export {
+  moduleDocumentSchema,
   moduleOperations,
+  readModuleDocument,
   readSystemModules,
+  readTransferCapabilities,
   systemModulesSchema,
   type SystemModule,
   type SystemModuleHealth,
   type SystemModules,
+  type TransferCapability,
 } from './modules-api.js';
 export {
   downloadSettingsOperations,

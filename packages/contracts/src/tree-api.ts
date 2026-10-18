@@ -1,3 +1,4 @@
+import { readCapabilityOffers } from './modules-api.js';
 import { integer, items, record, text } from './wire-values.js';
 
 /**
@@ -138,9 +139,6 @@ export const artifactTreePaths = {
 };
 
 const DIGEST = /^[a-f0-9]{64}$/;
-/** A semver 2.0.0 version without build metadata, as extension API versions are written. */
-const SEMVER =
-  /^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
 const DECIMAL = /^(0|[1-9][0-9]{0,15})$/;
 
 function digest(value: unknown): string {
@@ -185,24 +183,10 @@ export function readArtifactTree(value: unknown): ArtifactTree {
   };
 }
 
-/** Validates `capabilities.tree` or `capabilities.transfer` entries; malformed ones are dropped. */
-export function readCapabilityOffers(value: unknown): readonly TreeCapability[] | undefined {
-  if (value === undefined) return undefined;
-  return items(value).flatMap((entry) => {
-    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return [];
-    const row = record(entry);
-    const { name, versions, module, prefix } = row;
-    if (
-      typeof name !== 'string' ||
-      !/^[a-z][a-z0-9-]{1,31}$/.test(name) ||
-      typeof module !== 'string' ||
-      typeof prefix !== 'string' ||
-      !Array.isArray(versions)
-    )
-      return [];
-    const known = versions.filter(
-      (version): version is string => typeof version === 'string' && SEMVER.test(version),
-    );
-    return known.length === 0 ? [] : [{ name, versions: known, module, prefix }];
-  });
+/** A prefix of a tree capability: the core API or a module's routes under `/api/ext/`. */
+const TREE_PREFIX = /^\/api\/(v1|ext\/[a-z][a-z0-9-]{1,31}\/v[1-9][0-9]{0,3})\/$/;
+
+/** Validates `capabilities.tree` with the same strict reader as `capabilities.transfer`. */
+export function readTreeCapabilities(value: unknown): readonly TreeCapability[] {
+  return readCapabilityOffers(value, TREE_PREFIX, 'tree');
 }

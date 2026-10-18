@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Pool } from 'pg';
-import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
+import { retentionObject, requireAdministrator } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import type { MirrorStatus } from '@proanima/arkvory-application';
 import { topologySchema, type SiteTopology } from '@proanima/arkvory-contracts';
@@ -19,14 +19,6 @@ export interface TopologyParts {
   readonly updates: Pick<UpdateControl, 'status'>;
   readonly downloads: Pick<DownloadScheduler, 'snapshot'>;
   readonly pool: Pick<Pool, 'query'>;
-}
-
-/** The global administrator of this installation only: topology names hosts and nodes. */
-function administrator(actor: Principal) {
-  if (actor.managed || actor.administrator !== true)
-    throw new ArkvoryError('forbidden', 'Administrator required', {
-      reason: 'administrator_required',
-    });
 }
 
 /** Read gateways of the installation from their leases (ADR 0009): a slot and whether it is held. */
@@ -117,7 +109,7 @@ export function registerTopologyRoutes(
     '/api/v1/system/topology',
     { schema: { response: { 200: topologySchema } } },
     async (request) => {
-      administrator(principal(request));
+      requireAdministrator(principal(request));
       retentionObject(request.query, []);
       return collectTopology(parts);
     },

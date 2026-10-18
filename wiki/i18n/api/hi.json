@@ -11,10 +11,10 @@
     "getCapabilities": {
       "en": {
         "summary": "Get server capabilities and limits",
-        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed."
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed. `transfer` lists the transfer protocols of the modules this gateway runs, each with its `name`, the `versions` it speaks, the `module` and the `prefix` of its routes; a client uses one only with an extension of the same name and a common version, and otherwise transfers as usual."
       },
       "summary": "सर्वर की क्षमताएँ और सीमाएँ प्राप्त करें",
-      "description": "API संस्करण, गेटवे की भूमिका, फ़ीचर फ़्लैग (उदाहरण के लिए `selfRegistration` या `mirrorFeed`) और वे सीमाएँ लौटाता है जिनके अनुसार क्लाइंट स्वयं को ढालता है: सबसे बड़ा ऑब्जेक्ट (`maxObjectBytes`, दशमलव स्ट्रिंग), सबसे छोटा और सबसे बड़ा मल्टीपार्ट खंड, भागों की अधिकतम संख्या और पृष्ठ का अधिकतम आकार। क्लाइंट शुरू होते समय इसे एक बार पढ़ें; यह कोई संसाधन सूचीबद्ध नहीं करता। `modules` उन सक्षम मॉड्यूल को उनके `id` और एक्सटेंशन पॉइंट (`kind`) के साथ सूचीबद्ध करता है जिन्हें यह गेटवे सेवा देता है; `ARKVORY_MODULES_FILE` में बंद किया गया प्रोटोकॉल सूची में नहीं होता।"
+      "description": "API संस्करण, गेटवे की भूमिका, फ़ीचर फ़्लैग (उदाहरण के लिए `selfRegistration` या `mirrorFeed`) और वे सीमाएँ लौटाता है जिनके अनुसार क्लाइंट स्वयं को ढालता है: सबसे बड़ा ऑब्जेक्ट (`maxObjectBytes`, दशमलव स्ट्रिंग), सबसे छोटा और सबसे बड़ा मल्टीपार्ट खंड, भागों की अधिकतम संख्या और पृष्ठ का अधिकतम आकार। क्लाइंट शुरू होते समय इसे एक बार पढ़ें; यह कोई संसाधन सूचीबद्ध नहीं करता। `modules` उन सक्षम मॉड्यूल को उनके `id` और एक्सटेंशन पॉइंट (`kind`) के साथ सूचीबद्ध करता है जिन्हें यह गेटवे सेवा देता है; `ARKVORY_MODULES_FILE` में बंद किया गया प्रोटोकॉल सूची में नहीं होता। `transfer` इस गेटवे द्वारा चलाए जाने वाले मॉड्यूल के ट्रांसफ़र प्रोटोकॉल सूचीबद्ध करता है, हर एक के साथ उसका `name`, समर्थित `versions`, `module` और उसके रूट का `prefix`; क्लाइंट किसी प्रोटोकॉल का उपयोग तभी करता है जब उसके पास उसी नाम का एक्सटेंशन और कोई साझा संस्करण हो, अन्यथा वह सामान्य तरीके से ट्रांसफ़र करता है।"
     },
     "getReadinessStatus": {
       "en": {
@@ -1008,6 +1008,14 @@
       "summary": "इस इंस्टॉलेशन के मॉड्यूल की सूची",
       "description": "यह इंस्टॉलेशन जिन मॉड्यूल की योजना बनाता है, उन सभी को `id` के क्रम में लौटाता है: `id`, `version`, एक्सटेंशन पॉइंट (`kind`), `source` (कोर के मॉड्यूल के लिए `builtin`), क्या वह मुफ़्त कोर का हिस्सा है (`core`, कभी बंद नहीं होता) और क्या वह सक्षम है (`enabled`), वे प्रोसेस जिनमें वह चलता है (`roles`), क्या जवाब देने वाला प्रोसेस उसे चलाता है (`running`) और वहाँ उसकी स्थिति (`health`: `ok`, `degraded` या कोड के साथ `failed`; वहाँ न चले तो null)। `compatibilityFingerprint` उस चीज़ का SHA-256 है जिस पर इंस्टॉलेशन के सभी प्रोसेस को सहमत होना चाहिए: मॉड्यूल, उनके स्रोत, एक्सटेंशन पॉइंट, चुनाव और सेटिंग्स, रिलीज़ संस्करणों के बिना; रीड गेटवे या वर्कर तभी तैयार होता है जब उसका मान लेखन प्रोसेस के मान से मेल खाए। `fingerprint` सभी संस्करणों सहित सटीक योजना का SHA-256 है, इसलिए यह हर रिलीज़ के साथ बदलता है; `extensionApi` इस कोर के मॉड्यूल अनुबंध का संस्करण है। सेटिंग्स, पाथ और सीक्रेट कभी नहीं लौटाए जाते। केवल ग्लोबल एडमिनिस्ट्रेटर पढ़ सकता है। लोडर द्वारा अस्वीकार किए गए इंस्टॉल हस्ताक्षरित मॉड्यूल भी सूची में आते हैं, `running` false और `health` कोड सहित `failed`, `revoked` या `unavailable` के साथ; जो हस्ताक्षरित मॉड्यूल वहाँ चलना चाहिए पर लोड या शुरू नहीं हुआ, वह अपने कोड के साथ `failed` दिखता है।"
     },
+    "getSystemModuleOpenApi": {
+      "en": {
+        "summary": "Get the API document of one module",
+        "description": "Returns the OpenAPI 3.1 document of the routes the module `id` serves under `/api/ext/<id>/v<major>/` in the answering process: the paths and schemas the module documents, checked by the server against its routes, and for each operation what the server checks before the module runs (`x-arkvory-access`, `x-arkvory-action` with the path parameter that names the repository, `x-arkvory-effect`). `info.version` is the `fingerprint` of the module plan. A read gateway returns only the reads it serves. A module that serves no routes in the answering process, is disabled or did not start is `not_found`. Only the global administrator may read it; every authenticated caller reads the combined document of all modules at `/api/ext/openapi.json`, with the operations it may call."
+      },
+      "summary": "एक मॉड्यूल का API दस्तावेज़ प्राप्त करें",
+      "description": "जवाब देने वाले प्रोसेस में मॉड्यूल `id` द्वारा `/api/ext/<id>/v<major>/` के अंतर्गत दिए जाने वाले रूट का OpenAPI 3.1 दस्तावेज़ लौटाता है: मॉड्यूल द्वारा वर्णित पाथ और स्कीमा, जिन्हें सर्वर ने उसके रूट से मिलाया है, और हर ऑपरेशन के लिए वह जाँच जो सर्वर मॉड्यूल चलाने से पहले करता है (`x-arkvory-access`, रिपॉज़िटरी बताने वाले पाथ पैरामीटर के साथ `x-arkvory-action`, `x-arkvory-effect`)। `info.version` मॉड्यूल योजना का `fingerprint` है। रीड गेटवे केवल वही पठन ऑपरेशन लौटाता है जिन्हें वह सेवा देता है। जो मॉड्यूल जवाब देने वाले प्रोसेस में कोई रूट नहीं देता, बंद है या शुरू नहीं हुआ, उसके लिए `not_found` मिलता है। केवल ग्लोबल एडमिनिस्ट्रेटर पढ़ सकता है; कोई भी प्रमाणित कॉलर सभी मॉड्यूल का संयुक्त दस्तावेज़ `/api/ext/openapi.json` पर पढ़ता है, जिसमें केवल वे ऑपरेशन होते हैं जिन्हें वह कॉल कर सकता है।"
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",
@@ -1253,6 +1261,7 @@
     "Event id, `<epoch>:<position>`; deduplicate by it": "इवेंट ID, `<epoch>:<position>`; इसी से डुप्लिकेट हटाएँ",
     "Artifact id, or the path of a file event": "आर्टिफ़ैक्ट ID, या फ़ाइल इवेंट में पथ",
     "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; एक पार्टिशन के इवेंट अपना कमिट क्रम बनाए रखते हैं",
-    "Data of the type; its JSON Schema is in the type list": "टाइप का डेटा; उसका JSON Schema टाइप सूची में है"
+    "Data of the type; its JSON Schema is in the type list": "टाइप का डेटा; उसका JSON Schema टाइप सूची में है",
+    "Transfer protocols of the enabled modules this gateway runs; a client uses one only with an extension of the same name and a common version.": "इस गेटवे द्वारा चलाए जाने वाले सक्षम मॉड्यूल के ट्रांसफ़र प्रोटोकॉल; क्लाइंट किसी का उपयोग तभी करता है जब उसके पास उसी नाम का एक्सटेंशन और कोई साझा संस्करण हो।"
   }
 }

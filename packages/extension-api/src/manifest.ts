@@ -1,3 +1,5 @@
+import { parseProvidedCapability, parseRequiredCapability } from './capabilities.js';
+import { MODULE_SOURCES, type ModuleSource } from './sources.js';
 import { parseCaretRange, parseSemanticVersion } from './version.js';
 
 /** The only manifest format this version reads. */
@@ -15,6 +17,8 @@ export const MODULE_KINDS = [
   'identity-provider',
   'event-sink',
   'transfer',
+  // A module without an extension point of its own: it works through host services only.
+  'service',
 ] as const;
 export type ModuleKind = (typeof MODULE_KINDS)[number];
 
@@ -49,16 +53,42 @@ export interface ModuleManifest {
    * Absent in a manifest means none.
    */
   readonly uses: readonly string[];
-  /** Capabilities the module needs from other enabled modules. */
+  /**
+   * Capabilities the module needs from other enabled modules: `name@^1.2.0`, a caret range of the
+   * value's contract (ADR 0083, N13). A bare `name` means `@^0.0.0`, for built-in modules only.
+   */
   readonly requires: readonly string[];
-  /** Capabilities the module gives other modules; one provider per capability. */
+  /** Capabilities the module uses when a provider is enabled, as `requires`; absent means none. */
+  readonly optional: readonly string[];
+  /**
+   * Capabilities the module gives other modules, `name@1.4.0`; one provider per name. A bare
+   * `name` means `@0.0.0`, for built-in modules only.
+   */
   readonly provides: readonly string[];
+  /**
+   * Sources whose modules may use the values of `provides` beside modules of the same
+   * `publisher`, who always may (ADR 0083, N13); absent means none.
+   */
+  readonly exposeTo: readonly ModuleSource[];
+  /**
+   * What the module asks of its data directory (service `data-directory`, ADR 0083, N6); the
+   * operator approves or changes it in `ARKVORY_MODULES_FILE`. Null when absent.
+   */
+  readonly resources: ModuleResources | null;
   /** Path prefixes of the routes the module serves, each starting and ending with `/`. */
   readonly routePrefixes: readonly string[];
   /** Prefix of every metric the module publishes, or null for none. */
   readonly metricPrefix: string | null;
   /** Prefix of every table the module owns, or null for none. */
   readonly tablePrefix: string | null;
+}
+
+/** Requested size of the data directory, both areas together. */
+export interface ModuleResources {
+  /** Bytes in MiB, 0 to 1048576 (1 TiB). */
+  readonly dataMiB: number;
+  /** Regular files, 0 to 10000000. */
+  readonly dataFiles: number;
 }
 
 export type ModuleManifestProblem =
@@ -87,7 +117,10 @@ const FIELDS = [
   'roles',
   'uses',
   'requires',
+  'optional',
   'provides',
+  'exposeTo',
+  'resources',
   'routePrefixes',
   'metricPrefix',
   'tablePrefix',
@@ -97,7 +130,6 @@ const FIELDS = [
  * names `arkvory_x_<id>__` of signed modules then never start one another (see plan-rules).
  */
 export const MODULE_ID_PATTERN = /^(?=.{2,32}$)[a-z](?:-?[a-z0-9])+$/;
-const CAPABILITY = /^[a-z][a-z0-9-]{0,63}$/;
 /** Pattern of an extension point, a publisher and a service name. */
 const NAME = /^[a-z][a-z0-9-]{1,31}$/;
 const ROUTE_PREFIX = /^\/(?:[a-z0-9][a-z0-9._-]{0,63}\/){1,8}$/;
@@ -167,6 +199,53 @@ function matching(pattern: RegExp) {
   };
 }
 
+/** A capability entry; two entries of one list, or of `requires` and `optional`, share no name. */
+function capability(parse: typeof parseProvidedCapability) {
+  return (value: unknown, path: string): string => {
+    if (typeof value !== 'string') throw new ModuleManifestError('type', path);
+    if (value.length > 128 || parse(value) === null) throw new ModuleManifestError('format', path);
+    return value;
+  };
+}
+
+function distinctNames(lists: readonly (readonly [string, readonly string[]])[]): void {
+  const seen = new Set<string>();
+  for (const [key, entries] of lists)
+    entries.forEach((value, index) => {
+      const name = (parseProvidedCapability(value) ?? parseRequiredCapability(value))?.name;
+      if (name === undefined || seen.has(name))
+        throw new ModuleManifestError('duplicate', `/${key}/${String(index)}`);
+      seen.add(name);
+    });
+}
+
+const MAX_DATA_MIB = 1024 * 1024;
+const MAX_DATA_FILES = 10_000_000;
+
+function count(value: unknown, path: string, max: number): number {
+  if (typeof value !== 'number') throw new ModuleManifestError('type', path);
+  if (!Number.isSafeInteger(value) || value < 0 || value > max)
+    throw new ModuleManifestError('format', path);
+  return value;
+}
+
+function resources(row: Fields): ModuleResources | null {
+  const value = row['resources'];
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'object' || Array.isArray(value))
+    throw new ModuleManifestError('type', '/resources');
+  const fields = Object.fromEntries(Object.entries(value));
+  const unknown = Object.keys(fields).find((key) => key !== 'dataMiB' && key !== 'dataFiles');
+  if (unknown !== undefined)
+    throw new ModuleManifestError('unknown_field', `/resources/${unknown}`);
+  for (const key of ['dataMiB', 'dataFiles'])
+    if (fields[key] === undefined) throw new ModuleManifestError('required', `/resources/${key}`);
+  return {
+    dataMiB: count(fields['dataMiB'], '/resources/dataMiB', MAX_DATA_MIB),
+    dataFiles: count(fields['dataFiles'], '/resources/dataFiles', MAX_DATA_FILES),
+  };
+}
+
 function format(row: Fields): typeof MODULE_MANIFEST_FORMAT {
   const value = present(row, 'format');
   if (typeof value !== 'number') throw new ModuleManifestError('type', '/format');
@@ -187,6 +266,18 @@ export function parseModuleManifest(input: unknown): ModuleManifest {
   refuseUnknown(row);
   const core = present(row, 'core');
   if (typeof core !== 'boolean') throw new ModuleManifestError('type', '/core');
+  const limits = { min: 0, max: 32 };
+  const requires = list(row, 'requires', limits, capability(parseRequiredCapability));
+  const optional =
+    row['optional'] === undefined
+      ? []
+      : list(row, 'optional', limits, capability(parseRequiredCapability));
+  const provides = list(row, 'provides', limits, capability(parseProvidedCapability));
+  distinctNames([
+    ['requires', requires],
+    ['optional', optional],
+  ]);
+  distinctNames([['provides', provides]]);
   return {
     format: manifestFormat,
     id: text(row, 'id', (value) => MODULE_ID_PATTERN.test(value)),
@@ -199,8 +290,16 @@ export function parseModuleManifest(input: unknown): ModuleManifest {
       oneOf(value, MODULE_ROLES, path),
     ),
     uses: row['uses'] === undefined ? [] : list(row, 'uses', { min: 0, max: 32 }, matching(NAME)),
-    requires: list(row, 'requires', { min: 0, max: 32 }, matching(CAPABILITY)),
-    provides: list(row, 'provides', { min: 0, max: 32 }, matching(CAPABILITY)),
+    requires,
+    optional,
+    provides,
+    exposeTo:
+      row['exposeTo'] === undefined
+        ? []
+        : list(row, 'exposeTo', { min: 0, max: MODULE_SOURCES.length }, (value, path) =>
+            oneOf(value, MODULE_SOURCES, path),
+          ),
+    resources: resources(row),
     routePrefixes: list(row, 'routePrefixes', { min: 0, max: 16 }, matching(ROUTE_PREFIX)),
     metricPrefix: nullableText(row, 'metricPrefix'),
     tablePrefix: nullableText(row, 'tablePrefix'),

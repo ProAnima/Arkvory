@@ -104,6 +104,10 @@ Webhooks подписываются HMAC-SHA256, доставляются at-lea
 
 - [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html)
 
+## Маршруты модулей
+
+Модуль со службой `routes` обслуживает маршруты только под `/api/ext/<id>/v<major>/`; `/api/v1`, его OpenAPI и SDK ядра от набора модулей не меняются. До кода модуля ядро выполняет аутентификацию, проверку `access` (`authenticated` или `administrator`) и действия на репозитории из пути с правилами `/api/v1`, допуск записи, пределы тела (JSON до 1 МиБ, поток до `maxObjectBytes`, сроки и полоса загрузки) и контракт ошибок; ответ `content` выдаёт `createContentSender` (ETag, Range, `If-Range`, 304, очередь ADR 0076, полоса), `stream` — без Range, с допуском на запрос. Сводный документ — `GET /api/ext/openapi.json` (OpenAPI 3.1, операции по правам вызывающего, `info.version` — отпечаток плана), документ одного модуля — `GET /api/v1/system/modules/{id}/openapi` (глобальный администратор). `capabilities.transfer` перечисляет протоколы передачи работающих модулей: `{name, versions, module, prefix}`. Подробности: [ADR 0083](adr/0083-core-extension-points.md), N7, N12, «Y6»; [ADR 0079](adr/0079-extension-modules.md), X5.
+
 ## Профиль шлюза чтения
 
 `ARKVORY_ROLE=reader` принимает только GET/HEAD; после аутентификации остальные методы получают 405, `Allow: GET, HEAD`, `code: read_only`, даже с write key. Прежние scopes чтения сохраняются. `/health/ready` содержит `role: api|reader`, `sharedDownloads: null|{slot,slots,active,leaseSeconds}`; `writable` всегда false на reader. Потеря ownership/lease — 503 с Retry-After, уже начатый поток прерывается. Консоль доступна на writer. Общая OpenAPI описывает операции writer; поддержка reader-профиля ограничена указанным правилом. [READ_GATEWAYS](READ_GATEWAYS.md).

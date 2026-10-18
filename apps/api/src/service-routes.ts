@@ -24,11 +24,19 @@ export function registerServiceRoutes(
     maxObjectBytes,
     selfRegistration,
     modules,
+    transfer,
   }: {
     maxObjectBytes: number;
     selfRegistration: boolean;
     /** Enabled modules this gateway runs (ADR 0079, section 9), in id order. */
     modules: readonly { readonly id: string; readonly kind: string }[];
+    /** Transfer protocols of the running modules (ADR 0079, 5.2), in module order. */
+    transfer: readonly {
+      readonly name: string;
+      readonly versions: readonly string[];
+      readonly module: string;
+      readonly prefix: string;
+    }[];
   },
 ): void {
   app.get('/api/v1/capabilities', () =>
@@ -66,6 +74,12 @@ export function registerServiceRoutes(
         maxPageSize: 100,
       },
       modules: modules.map(({ id, kind }) => ({ id, kind })),
+      transfer: transfer.map(({ name, versions, module, prefix }) => ({
+        name,
+        versions,
+        module,
+        prefix,
+      })),
       // ADR 0083, N8: the archive table of contents route of the core (`zip-tree` version 1).
       tree: [{ name: 'zip-tree', versions: ['1.0.0'], module: 'core', prefix: '/api/v1/' }],
     }),

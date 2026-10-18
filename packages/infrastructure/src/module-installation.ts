@@ -15,7 +15,7 @@ import type { RefusedModule, VerifiedModule } from './module-admission.js';
 import { importVerifiedEntry, ModuleLoadError } from './module-import.js';
 import { checkInstalledModules } from './module-loader.js';
 import type { InstalledModules, InstalledModulesSource } from './module-loader.js';
-import { moduleHost, ModulePlanError, prepareSelected } from './module-plan.js';
+import { approvedResources, moduleHost, ModulePlanError, prepareSelected } from './module-plan.js';
 import type { PreparedModule } from './module-plan.js';
 import type { ModuleSelection, ModuleSelections } from './module-selection.js';
 
@@ -64,6 +64,7 @@ function plannedSigned<Context>(
       config: moduleJson(selection?.config),
     },
     dataClass: module.manifest.package.dataClass,
+    resources: approvedResources(module.manifest.module.resources, selection),
     create: notLoaded,
   };
 }

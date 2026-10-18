@@ -201,3 +201,21 @@ export type { InstallationPlan, LoadOptions } from './module-installation.js';
 export { parseModuleSelections, readModuleSelections } from './module-selection.js';
 export type { ModuleSelection, ModuleSelections } from './module-selection.js';
 export { PostgresModulePlan, type ModulePlanFingerprints } from './module-plan-store.js';
+// Host services of ADR 0083 (N1, N2, N4, N6, N13).
+export { CapabilityRegistry } from './module-capabilities.js';
+export { openModuleData } from './module-data.js';
+export type { ModuleData, ModuleDataOptions } from './module-data.js';
+export { requireVolumeRoom } from './volume-space.js';
+export type { VolumeProbe, VolumeReserve } from './volume-space.js';
+export { AccessScopes, moduleCatalog } from './module-catalog.js';
+export { ModuleHostServices, RECONCILE_INTERVAL_MS } from './module-host-services.js';
+export type { HostServiceSources } from './module-host-services.js';
+export { MOVE_LEASE_SECONDS, PostgresBlobMoves } from './blob-moves-store.js';
+export {
+  PostgresCopyRemoval,
+  PostgresUploadSwitch,
+  REHOME_LOCK,
+  pacedCopy,
+  takeRehomeSingleton,
+} from './blob-moves-steps.js';
+export type { RehomeSingleton } from './blob-moves-steps.js';

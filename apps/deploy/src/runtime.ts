@@ -29,9 +29,11 @@ export interface RoleCommand {
 export const serviceRoles = ['api', 'worker', 'backup'] as const;
 
 /**
- * What a launcher role runs. `vault-init` is the single operator command routed through the
- * launcher: `arkvory configure --init-vault` runs the backup CLI of the same release with the
- * installation's runtime environment, so the CLI repeats its own storage-separation check.
+ * What a launcher role runs. Two operator commands are routed through the launcher, each with
+ * the installation's runtime environment and the code of the same release: `vault-init`
+ * (`arkvory configure --init-vault` runs the backup CLI, which repeats its own
+ * storage-separation check) and `storage-rehome` (`arkvory storage rehome|moves` plans moves
+ * between storages, ADR 0083, N2).
  */
 export function roleCommand(role: string, args: readonly string[] = []): RoleCommand {
   if (role === 'vault-init') {
@@ -44,6 +46,16 @@ export function roleCommand(role: string, args: readonly string[] = []): RoleCom
       argv: ['vault', 'init', vault, '--no-encryption'],
       service: false,
     };
+  }
+  // `arkvory storage rehome` plans moves between storages with the installation's environment
+  // (ADR 0083, N2); the worker of the same release performs them.
+  if (role === 'storage-rehome') {
+    if (
+      args.length > 8 ||
+      args.some((arg) => !/^(--[a-z]{2,12}|[a-z0-9][a-z0-9._-]{0,63})$/.test(arg))
+    )
+      throw new Error('storage-rehome expects storage ids, a repository and a limit');
+    return { entry: 'apps/worker/dist/rehome.js', argv: args, service: false };
   }
   if (args.length) throw new Error('Service roles take no arguments');
   switch (role) {

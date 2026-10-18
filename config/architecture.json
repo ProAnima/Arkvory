@@ -27,6 +27,10 @@
       "allowed": ["packages/extension-api"]
     },
     {
+      "path": "packages/extension-testkit",
+      "allowed": ["packages/extension-api"]
+    },
+    {
       "path": "packages/application",
       "allowed": ["packages/domain"]
     },

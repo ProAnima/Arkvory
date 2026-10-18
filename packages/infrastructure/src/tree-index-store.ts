@@ -11,14 +11,14 @@ import type {
 import { inTransaction } from './pg-transaction.js';
 
 /**
- * Version 45 (ADR 0083, N8), expand-only: the table of contents of published archives, part of
+ * Version 46 (ADR 0083, N8), expand-only: the table of contents of published archives, part of
  * a backup. `arkvory_tree_indexes` holds one outcome per indexed upload, so a missing row means
  * "not indexed yet" and an `unavailable` row is never retried; `arkvory_tree_entries` holds the
  * file entries of a `ready` one. Upload rows are never deleted by the service (cleanup only marks
  * them reclaimed and drops their table then); the cascades keep test and restore deletions valid.
  */
 export async function migrateTreeIndexes(client: PoolClient): Promise<void> {
-  if ((await client.query('SELECT version FROM arkvory_migrations WHERE version=45')).rowCount)
+  if ((await client.query('SELECT version FROM arkvory_migrations WHERE version=46')).rowCount)
     return;
   await client.query(`
     CREATE TABLE IF NOT EXISTS arkvory_tree_indexes (
@@ -41,7 +41,7 @@ export async function migrateTreeIndexes(client: PoolClient): Promise<void> {
       data_length bigint NOT NULL CHECK (data_length >= 0),
       PRIMARY KEY (upload_id, ordinal)
     );
-    INSERT INTO arkvory_migrations(version) VALUES(45);
+    INSERT INTO arkvory_migrations(version) VALUES(46);
   `);
 }
 

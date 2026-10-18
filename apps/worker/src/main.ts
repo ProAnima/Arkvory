@@ -38,6 +38,7 @@ import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 import { acquireWithPlan, watchModulePlan } from './module-plan.js';
 import { watchWorkerStorage } from './storage-watch.js';
+import { rehomeBytesPerSecond, runRehome } from './rehome-loop.js';
 
 let levelError: Error | undefined;
 /** Stopped before taking work, as standby or waiting for the module plan: a clean stop. */
@@ -111,6 +112,8 @@ try {
   );
   // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
   const eventRetention = readEventRetention(process.env);
+  // ADR 0083, N2: the copy budget of moves between storages.
+  const rehomeBudget = rehomeBytesPerSecond(process.env['ARKVORY_REHOME_BYTES_PER_SECOND']);
   // ADR 0079: the installation's module plan, refused before the worker takes its lock. The
   // installed signed modules are verified and planned like the writer's; none runs here (X4).
   const { compatibilityFingerprint } = (
@@ -177,7 +180,8 @@ try {
       catalog,
       blobs,
       { next: randomUUID, now: () => new Date().toISOString() },
-      { placement },
+      // Large uploads complete here; a storage may assemble them from its parts (ADR 0083, N1).
+      { placement, staged: blobs },
     ),
     keyFile,
     ownerActive: () => catalog.active,
@@ -221,6 +225,21 @@ try {
     stop: stop.signal,
     diagnostics,
   });
+  const rehoming = runRehome({
+    catalog,
+    blobs,
+    stop: stop.signal,
+    diagnostics,
+    bytesPerSecond: rehomeBudget,
+  }).catch((error: unknown) => {
+    // Awaited only at shutdown, like the mirrors.
+    diagnostics.write({
+      level: 'error',
+      component: 'worker',
+      code: 'storage.move_loop_failed',
+      ...failureCause(error),
+    });
+  });
   // Tables of contents of published archives (ADR 0083, N8); reads go through the storage port.
   const indexing = runTreeIndexing({ catalog, blobs, stop: stop.signal, diagnostics }).catch(
     (error: unknown) => {
@@ -260,6 +279,7 @@ try {
     await mirroring;
     await delivering;
     await sequencing;
+    await rehoming;
     await indexing;
     clearInterval(recovery);
     unwatchPlan();

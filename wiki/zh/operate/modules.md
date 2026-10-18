@@ -52,10 +52,11 @@ description: 在主机上安装、启用、检查和移除已签名的模块包�
    { "format": 1, "modules": { "sample": { "enabled": true } } }
    ```
 
-2. 按照[应用更改](../install/configuration#apply-change)重启服务。
-3. 以全局管理员身份检查模块：`GET /api/v1/system/modules` 在 API 和每个读取网关上都显示它为 `running: true`，`health.status` 为 `ok`。
+2. 如果模块会保存文件，请用 `resources` 批准其数据目录的大小，例如在 `enabled` 旁边写 `"resources": { "dataMiB": 512, "dataFiles": 10000 }`。它会取代包所请求的大小。参见[模块的数据目录](#data)。
+3. 按照[应用更改](../install/configuration#apply-change)重启服务。
+4. 以全局管理员身份检查模块：`GET /api/v1/system/modules` 在 API 和每个读取网关上都显示它为 `running: true`，`health.status` 为 `ok`。
 
-API 和读取网关运行模块。worker 检查相同的模块，但不运行任何模块。此版本拒绝在 worker 或备份代理中运行的模块（`role_unsupported`）以及声明自有路由的模块（`routes_unsupported`）。Docker Compose 安装目前还不加载模块。
+API 和读取网关运行模块。worker 检查相同的模块，但不运行任何模块。此版本拒绝在 worker 或备份代理中运行的模块（`role_unsupported`）以及声明了路由前缀却不通过 Arkvory 提供路由的模块（`routes_unsupported`）。Docker Compose 安装目前还不加载模块。
 
 服务在导入模块的任何代码之前，会再次检查包：
 
@@ -74,6 +75,43 @@ API 和读取网关运行模块。worker 检查相同的模块，但不运行任
 只有当另一个已启用的模块需要失败的模块时，它才会使 Arkvory 退出就绪状态（`/health/ready` 返回 503 和 `module_failed`）。保存已发布文件字节的模块（数据 `layout`）永远不会这样：Arkvory 继续提供其数据，并把新的上传写入自己的存储而不是模块的存储。日志会记录 `module.refused` 和 `module.failed`，代码在 `errorCode` 中。
 
 要修复被更改或缺失的包，请重新安装它。安装的所有服务必须看到相同的模块，无论是否启用：模块不同的读取网关或 worker 不会就绪（`module_plan_mismatch`）。请在每个读取网关的主机上安装相同的包。
+
+### 模块的数据目录 {#data}
+
+保存自有索引、缓存或状态的模块会在数据卷上获得一个目录：`default` 存储目录中的 `module-data/<id>/`。其中 `data` 部分用于备份，`cache` 部分则不用于备份。Arkvory 把每次写入都计入批准的大小，以 MiB 和文件数计算，两部分合计。超出该大小的写入会被拒绝（`module_quota_exceeded`），模块继续运行。没有批准的大小时，模块只能读取。[卷的预留空间](./storage#disk)同样适用。在读取网关上，模块读取相同的文件，但不能更改它们。
+
+移除模块时会保留其目录。不再需要这些数据时，请自行删除 `module-data/<id>/`。备份目前还不包含模块目录。
+
+## 模块的路由 {#routes}
+
+模块可以在自己的前缀 `/api/ext/<id>/v<major>/` 下添加 HTTP 路由，例如 `/api/ext/sample/v1/`。在模块的任何代码运行之前，Arkvory 会检查每个请求：
+
+| 检查   | 与 `/api/v1` 相同                                                                                                    |
+| ------ | -------------------------------------------------------------------------------------------------------------------- |
+| 凭据   | 相同的密钥、会话和令牌；路由对任何已登录的调用方开放，或仅对全局管理员开放                                           |
+| 权限   | 路由针对其路径中的仓库指定的权限，例如 `content.read` 或 `upload.create`：服务密钥需要该权限，账户需要读取或写入授权 |
+| 请求体 | 路由的大小限制，以及服务器的上传限制、期限和带宽                                                                     |
+| 文件   | 由 Arkvory 自己发送：ETag、Range、`If-Range`、304、下载队列和下载带宽                                                |
+
+错误采用 API 的错误格式。模块永远看不到凭据和其他标头。读取网关提供模块的读取路由，对其他路由回答 `read_only`。
+
+每个模块都用 OpenAPI 文档描述自己的路由，Arkvory 在模块启动时比对两者。路由违反规则的模块不会启动，也不提供任何内容；Arkvory 继续运行。`GET /api/v1/system/modules` 显示它为 `running: false` 和 `health.status` `failed`：
+
+| 代码                     | 含义                                                                 |
+| ------------------------ | -------------------------------------------------------------------- |
+| `routes_invalid`         | 路由违反规则，例如路径在模块前缀之外，或对任何已登录调用方开放的更改 |
+| `openapi_invalid`        | OpenAPI 文档缺失或无效                                               |
+| `openapi_route_mismatch` | 某个路由在文档中没有操作，或某个操作没有路由                         |
+| `transfer_invalid`       | 模块提供了它不允许提供的传输协议                                     |
+
+路由的文档：
+
+| 地址                                                                                        | 谁可以读取         | 内容                                                 |
+| ------------------------------------------------------------------------------------------- | ------------------ | ---------------------------------------------------- |
+| `GET /api/ext/openapi.json`                                                                 | 任何已登录的调用方 | 此服务运行的所有模块的路由，只含调用方可以调用的操作 |
+| [`GET /api/v1/system/modules/{id}/openapi`](../api/reference/system#getSystemModuleOpenApi) | 全局管理员         | 单个模块的路由                                       |
+
+`/api/v1/openapi.json` 从不列出模块的路由。类型为 `transfer` 的模块可以提供另一种传输文件的方式：`GET /api/v1/capabilities` 在 `transfer` 中列出它。客户端只有在拥有匹配的扩展时才使用它，否则照常传输文件。
 
 ## 更新、固定和降级 {#versions}
 

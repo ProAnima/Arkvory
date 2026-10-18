@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { ArkvoryError, retentionObject } from '@proanima/arkvory-domain';
+import { ArkvoryError, retentionObject, requireAdministrator } from '@proanima/arkvory-domain';
 import type { Principal } from '@proanima/arkvory-domain';
 import { readUpdateRequest } from '@proanima/arkvory-contracts';
 import { UpdateControl } from './update-control.js';
@@ -11,11 +11,7 @@ export function registerUpdateRoutes(
 ) {
   const control = new UpdateControl(directory);
   const authorize = (r: FastifyRequest) => {
-    const actor = principal(r);
-    if (actor.managed || actor.administrator !== true)
-      throw new ArkvoryError('forbidden', 'Administrator required', {
-        reason: 'administrator_required',
-      });
+    requireAdministrator(principal(r));
     retentionObject(r.query, []);
   };
   app.get('/api/v1/system/updates', async (r) => {

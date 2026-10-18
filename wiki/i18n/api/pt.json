@@ -11,10 +11,10 @@
     "getCapabilities": {
       "en": {
         "summary": "Get server capabilities and limits",
-        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed."
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed. `transfer` lists the transfer protocols of the modules this gateway runs, each with its `name`, the `versions` it speaks, the `module` and the `prefix` of its routes; a client uses one only with an extension of the same name and a common version, and otherwise transfers as usual."
       },
       "summary": "Obter as capacidades e os limites do servidor",
-      "description": "Retorna as versões da API, o papel do gateway, as flags de recurso (por exemplo `selfRegistration` ou `mirrorFeed`) e os limites aos quais um cliente se adapta: o maior objeto (`maxObjectBytes`, uma string decimal), o menor e o maior segmento multipart, o maior número de partes e o maior tamanho de página. Leia-o uma vez quando um cliente iniciar; ele não lista nenhum recurso. `modules` lista os módulos habilitados que este gateway atende, cada um com seu `id` e ponto de extensão (`kind`); um protocolo desligado em `ARKVORY_MODULES_FILE` não aparece."
+      "description": "Retorna as versões da API, o papel do gateway, as flags de recurso (por exemplo `selfRegistration` ou `mirrorFeed`) e os limites aos quais um cliente se adapta: o maior objeto (`maxObjectBytes`, uma string decimal), o menor e o maior segmento multipart, o maior número de partes e o maior tamanho de página. Leia-o uma vez quando um cliente iniciar; ele não lista nenhum recurso. `modules` lista os módulos habilitados que este gateway atende, cada um com seu `id` e ponto de extensão (`kind`); um protocolo desligado em `ARKVORY_MODULES_FILE` não aparece. `transfer` lista os protocolos de transferência dos módulos que este gateway executa, cada um com `name`, as `versions` que suporta, o `module` e o `prefix` das rotas dele; um cliente só usa um deles se tiver uma extensão com o mesmo nome e uma versão em comum; caso contrário, transfere normalmente."
     },
     "getReadinessStatus": {
       "en": {
@@ -1008,6 +1008,14 @@
       "summary": "Listar os módulos desta instalação",
       "description": "Retorna cada módulo planejado por esta instalação, em ordem de `id`: `id`, `version`, o ponto de extensão (`kind`), `source` (`builtin` para módulos do núcleo), se faz parte do núcleo gratuito (`core`, nunca desativado) e se está habilitado (`enabled`), os processos em que roda (`roles`), se o processo que responde o executa (`running`) e seu estado nele (`health`: `ok`, `degraded` ou `failed` com um código; null quando não roda ali). `compatibilityFingerprint` é o SHA-256 daquilo em que todos os processos da instalação precisam concordar: os módulos com origem, ponto de extensão, escolha e configurações, sem as versões de release; um gateway de leitura ou o worker só fica pronto com o valor do processo de gravação. `fingerprint` é o SHA-256 do plano exato com todas as versões, por isso muda a cada release; `extensionApi` é a versão do contrato de módulos deste núcleo. Configurações, caminhos e segredos nunca são retornados. Somente o administrador global pode ler. Os módulos assinados instalados que o carregador recusou também são listados, com `running` false e `health` `failed`, `revoked` ou `unavailable` com um código; um módulo assinado que deveria rodar ali mas não carregou ou não iniciou mostra `failed` com seu código."
     },
+    "getSystemModuleOpenApi": {
+      "en": {
+        "summary": "Get the API document of one module",
+        "description": "Returns the OpenAPI 3.1 document of the routes the module `id` serves under `/api/ext/<id>/v<major>/` in the answering process: the paths and schemas the module documents, checked by the server against its routes, and for each operation what the server checks before the module runs (`x-arkvory-access`, `x-arkvory-action` with the path parameter that names the repository, `x-arkvory-effect`). `info.version` is the `fingerprint` of the module plan. A read gateway returns only the reads it serves. A module that serves no routes in the answering process, is disabled or did not start is `not_found`. Only the global administrator may read it; every authenticated caller reads the combined document of all modules at `/api/ext/openapi.json`, with the operations it may call."
+      },
+      "summary": "Obter o documento de API de um módulo",
+      "description": "Retorna o documento OpenAPI 3.1 das rotas que o módulo `id` atende em `/api/ext/<id>/v<major>/` no processo que responde: os caminhos e esquemas que o módulo documenta, conferidos pelo servidor com as rotas dele, e em cada operação o que o servidor verifica antes de executar o módulo (`x-arkvory-access`, `x-arkvory-action` com o parâmetro de caminho que nomeia o repositório, `x-arkvory-effect`). `info.version` é o `fingerprint` do plano de módulos. Um gateway de leitura retorna apenas as leituras que atende. Um módulo que não atende rotas no processo que responde, está desativado ou não iniciou resulta em `not_found`. Somente o administrador global pode ler; qualquer chamador autenticado lê o documento combinado de todos os módulos em `/api/ext/openapi.json`, com as operações que pode chamar."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",
@@ -1253,6 +1261,7 @@
     "Event id, `<epoch>:<position>`; deduplicate by it": "Id do evento, `<epoch>:<position>`; deduplique por ele",
     "Artifact id, or the path of a file event": "Id do artefato, ou o caminho em eventos de arquivo",
     "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; os eventos de uma partição mantêm a ordem de confirmação",
-    "Data of the type; its JSON Schema is in the type list": "Dados do tipo; seu JSON Schema está na lista de tipos"
+    "Data of the type; its JSON Schema is in the type list": "Dados do tipo; seu JSON Schema está na lista de tipos",
+    "Transfer protocols of the enabled modules this gateway runs; a client uses one only with an extension of the same name and a common version.": "Protocolos de transferência dos módulos habilitados que este gateway executa; um cliente só usa um deles se tiver uma extensão com o mesmo nome e uma versão em comum."
   }
 }

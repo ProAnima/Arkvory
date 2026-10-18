@@ -11,10 +11,10 @@
     "getCapabilities": {
       "en": {
         "summary": "Get server capabilities and limits",
-        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed."
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed. `transfer` lists the transfer protocols of the modules this gateway runs, each with its `name`, the `versions` it speaks, the `module` and the `prefix` of its routes; a client uses one only with an extension of the same name and a common version, and otherwise transfers as usual."
       },
       "summary": "获取服务器能力与限制",
-      "description": "返回 API 版本、网关角色、功能开关（例如 `selfRegistration` 或 `mirrorFeed`），以及客户端需要适配的限制：最大对象大小（`maxObjectBytes`，十进制字符串）、分片上传的最小和最大分片大小、最大分片数和最大页面大小。客户端启动时读取一次即可；它不列出任何资源。 `modules` 列出此网关提供的已启用模块及其 `id` 和扩展点（`kind`）；在 `ARKVORY_MODULES_FILE` 中关闭的协议不会列出。"
+      "description": "返回 API 版本、网关角色、功能开关（例如 `selfRegistration` 或 `mirrorFeed`），以及客户端需要适配的限制：最大对象大小（`maxObjectBytes`，十进制字符串）、分片上传的最小和最大分片大小、最大分片数和最大页面大小。客户端启动时读取一次即可；它不列出任何资源。 `modules` 列出此网关提供的已启用模块及其 `id` 和扩展点（`kind`）；在 `ARKVORY_MODULES_FILE` 中关闭的协议不会列出。 `transfer` 列出此网关运行的模块提供的传输协议，每项包含 `name`、支持的 `versions`、`module` 及其路由的 `prefix`；客户端只有在拥有同名扩展且存在共同版本时才使用该协议，否则按常规方式传输。"
     },
     "getReadinessStatus": {
       "en": {
@@ -1008,6 +1008,14 @@
       "summary": "列出此安装的模块",
       "description": "按 `id` 顺序返回此安装规划的每个模块：`id`、`version`、扩展点（`kind`）、`source`（核心模块为 `builtin`）、是否属于免费核心（`core`，永不禁用）以及是否启用（`enabled`）、运行它的进程（`roles`）、应答的进程是否运行它（`running`）及其在该进程中的状态（`health`：`ok`、`degraded` 或带代码的 `failed`；不在该进程运行时为 null）。`compatibilityFingerprint` 是安装的所有进程必须一致的内容的 SHA-256：模块及其来源、扩展点、启用选择和设置，不含发布版本；读取网关或工作进程（worker）只有在与写入进程的值相同时才就绪。`fingerprint` 是包含所有版本的确切规划的 SHA-256，因此每次发布都会改变；`extensionApi` 是此核心的模块契约版本。从不返回设置、路径和密钥。只有全局管理员可以读取。 加载器拒绝的已安装签名模块也会列出，`running` 为 false，`health` 为 `failed`、`revoked` 或 `unavailable` 并带有代码；应在该进程运行但未能加载或启动的签名模块显示为 `failed` 及其代码。"
     },
+    "getSystemModuleOpenApi": {
+      "en": {
+        "summary": "Get the API document of one module",
+        "description": "Returns the OpenAPI 3.1 document of the routes the module `id` serves under `/api/ext/<id>/v<major>/` in the answering process: the paths and schemas the module documents, checked by the server against its routes, and for each operation what the server checks before the module runs (`x-arkvory-access`, `x-arkvory-action` with the path parameter that names the repository, `x-arkvory-effect`). `info.version` is the `fingerprint` of the module plan. A read gateway returns only the reads it serves. A module that serves no routes in the answering process, is disabled or did not start is `not_found`. Only the global administrator may read it; every authenticated caller reads the combined document of all modules at `/api/ext/openapi.json`, with the operations it may call."
+      },
+      "summary": "获取单个模块的 API 文档",
+      "description": "返回模块 `id` 在应答的进程中于 `/api/ext/<id>/v<major>/` 下提供的路由的 OpenAPI 3.1 文档：模块记录的路径和架构（服务器已将其与模块的路由核对），以及每个操作在模块运行前由服务器执行的检查（`x-arkvory-access`、带有指明仓库的路径参数的 `x-arkvory-action`、`x-arkvory-effect`）。`info.version` 是模块规划的 `fingerprint`。读取网关只返回它提供的读取操作。在应答的进程中不提供路由、已禁用或未能启动的模块返回 `not_found`。只有全局管理员可以读取；任何已认证的调用方都可以在 `/api/ext/openapi.json` 读取所有模块的合并文档，其中只包含它可以调用的操作。"
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",
@@ -1253,6 +1261,7 @@
     "Event id, `<epoch>:<position>`; deduplicate by it": "事件 ID，`<epoch>:<position>`；按它去重",
     "Artifact id, or the path of a file event": "制品 ID，文件事件则为路径",
     "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`；同一分区的事件保持提交顺序",
-    "Data of the type; its JSON Schema is in the type list": "该类型的数据；其 JSON Schema 见类型列表"
+    "Data of the type; its JSON Schema is in the type list": "该类型的数据；其 JSON Schema 见类型列表",
+    "Transfer protocols of the enabled modules this gateway runs; a client uses one only with an extension of the same name and a common version.": "此网关运行的已启用模块提供的传输协议；客户端只有在拥有同名扩展且存在共同版本时才使用该协议。"
   }
 }

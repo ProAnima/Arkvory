@@ -4,8 +4,8 @@ import type {
   TransferOffer,
   TransferResponse,
 } from '@proanima/arkvory-extension-api';
-import { readCapabilityOffers, record } from '@proanima/arkvory-contracts';
-import type { TreeCapability } from '@proanima/arkvory-contracts';
+import { readTransferCapabilities, record } from '@proanima/arkvory-contracts';
+import type { TransferCapability } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 import { ArkvoryClientError, ArkvoryNetworkError, releaseReader } from './transfer.js';
 
@@ -35,8 +35,15 @@ export interface ChosenTransfer {
 }
 
 const NAME = /^[a-z][a-z0-9-]{1,31}$/;
-/** A module prefix the server may offer: the core API or a module under `/api/ext/`. */
-const PREFIX = /^\/api\/(v1|ext\/[a-z][a-z0-9-]{1,31}\/v[1-9][0-9]{0,3})\/$/;
+/**
+ * The routes of the offering module, `/api/ext/<module>/v<major>/`: a transfer channel never
+ * reaches the core API or another module's routes (ADR 0079, 5.2).
+ */
+const PREFIX = /^\/api\/ext\/([a-z][a-z0-9-]{1,31})\/v[1-9][0-9]{0,3}\/$/;
+
+function modulePrefix(offer: TransferCapability): boolean {
+  return PREFIX.exec(offer.prefix)?.[1] === offer.module;
+}
 /** A relative path under the prefix: no scheme, no leading slash, no `.` or `..` segment. */
 const RELATIVE = /^(?![/\\])[A-Za-z0-9._~!$&'()*+,;=:@%/?-]{0,2048}$/;
 
@@ -80,15 +87,16 @@ export function compareVersions(a: string, b: string): number {
 
 /**
  * The first extension of the client's list that the server offers, with the highest version
- * both know; the client's order is its preference. Offers with a malformed prefix are ignored.
+ * both know; the client's order is its preference. An offer whose prefix is not the routes of
+ * its own module is ignored.
  */
 export function chooseTransfer(
   extensions: readonly TransferExtension[],
-  offers: readonly TreeCapability[],
+  offers: readonly TransferCapability[],
 ): ChosenTransfer | null {
   for (const extension of extensions) {
     for (const offer of offers) {
-      if (offer.name !== extension.name || !PREFIX.test(offer.prefix)) continue;
+      if (offer.name !== extension.name || !modulePrefix(offer)) continue;
       const common = offer.versions.filter((version) => extension.versions.includes(version));
       if (common.length === 0) continue;
       return {
@@ -107,7 +115,7 @@ export function chooseTransfer(
 
 /** The server's `capabilities.transfer`, read once per client and tolerant of its absence. */
 export class TransferExtensions {
-  private offers: Promise<readonly TreeCapability[]> | undefined;
+  private offers: Promise<readonly TransferCapability[]> | undefined;
   constructor(
     private readonly http: HttpPort,
     readonly extensions: readonly TransferExtension[] = [],
@@ -149,17 +157,24 @@ export class TransferExtensions {
     return this.mode === 'auto' && !signal?.aborted && !isAbort(failure);
   }
 
-  private serverOffers(signal?: AbortSignal): Promise<readonly TreeCapability[]> {
-    this.offers ??= this.http.call('api/v1/capabilities', 'GET', undefined, signal).then(
-      (value) => readCapabilityOffers(record(value)['transfer']) ?? [],
-      (error: unknown) => {
-        // A failed read is not remembered: the next operation asks again.
-        this.offers = undefined;
-        if (this.mode === 'strict' || isAbort(error)) throw error;
-        return [];
-      },
-    );
+  private serverOffers(signal?: AbortSignal): Promise<readonly TransferCapability[]> {
+    this.offers ??= this.readOffers(signal).catch((error: unknown) => {
+      // A failed read is not remembered: the next operation asks again.
+      this.offers = undefined;
+      if (this.mode === 'strict' || isAbort(error)) throw error;
+      return [];
+    });
     return this.offers;
+  }
+
+  private async readOffers(signal?: AbortSignal): Promise<readonly TransferCapability[]> {
+    const value = await this.http.call('api/v1/capabilities', 'GET', undefined, signal);
+    try {
+      const offered = record(value)['transfer'];
+      return offered === undefined ? [] : readTransferCapabilities(offered);
+    } catch {
+      throw new ArkvoryClientError('invalid_response', 'Invalid capability');
+    }
   }
 
   /** Requests under the offer's prefix with this client's credential and checks. */

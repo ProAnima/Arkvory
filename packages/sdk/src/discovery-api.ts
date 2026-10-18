@@ -7,7 +7,8 @@ import {
   integer,
   items,
   readOperationPage,
-  readCapabilityOffers,
+  readTransferCapabilities,
+  readTreeCapabilities,
 } from '@proanima/arkvory-contracts';
 import type { OperationQuery } from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
@@ -46,8 +47,9 @@ export class DiscoveryApi {
             const row = record(value);
             return { id: text(row['id']), kind: text(row['kind']) };
           });
-    const transfer = offers(r['transfer']);
-    const tree = offers(r['tree']);
+    // ADR 0079, 5.2 and ADR 0083, N8: absent on older servers; extensions compare against them.
+    const transfer = offers(r['transfer'], readTransferCapabilities);
+    const tree = offers(r['tree'], readTreeCapabilities);
     return {
       apiVersions: items(r['apiVersions']).map(text),
       gatewayRole,
@@ -60,7 +62,6 @@ export class DiscoveryApi {
         maxPageSize: integer(limits['maxPageSize']),
       },
       ...(modules === undefined ? {} : { modules }),
-      // ADR 0079, 5.2 and ADR 0083, N8: optional offers, absent on older servers.
       ...(transfer === undefined ? {} : { transfer }),
       ...(tree === undefined ? {} : { tree }),
     };
@@ -86,9 +87,10 @@ export class DiscoveryApi {
   }
 }
 
-function offers(value: unknown) {
+function offers<T>(value: unknown, read: (value: unknown) => T): T | undefined {
+  if (value === undefined) return undefined;
   try {
-    return readCapabilityOffers(value);
+    return read(value);
   } catch {
     throw new ArkvoryClientError('invalid_response', 'Invalid capability');
   }

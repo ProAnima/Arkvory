@@ -43,7 +43,7 @@ async function directory(t) {
   return path;
 }
 
-test('the backup agent is a supervised role and vault-init the only launcher command', () => {
+test('the backup agent is a supervised role; vault-init and storage-rehome are the launcher commands', () => {
   assert.deepEqual(serviceRoles, ['api', 'worker', 'backup']);
   assert.deepEqual(roleCommand('backup'), {
     entry: 'apps/backup/dist/main.js',
@@ -61,6 +61,15 @@ test('the backup agent is a supervised role and vault-init the only launcher com
   assert.throws(() => roleCommand('vault-init', []), /absolute/);
   assert.throws(() => roleCommand('backup', ['capture']), /no arguments/);
   assert.throws(() => roleCommand('restore'), /Invalid service role/);
+  // ADR 0083, N2: planning moves runs the worker's entry with the installation's environment.
+  assert.deepEqual(roleCommand('storage-rehome', ['--from', 'default', '--to', 'volume-2']), {
+    entry: 'apps/worker/dist/rehome.js',
+    argv: ['--from', 'default', '--to', 'volume-2'],
+    service: false,
+  });
+  assert.deepEqual(roleCommand('storage-rehome', ['--status']).argv, ['--status']);
+  assert.throws(() => roleCommand('storage-rehome', ['--from', '/etc/passwd']), /storage-rehome/);
+  assert.throws(() => roleCommand('storage-rehome', ['--from', 'a;b']), /storage-rehome/);
 });
 
 /** An installation whose release backup entry records how the launcher started it. */

@@ -1,7 +1,11 @@
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { canonicalJson } from '@proanima/arkvory-extension-api';
-import type { ModuleManifest, TransferExtension } from '@proanima/arkvory-extension-api';
+import type {
+  ModuleJson,
+  ModuleManifest,
+  TransferExtension,
+} from '@proanima/arkvory-extension-api';
 import { parseModuleFields } from '@proanima/arkvory-signing';
 import { confinePackage } from '@proanima/arkvory-resolution';
 
@@ -141,7 +145,7 @@ export async function importClientModule(
   } catch (error) {
     throw new ClientLoadError('descriptor_invalid', { cause: error });
   }
-  if (canonicalJson({ ...manifest }) !== canonicalJson({ ...signed }))
+  if (canonicalJson(manifestJson(manifest)) !== canonicalJson(manifestJson(signed)))
     throw new ClientLoadError('descriptor_mismatch');
   let module: unknown;
   try {
@@ -154,4 +158,10 @@ export async function importClientModule(
   if (!Array.isArray(transfer) || transfer.length > 16)
     throw new ClientLoadError('contribution_invalid');
   return transfer.map((item: unknown) => transferExtension(item));
+}
+
+/** A manifest as plain JSON, for comparing two of them field by field. */
+function manifestJson(manifest: ModuleManifest): ModuleJson {
+  const { resources, ...rest } = manifest;
+  return { ...rest, resources: resources ? { ...resources } : null };
 }

@@ -73,3 +73,21 @@ test('the modules file is an absolute path, read at most one MiB far in bytes', 
   );
   await assert.rejects(readModuleSelections(directory), /ARKVORY_MODULES_FILE cannot be read/);
 });
+
+test('the operator approves the data directory of a module in the modules file', () => {
+  const read = (resources) =>
+    parseModuleSelections({ format: 1, modules: { 'op-index': { enabled: true, resources } } });
+  assert.deepEqual(read({ dataMiB: 64, dataFiles: 1000 }).get('op-index').resources, {
+    dataMiB: 64,
+    dataFiles: 1000,
+  });
+  assert.equal(read(undefined).get('op-index').resources, undefined);
+  for (const [value, pointer] of [
+    [{ dataMiB: -1, dataFiles: 1 }, '/modules/op-index/resources/dataMiB'],
+    [{ dataMiB: 1, dataFiles: 1.5 }, '/modules/op-index/resources/dataFiles'],
+    [{ dataMiB: 1 }, '/modules/op-index/resources/dataFiles'],
+    [{ dataMiB: 1, dataFiles: 1, inodes: 1 }, 'unknown field /modules/op-index/resources/inodes'],
+    ['big', '/modules/op-index/resources'],
+  ])
+    assert.throws(() => read(value), { message: `Invalid ARKVORY_MODULES_FILE: ${pointer}` });
+});

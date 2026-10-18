@@ -1,4 +1,5 @@
-import type { HostService, ModuleSource } from './context.js';
+import type { HostService } from './context.js';
+import type { ModuleSource } from './sources.js';
 import { canonicalJson, type ModuleJson } from './json.js';
 import {
   MODULE_ID_PATTERN,
@@ -16,6 +17,7 @@ import {
   type ModulePlanRuleCode,
   type ReadModule,
 } from './plan-rules.js';
+import { capabilityLines, checkVersioned } from './plan-capabilities.js';
 import { checkServices } from './plan-services.js';
 import {
   parseCaretRange,
@@ -173,8 +175,22 @@ function fingerprint(modules: readonly Candidate[], host: ModuleHost): string {
       sha256: m.packageSha256,
       enabled: m.enabled,
       config: m.config,
+      // Only when the module has any: plans without capabilities keep their earlier digest.
+      ...capabilityField(m, exactVersion),
     })),
   });
+}
+
+const exactVersion = (version: SemanticVersion) =>
+  `${String(version.major)}.${String(version.minor)}.${String(version.patch)}`;
+
+/** The capability lists of a module for a fingerprint, or nothing when it has none. */
+function capabilityField(
+  m: Candidate,
+  line: (version: SemanticVersion) => string,
+): { capabilities?: ModuleJson } {
+  const lines = capabilityLines(m, line);
+  return lines === null ? {} : { capabilities: lines };
 }
 
 /**
@@ -205,6 +221,8 @@ function compatibilityFingerprint(modules: readonly Candidate[], host: ModuleHos
         enabled: m.enabled,
         config: m.config,
         line: m.source === 'builtin' ? null : compatibilityLine(version),
+        // Versions of capabilities by their line, as for module versions (ADR 0083, N13).
+        ...capabilityField(m, compatibilityLine),
       };
     }),
   });
@@ -226,6 +244,7 @@ export function planModules(
     ...checkModules(modules, hostApi),
     ...checkOwnership(modules),
     ...checkServices(modules, host.services),
+    ...checkVersioned(modules),
     ...checkOverlaps(modules, host.reservedRoutePrefixes),
   ];
   const order = startOrder(modules, found);

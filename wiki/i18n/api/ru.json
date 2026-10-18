@@ -11,10 +11,10 @@
     "getCapabilities": {
       "en": {
         "summary": "Get server capabilities and limits",
-        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed."
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed. `transfer` lists the transfer protocols of the modules this gateway runs, each with its `name`, the `versions` it speaks, the `module` and the `prefix` of its routes; a client uses one only with an extension of the same name and a common version, and otherwise transfers as usual."
       },
       "summary": "Получить возможности и ограничения сервера",
-      "description": "Возвращает версии API, роль шлюза, флаги возможностей (например, `selfRegistration` или `mirrorFeed`) и ограничения, под которые подстраивается клиент: наибольший объект (`maxObjectBytes`, десятичная строка), наименьший и наибольший размер части при загрузке по частям, наибольшее число частей и наибольший размер страницы. Прочитайте его один раз при запуске клиента; ресурсов он не перечисляет. `modules` перечисляет включённые модули, которые обслуживает этот шлюз, с их `id` и точкой расширения (`kind`); протокола, выключенного в `ARKVORY_MODULES_FILE`, в списке нет."
+      "description": "Возвращает версии API, роль шлюза, флаги возможностей (например, `selfRegistration` или `mirrorFeed`) и ограничения, под которые подстраивается клиент: наибольший объект (`maxObjectBytes`, десятичная строка), наименьший и наибольший размер части при загрузке по частям, наибольшее число частей и наибольший размер страницы. Прочитайте его один раз при запуске клиента; ресурсов он не перечисляет. `modules` перечисляет включённые модули, которые обслуживает этот шлюз, с их `id` и точкой расширения (`kind`); протокола, выключенного в `ARKVORY_MODULES_FILE`, в списке нет. `transfer` перечисляет протоколы передачи модулей, которые выполняет этот шлюз: имя (`name`), поддерживаемые версии (`versions`), модуль (`module`) и префикс его маршрутов (`prefix`); клиент пользуется протоколом, только если у него есть расширение с тем же именем и общей версией, иначе передаёт данные обычным способом."
     },
     "getReadinessStatus": {
       "en": {
@@ -1008,6 +1008,14 @@
       "summary": "Список модулей установки",
       "description": "Возвращает все модули, запланированные в установке, по порядку `id`: `id`, `version`, точку расширения (`kind`), `source` (`builtin` — модули ядра), входит ли модуль в бесплатное ядро (`core`, не выключается) и включён ли он (`enabled`), процессы, в которых он работает (`roles`), работает ли он в ответившем процессе (`running`) и его состояние там (`health`: `ok`, `degraded` или `failed` с кодом; null, если модуль там не работает). `compatibilityFingerprint` — SHA-256 того, в чём должны совпадать все процессы установки: модули с источниками, точками расширения, выбором и настройками, без версий релиза; шлюз чтения и worker готовы, только если значение совпадает с записанным процессом записи. `fingerprint` — SHA-256 точного плана со всеми версиями, он меняется с каждым релизом; `extensionApi` — версия контракта модулей этого ядра. Настройки, пути и секреты не возвращаются. Читать может только глобальный администратор. Установленные подписанные модули, которые загрузчик отклонил, тоже перечислены: с `running`, равным false, и `health` `failed`, `revoked` или `unavailable` с кодом; подписанный модуль, который должен работать в этом процессе, но не загрузился или не запустился, показан как `failed` с кодом."
     },
+    "getSystemModuleOpenApi": {
+      "en": {
+        "summary": "Get the API document of one module",
+        "description": "Returns the OpenAPI 3.1 document of the routes the module `id` serves under `/api/ext/<id>/v<major>/` in the answering process: the paths and schemas the module documents, checked by the server against its routes, and for each operation what the server checks before the module runs (`x-arkvory-access`, `x-arkvory-action` with the path parameter that names the repository, `x-arkvory-effect`). `info.version` is the `fingerprint` of the module plan. A read gateway returns only the reads it serves. A module that serves no routes in the answering process, is disabled or did not start is `not_found`. Only the global administrator may read it; every authenticated caller reads the combined document of all modules at `/api/ext/openapi.json`, with the operations it may call."
+      },
+      "summary": "Документ API одного модуля",
+      "description": "Возвращает документ OpenAPI 3.1 маршрутов, которые модуль `id` обслуживает под `/api/ext/<id>/v<major>/` в ответившем процессе: пути и схемы, описанные модулем и сверенные сервером с его маршрутами, а у каждой операции — то, что сервер проверяет до вызова модуля (`x-arkvory-access`, `x-arkvory-action` с параметром пути, который называет репозиторий, `x-arkvory-effect`). `info.version` — `fingerprint` плана модулей. Шлюз чтения возвращает только операции чтения, которые он обслуживает. Модуль, который в ответившем процессе не обслуживает маршрутов, выключен или не запустился, — `not_found`. Читать может только глобальный администратор; сводный документ всех модулей с операциями, которые ему доступны, любой аутентифицированный клиент читает по адресу `/api/ext/openapi.json`."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",
@@ -1253,6 +1261,7 @@
     "Event id, `<epoch>:<position>`; deduplicate by it": "Идентификатор события, `<epoch>:<position>`; дедуплицируйте по нему",
     "Artifact id, or the path of a file event": "ID артефакта или путь файла для событий файлов",
     "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`; события одного раздела сохраняют порядок фиксации",
-    "Data of the type; its JSON Schema is in the type list": "Данные типа; их JSON Schema — в списке типов"
+    "Data of the type; its JSON Schema is in the type list": "Данные типа; их JSON Schema — в списке типов",
+    "Transfer protocols of the enabled modules this gateway runs; a client uses one only with an extension of the same name and a common version.": "Протоколы передачи включённых модулей, которые выполняет этот шлюз; клиент пользуется протоколом, только если у него есть расширение с тем же именем и общей версией."
   }
 }

@@ -77,8 +77,8 @@ export const exportedTables: readonly BackupTable[] = [
   // Where new uploads go (ADR 0083, N11); the restored storages carry the same ids.
   { name: 'arkvory_storage_placement', key: ['repository'], since: 44 },
   // Tables of contents of archives (ADR 0083, N8): restored, the worker does not read them again.
-  { name: 'arkvory_tree_indexes', key: ['upload_id'], since: 45 },
-  { name: 'arkvory_tree_entries', key: ['upload_id', 'ordinal'], since: 45 },
+  { name: 'arkvory_tree_indexes', key: ['upload_id'], since: 46 },
+  { name: 'arkvory_tree_entries', key: ['upload_id', 'ordinal'], since: 46 },
 ];
 
 /**
@@ -145,6 +145,12 @@ export const excludedTables: readonly ExcludedTable[] = [
   {
     name: 'arkvory_event_state',
     reason: 'epoch and positions of the source; migrating the target starts a new epoch',
+  },
+  // ADR 0083, N2: a move is a property of the source's storages; a restore writes every blob
+  // to the storage its upload row names.
+  {
+    name: 'arkvory_blob_moves',
+    reason: 'moves between storages of the source; a restore writes each blob to its storage',
   },
   {
     name: 'arkvory_module_plan',

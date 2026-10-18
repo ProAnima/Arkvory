@@ -8,6 +8,7 @@ export * from './credentials.js';
 export * from './identity.js';
 export * from './login-backoff.js';
 export * from './service-access.js';
+export * from './administrator.js';
 
 export * from './service-policy.js';
 export * from './service-delegation.js';
@@ -56,4 +57,5 @@ export type {
 export { acknowledges } from './replica.js';
 export type { ReplicaCopies, ReplicaPeer } from './replica.js';
 export * from './storage-placement.js';
+export * from './blob-moves.js';
 export * from './archive-tree.js';
