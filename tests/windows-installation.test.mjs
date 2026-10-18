@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { dependencies } from '../scripts/native-dependencies.mjs';
 
 // The Windows scripts run elevated; gate deployment-services executes them on Windows. These
 // checks keep their order and their shared code consistent on every OS.
@@ -63,10 +64,21 @@ test('install.ps1 runs Node.js only after the runtime passed verification', asyn
     '& $node $setup install',
   ]);
   assert.equal(install.match(/& \$node /g)?.length, 1, 'Node.js starts once, at the end');
-  // The archive pin matches the native packaging pin.
+  // The archive of install.ps1 is the one native packaging pins; packaging checks the node.exe
+  // hash and the entries of install.ps1 against that archive.
+  const [url, archiveSha256] = dependencies.nodeWindows;
+  const nodeName = /\$nodeName = '(node-v[0-9.]+-win-x64)'/.exec(install)?.[1];
   assert.match(
-    await read('scripts/native-dependencies.mjs'),
-    /158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541/,
+    install,
+    /Invoke-WebRequest "https:\/\/nodejs\.org\/dist\/v24\.21\.0\/\$nodeName\.zip"/,
+  );
+  assert.equal(`https://nodejs.org/dist/v24.21.0/${nodeName}.zip`, url);
+  assert.ok(install.includes(`-ne '${archiveSha256.toUpperCase()}'`), 'archive SHA-256');
+  assert.ok(
+    (await read('scripts/package-native.mjs')).includes(
+      `await installerRuntimePins(join(stage, 'node/${nodeName}'));`,
+    ),
+    'packaging checks the pins of install.ps1',
   );
 });
 

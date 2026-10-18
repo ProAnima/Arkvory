@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, cp, copyFile, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, cp, copyFile, readFile, readdir, writeFile, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -69,6 +69,21 @@ async function expand(archive, destination) {
     { ARKVORY_ARCHIVE: archive, ARKVORY_DESTINATION: destination },
   );
 }
+/**
+ * install.ps1 runs only a node.exe with its pinned SHA-256 and only the archive's own entries
+ * beside it, both taken from the archive pinned here: a Node.js update changes them together,
+ * and packaging stops until they agree.
+ */
+async function installerRuntimePins(directory) {
+  const script = await readFile('deploy/install.ps1', 'utf8');
+  const pinned = /\$nodeSha256 = '([A-F0-9]{64})'/.exec(script)?.[1];
+  if (pinned?.toLowerCase() !== (await sha256(join(directory, 'node.exe'))))
+    throw Error('deploy/install.ps1 $nodeSha256 is not the SHA-256 of node.exe in the archive');
+  const listed = /\$nodeEntries = @\(([^)]*)\)/.exec(script)?.[1] ?? '';
+  const entries = new Set([...listed.matchAll(/'([^']+)'/g)].map((match) => match[1]));
+  for (const name of await readdir(directory))
+    if (!entries.has(name)) throw Error(`deploy/install.ps1 $nodeEntries lacks ${name}`);
+}
 async function windowsPackage() {
   const runtime = join(payload, 'runtime');
   await mkdir(runtime);
@@ -76,6 +91,7 @@ async function windowsPackage() {
   await copyFile(await dependency('nodeWindows', cache), nodeArchive);
   await expand(nodeArchive, join(stage, 'node'));
   await copyFile(join(stage, 'node/node-v24.21.0-win-x64/node.exe'), join(runtime, 'node.exe'));
+  await installerRuntimePins(join(stage, 'node/node-v24.21.0-win-x64'));
   await copyFile(
     join(stage, 'node/node-v24.21.0-win-x64/LICENSE'),
     join(runtime, 'NODE-LICENSE.txt'),
