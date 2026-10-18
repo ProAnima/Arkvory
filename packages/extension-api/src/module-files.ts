@@ -11,7 +11,10 @@ export interface FileSink {
   /**
    * Publishes the file under its name: atomically, replacing an existing file unless the sink
    * was created `exclusive` (then `conflict`). A `durable` file and its directory are synced
-   * first (the directory not on Windows, ADR 0004).
+   * first (the directory not on Windows, ADR 0004). The quota is checked again against what
+   * the name holds now (`module_quota_exceeded`, the file is then dropped): a file removed or
+   * replaced since `create` no longer credits its old size. On Windows a file another handle
+   * keeps open is retried briefly, then `unavailable`.
    */
   close(): Promise<void>;
   /** Drops what was written; idempotent, also after a failed write or close. */
