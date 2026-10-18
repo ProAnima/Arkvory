@@ -32,7 +32,12 @@
     },
     {
       "path": "packages/infrastructure",
-      "allowed": ["packages/application", "packages/domain", "packages/extension-api"]
+      "allowed": [
+        "packages/application",
+        "packages/domain",
+        "packages/extension-api",
+        "packages/signing"
+      ]
     },
     {
       "path": "packages/sdk",

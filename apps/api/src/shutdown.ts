@@ -13,6 +13,33 @@ export interface ShutdownOptions {
   /** Monotonic milliseconds. */
   readonly now: () => number;
   readonly exit: (code: number) => void;
+  /** How long a stopped process may stay alive before it exits regardless; see `exitIfLingering`. */
+  readonly lingerMs?: number;
+}
+
+/** Long enough for the event loop to empty after a clean close, short against the 120 s stop. */
+export const LINGER_MS = 5000;
+
+/**
+ * A finished process ends with `code` within `lingerMs`. Normally its event loop is empty and it
+ * exits on its own first: the timer does not hold it. A timer or socket that module code left
+ * behind (a signed module is code the core cannot clean up after, ADR 0078, 7) would otherwise
+ * keep a stopped or failed process alive until the supervisor kills it, or for good after a
+ * failed start, which no supervisor restarts.
+ */
+export function exitIfLingering(
+  diagnostics: Pick<DiagnosticLogger, 'write' | 'flush'>,
+  exit: (code: number) => void,
+  code: number,
+  lingerMs = LINGER_MS,
+): void {
+  const timer = setTimeout(() => {
+    diagnostics.write({ level: 'warning', component: 'process', code: 'process.handles_left' });
+    void diagnostics.flush(500).finally(() => {
+      exit(code);
+    });
+  }, lingerMs);
+  timer.unref();
 }
 export interface ShutdownRequest {
   readonly signal?: string;
@@ -90,6 +117,7 @@ export function createShutdown(options: ShutdownOptions): (request: ShutdownRequ
           code: 'api.stopped',
           durationMs: elapsed(),
         });
+        exitIfLingering(diagnostics, exit, request.failed ? 1 : 0, options.lingerMs);
       },
       (error: unknown) => {
         clearTimeout(deadline);

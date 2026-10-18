@@ -1,6 +1,6 @@
 import type { ModuleContext, ModuleSignal, PlannedModule } from '@proanima/arkvory-extension-api';
 import { planBuiltinModules } from '@proanima/arkvory-infrastructure';
-import type { ModuleSelections } from '@proanima/arkvory-infrastructure';
+import type { InstallationPlan, ModuleSelections } from '@proanima/arkvory-infrastructure';
 import { ModuleRuntime } from './module-host.js';
 import { ModuleTelemetry } from './module-telemetry.js';
 
@@ -14,19 +14,16 @@ export type ApiServices = Readonly<Record<string, never>>;
 export type ApiModuleContext = ModuleContext<ApiServices> & { readonly role: 'api' | 'reader' };
 
 /**
- * Plans the modules of this API process from the built-in list and the operator's choices
- * (`ARKVORY_MODULES_FILE`). No I/O: each configuration is parsed and the plan checked before
- * anything is allocated; `ModuleRuntime.start` then starts them. Without choices every built-in
- * module is enabled, as before modules existed.
+ * The modules of this API process from a loaded installation (`loadInstallation`): the built-in
+ * list, the operator's choices (`ARKVORY_MODULES_FILE`) and the installed signed modules. No I/O:
+ * each configuration was parsed and the plan checked before anything is allocated;
+ * `ModuleRuntime.start` then starts them.
  */
-export function planApiModules(
+export function apiModules(
   role: ApiModuleContext['role'],
-  coreVersion: string,
-  selections: ModuleSelections = new Map(),
-  // Tests plan without a process log; a server passes the telemetry bound to its own.
-  telemetry = new ModuleTelemetry({ write: () => undefined }, () => performance.now()),
+  installation: InstallationPlan<ApiModuleContext>,
+  telemetry: ModuleTelemetry,
 ): ModuleRuntime<ApiModuleContext> {
-  const { plan, prepared } = planBuiltinModules(coreVersion, selections);
   const context = (module: PlannedModule, signal: ModuleSignal): ApiModuleContext => ({
     role,
     source: module.source,
@@ -37,5 +34,24 @@ export function planApiModules(
     metrics: telemetry.metrics(module.manifest),
     services: {},
   });
-  return new ModuleRuntime<ApiModuleContext>(plan, prepared, { role, context });
+  return new ModuleRuntime<ApiModuleContext>(
+    installation.plan,
+    installation.prepared,
+    { role, context },
+    installation.refused,
+  );
+}
+
+/**
+ * The built-in modules alone with the operator's choices. Without choices every built-in module
+ * is enabled, as before modules existed.
+ */
+export function planApiModules(
+  role: ApiModuleContext['role'],
+  coreVersion: string,
+  selections: ModuleSelections = new Map(),
+  // Tests plan without a process log; a server passes the telemetry bound to its own.
+  telemetry = new ModuleTelemetry({ write: () => undefined }, () => performance.now()),
+): ModuleRuntime<ApiModuleContext> {
+  return apiModules(role, planBuiltinModules(coreVersion, selections), telemetry);
 }

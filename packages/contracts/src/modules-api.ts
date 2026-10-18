@@ -6,7 +6,10 @@ export const moduleOperations = [
 ] as const;
 
 export interface SystemModuleHealth {
-  /** `ok`, `degraded` or `failed`; later versions may add states, unknown ones mean not ok. */
+  /**
+   * `ok`, `degraded`, `failed`, `revoked` or `unavailable`; later versions may add states,
+   * unknown ones mean not ok.
+   */
   readonly status: string;
   readonly code: string | null;
 }
@@ -25,7 +28,11 @@ export interface SystemModule {
   readonly roles: readonly string[];
   /** Whether the answering process runs the module. */
   readonly running: boolean;
-  /** Health in the answering process; null when it does not run the module there. */
+  /**
+   * Health in the answering process; null when it does not run the module there. An installed
+   * signed module that was refused or failed to start shows `failed`, `revoked` or `unavailable`
+   * with the code while `running` is false.
+   */
   readonly health: SystemModuleHealth | null;
 }
 
@@ -88,7 +95,8 @@ export const modulePaths = {
         'List the modules of this installation: version, extension point, whether core and enabled, health in the answering process, and the plan fingerprints',
       responses: {
         200: {
-          description: 'Every planned module in id order; no settings, paths or secrets',
+          description:
+            'Every planned module and every installed signed module the loader refused, in id order; no settings, paths or secrets',
           content: { 'application/json': { schema: systemModulesSchema } },
         },
       },

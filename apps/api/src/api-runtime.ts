@@ -14,6 +14,7 @@ import {
 } from '@proanima/arkvory-infrastructure';
 import type {
   DiagnosticRecord,
+  InstallationPlan,
   StagingArea,
   StorageBackends,
   StorageFault,
@@ -23,11 +24,11 @@ import { DownloadSettingsControl } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
-import { planApiModules, type ApiModuleContext } from './modules.js';
+import { apiModules, planApiModules, type ApiModuleContext } from './modules.js';
 import type { ModuleRuntime } from './module-host.js';
 import { ModuleTelemetry } from './module-telemetry.js';
 
-function gatewayRole(config: ServerConfig): 'api' | 'reader' {
+export function gatewayRole(config: ServerConfig): 'api' | 'reader' {
   const role: unknown = config.role ?? 'api';
   if (role !== 'api' && role !== 'reader') throw new Error('Invalid gateway role');
   if (
@@ -73,11 +74,15 @@ export class ApiRuntime {
     coreVersion: string,
     /** The process log; modules write to it through their telemetry. */
     log: { write(record: DiagnosticRecord): void } = { write: () => undefined },
+    /** The loaded modules (`loadInstallation`); absent, the built-in modules alone. */
+    installation?: InstallationPlan<ApiModuleContext>,
   ) {
     this.role = gatewayRole(config);
     this.telemetry = new ModuleTelemetry(log, () => performance.now());
     // Module settings and the plan are checked before any pool, storage or timer exists.
-    this.modules = planApiModules(this.role, coreVersion, config.modules, this.telemetry);
+    this.modules = installation
+      ? apiModules(this.role, installation, this.telemetry)
+      : planApiModules(this.role, coreVersion, config.modules, this.telemetry);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
     this.blobs = localStorageBackends(

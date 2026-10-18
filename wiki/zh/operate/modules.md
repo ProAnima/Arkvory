@@ -1,13 +1,13 @@
 ---
 title: 模块
-description: 在主机上安装、检查和移除已签名的模块包，并保存您信任的插件作者的密钥。
+description: 在主机上安装、启用、检查和移除已签名的模块包，并保存您信任的插件作者的密钥。
 ---
 
 # 模块
 
 模块包为 Arkvory 增加一项功能。Arkvory 只安装它能够验证签名的包。本页的命令在安装所在的主机上运行：Linux 上以 root 身份，Windows 上以管理员身份。控制台和 HTTP API 不能安装模块，也不能信任密钥，因此被盗的控制台管理员帐户无法在服务器上运行代码。
 
-此版本保存并验证模块包。服务目前还不运行模块代码：后续版本会加载已安装的模块。
+服务每次启动时都会重新检查并加载已安装的模块。模块只有在您启用后才会运行。
 
 ## 安装包 {#install}
 
@@ -42,6 +42,39 @@ description: 在主机上安装、检查和移除已签名的模块包，并保�
 
 已以相同字节安装的版本保持不变。同一版本但字节不同则会被拒绝。
 
+## 启用并加载模块 {#load}
+
+已安装的模块在您启用之前保持关闭。服务只在启动时加载模块。
+
+1. 将模块添加到模块文件（`ARKVORY_MODULES_FILE`，参见[环境变量](../reference/environment#core)）。模块的设置放在 `config` 中：
+
+   ```json
+   { "format": 1, "modules": { "sample": { "enabled": true } } }
+   ```
+
+2. 按照[应用更改](../install/configuration#apply-change)重启服务。
+3. 以全局管理员身份检查模块：`GET /api/v1/system/modules` 在 API 和每个读取网关上都显示它为 `running: true`，`health.status` 为 `ok`。
+
+API 和读取网关运行模块。worker 检查相同的模块，但不运行任何模块。此版本拒绝在 worker 或备份代理中运行的模块（`role_unsupported`）以及声明自有路由的模块（`routes_unsupported`）。Docker Compose 安装目前还不加载模块。
+
+服务在导入模块的任何代码之前，会再次检查包：
+
+1. 只有 root（Windows 上为 SYSTEM 和 Administrators）或安装目录的所有者可以更改安装目录、`modules/`、模块集、吊销列表及其所在目录。安装过程会这样设置。其他账户可以更改的文件以及包内的链接都会被拒绝（`access_unsafe`、`access_link`）。
+2. 签名、每个文件和 Arkvory 的版本，与 `module install` 的检查相同。
+3. 吊销列表。被吊销的版本永远不会加载。过期的列表或没有列表都不会停止模块。
+
+未通过检查的模块不会加载；其他模块和 Arkvory 继续运行。`GET /api/v1/system/modules` 显示它为 `running: false`：
+
+| `health.status` | 含义                             | 代码                                                                                                        |
+| --------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `failed`        | 包被拒绝，或其代码未能加载或启动 | `file_mismatch`、`unknown_key`、`module_incompatible`、`access_unsafe`、`config_invalid`、`start_failed` 等 |
+| `revoked`       | ProAnimaStudio 吊销了此版本      | 吊销列表中的原因                                                                                            |
+| `unavailable`   | 主机上缺少包目录                 | `module_unavailable`                                                                                        |
+
+只有当另一个已启用的模块需要失败的模块时，它才会使 Arkvory 退出就绪状态（`/health/ready` 返回 503 和 `module_failed`）。保存已发布文件字节的模块（数据 `layout`）永远不会这样：Arkvory 继续提供其数据，并把新的上传写入自己的存储而不是模块的存储。日志会记录 `module.refused` 和 `module.failed`，代码在 `errorCode` 中。
+
+要修复被更改或缺失的包，请重新安装它。安装的所有服务必须看到相同的模块，无论是否启用：模块不同的读取网关或 worker 不会就绪（`module_plan_mismatch`）。请在每个读取网关的主机上安装相同的包。
+
 ## 更新、固定和降级 {#versions}
 
 使用 `--yes` 安装新版本的文件。之前的包会保留在主机上，直到下一次模块更改。
@@ -60,7 +93,7 @@ description: 在主机上安装、检查和移除已签名的模块包，并保�
 sudo arkvory module list --root /opt/proanima-arkvory
 ```
 
-该命令会重新验证每个已安装的包，就像服务在加载它之前所做的那样：签名、每个文件和归档。每个模块显示一个状态：
+该命令会重新验证每个已安装的包，与服务在加载它之前所做的相同：签名、每个文件和归档。每个模块显示一个状态：
 
 | 状态                 | 含义                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------- |

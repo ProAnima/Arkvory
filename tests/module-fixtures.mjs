@@ -1,5 +1,6 @@
+import { execFileSync } from 'node:child_process';
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { EXTENSION_API_VERSION } from '../packages/extension-api/dist/index.js';
@@ -152,4 +153,170 @@ export async function writePackage(directory, entries, name = 'package.tgz') {
   const file = join(directory, name);
   await writeFile(file, Buffer.isBuffer(entries) ? entries : tarGzip(entries));
   return file;
+}
+
+/** The fields of `manifestOf` that describe the module rather than the package. */
+const PACKAGE_ONLY = ['side', 'entry', 'dataClass', 'licenseFeature', 'coreRelease', 'files'];
+
+export function moduleManifestOf(overrides = {}) {
+  return Object.fromEntries(
+    Object.entries(manifestOf(overrides)).filter(([key]) => !PACKAGE_ONLY.includes(key)),
+  );
+}
+
+/**
+ * The entry of a test module: a default-exported descriptor whose manifest is the signed one
+ * (or `options.manifest`). Importing it appends `<id>@<version>` to `globalThis.arkvoryImported`,
+ * so a test sees whether the loader ever ran a package's code. `options`: `throwOnImport`,
+ * `createThrows`, `startFails`, `startHangs`, `requireConfig` (settings must be `{"mode":"on"}`),
+ * `health` (`ok`, `degraded` or `failed`).
+ */
+export function moduleSource(manifest, options = {}) {
+  return Buffer.from(`const manifest = ${JSON.stringify(options.manifest ?? manifest)};
+const options = ${JSON.stringify(options)};
+globalThis.arkvoryImported = [...(globalThis.arkvoryImported ?? []), manifest.id + '@' + manifest.version];
+if (options.throwOnImport) throw new Error('module refuses to load');
+export default {
+  manifest,
+  parseConfig(input) {
+    if (options.requireConfig && (typeof input !== 'object' || input === null || input.mode !== 'on'))
+      throw new Error('mode required');
+    return input ?? {};
+  },
+  describeConfig: () => ({}),
+  create(context) {
+    if (options.createThrows) throw new Error('cannot create');
+    return {
+      async start(signal) {
+        if (options.startFails) throw new Error('cannot start');
+        if (options.startHangs)
+          await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }));
+      },
+      async drain() {},
+      async stop() {},
+      health: () => ({
+        status: options.health ?? 'ok',
+        code: (options.health ?? 'ok') === 'ok' ? null : 'test_reason',
+      }),
+    };
+  },
+};
+`);
+}
+
+/** A package whose entry for every role is a `moduleSource` of its own manifest. */
+export function modulePackage(signer, manifest = {}, options = {}) {
+  const roles = manifest.roles ?? ['api', 'reader'];
+  const full = {
+    roles,
+    entry: Object.fromEntries(roles.map((r) => [r, 'files/main.mjs'])),
+    ...manifest,
+  };
+  return packageEntries({
+    signer,
+    manifest: full,
+    files: {
+      'files/main.mjs': moduleSource(moduleManifestOf(full), options),
+      'files/LICENSE.md': Buffer.from('# Module terms\n\nTest terms.\n'),
+    },
+  });
+}
+
+/**
+ * Takes the inherited access away from a test installation root exactly as the installers do:
+ * on Windows SYSTEM and Administrators with full control, LocalService reading, and the owner of
+ * the root, which the loader trusts too (the current user, or the Administrators group for an
+ * elevated process such as a CI runner); on POSIX mode 0700. A grant to the current user's own
+ * SID would be another writer under an elevated process, whose root belongs to Administrators,
+ * and a temporary directory of a Windows profile can grant other local accounts write access.
+ */
+export async function protectRoot(root) {
+  if (process.platform !== 'win32') return chmod(root, 0o700);
+  const script = [
+    '$owner = [IO.Directory]::GetAccessControl($env:ARKVORY_TEST_ROOT).GetOwner([Security.Principal.SecurityIdentifier]).Value',
+    // /reset drops rules written on the directory itself (a runner's default DACL writes one for
+    // its account, which is not the owner when an elevated process creates for Administrators).
+    '& icacls.exe $env:ARKVORY_TEST_ROOT /reset | Out-Null',
+    'if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }',
+    "& icacls.exe $env:ARKVORY_TEST_ROOT /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' ('*' + $owner + ':(OI)(CI)F') | Out-Null",
+    'exit $LASTEXITCODE',
+  ].join('; ');
+  // .NET rather than Get-Acl, and no PSModulePath: a runner step in PowerShell 7 hands its module
+  // path down, and Windows PowerShell cannot load the Security module of PowerShell 7.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
+  );
+  execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+    env: { ...env, ARKVORY_TEST_ROOT: root },
+    windowsHide: true,
+  });
+}
+
+/** Lets everyone change `path`: the access the loader must refuse. */
+export async function openToEveryone(path) {
+  if (process.platform !== 'win32') return chmod(path, 0o666);
+  execFileSync('icacls.exe', [path, '/grant', '*S-1-1-0:M'], { windowsHide: true });
+}
+
+/**
+ * An installation root with a current revocation list (valid until 2027-01-15) and the module
+ * commands of `arkvory` bound to it and to throwaway keys. `install(entries)` writes a package
+ * and installs it with `--yes`; `source(keys)` is what a service of this root loads with.
+ */
+export async function moduleInstallation(t, { extensionApi = EXTENSION_API_VERSION } = {}) {
+  const root = await temporaryDirectory(t, 'arkvory-loader-root-');
+  const files = await temporaryDirectory(t, 'arkvory-loader-files-');
+  await protectRoot(root);
+  await mkdir(join(root, 'config'));
+  await writeFile(join(root, 'config/runtime.json'), '{}');
+  await writeFile(
+    join(root, 'installation.json'),
+    JSON.stringify({
+      format: 1,
+      mode: 'systemd',
+      engine: 'docker',
+      automatic: false,
+      pin: null,
+      current: {
+        format: 1,
+        version: '0.6.0',
+        commit: 'a'.repeat(40),
+        schema: 43,
+        archiveSha256: 'b'.repeat(64),
+        setupSha256: 'c'.repeat(64),
+      },
+    }),
+  );
+  const keys = testHost();
+  await writeFile(
+    join(root, 'config/module-revocations.json'),
+    revocationList(keys.module, { sequence: 1, entries: [] }),
+  );
+  const context = {
+    moduleKeys: [keys.module.key],
+    licenseKeys: [keys.license.key],
+    releaseKeys: [keys.release.key],
+    extensionApi,
+    now: () => Date.parse('2026-10-17T12:00:00Z'),
+    print: () => undefined,
+  };
+  const { moduleCommand } = await import('../apps/deploy/dist/module-commands.js');
+  const run = (...args) => moduleCommand([...args, '--root', root], context);
+  let count = 0;
+  const install = async (entries, ...flags) =>
+    run('install', await writePackage(files, entries, `m${++count}.tgz`), '--yes', ...flags);
+  const writeFileIn = (name, text) => writePackage(files, Buffer.from(text), name);
+  return {
+    root,
+    keys,
+    run,
+    install,
+    writeFileIn,
+    modules: join(root, 'modules'),
+    source: (moduleKeys = [keys.module.key]) => ({
+      directory: join(root, 'modules'),
+      revocationsFile: join(root, 'config/module-revocations.json'),
+      keys: moduleKeys,
+    }),
+  };
 }

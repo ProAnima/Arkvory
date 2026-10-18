@@ -1,39 +1,13 @@
 import { mkdir, readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { MODULE_ID_PATTERN, parseSemanticVersion } from '@proanima/arkvory-extension-api';
-import { DATA_CLASSES } from '@proanima/arkvory-signing';
-import type { DataClass } from '@proanima/arkvory-signing';
+import { MODULE_SET_FILE, parseModuleSet, parseRetained } from '@proanima/arkvory-signing';
+import type { InstalledModule, ModuleSet, RetainedPackage } from '@proanima/arkvory-signing';
 import { atomicJson, inside, jsonFile, readOptional } from './files.js';
 import { record } from './model.js';
+import { commandOutput } from './process.js';
 
-/** A module package installed on this host and selected for the installation. */
-export interface InstalledModule {
-  readonly id: string;
-  readonly version: string;
-  /** SHA-256 of the package archive: the package hash of the plan, journal and backups. */
-  readonly sha256: string;
-  readonly keyId: string;
-  /** ProAnimaStudio modules only; operator plugins come with `arkvory plugin` (ADR 0082). */
-  readonly source: 'signed';
-  readonly dataClass: DataClass;
-  /** Updates keep this version (ADR 0078, 3.5). */
-  readonly pinned: boolean;
-  readonly installedAt: string;
-}
-
-/** A package that left the set in the last change, kept until the next one succeeds. */
-export interface RetainedPackage {
-  readonly id: string;
-  readonly version: string;
-  readonly sha256: string;
-}
-
-/** `modules/installed.json`: the module set of the installation. */
-export interface ModuleSet {
-  readonly format: 1;
-  readonly modules: readonly InstalledModule[];
-  readonly retained: readonly RetainedPackage[];
-}
+export type { InstalledModule, ModuleSet, RetainedPackage };
 
 export const emptyModuleSet: ModuleSet = { format: 1, modules: [], retained: [] };
 
@@ -45,7 +19,7 @@ export function moduleLayout(root: string) {
   const directory = inside(root, 'modules');
   return {
     directory,
-    set: join(directory, 'installed.json'),
+    set: join(directory, MODULE_SET_FILE),
     /** Operator decisions the module commands record, one JSON object per line. */
     audit: join(directory, 'audit.jsonl'),
     staging: join(directory, '.staging'),
@@ -55,49 +29,6 @@ export function moduleLayout(root: string) {
     /** The archive as signed and distributed; part of backups with the module's data (L2). */
     archive: (id: string, version: string) => join(directory, '.packages', `${id}@${version}.tgz`),
   };
-}
-
-const DIGEST = /^[0-9a-f]{64}$/;
-const KEY_ID = /^[0-9a-f]{16}$/;
-
-function text(value: unknown, valid: (text: string) => boolean, name: string): string {
-  if (typeof value !== 'string' || !valid(value)) throw new Error(`Invalid module set: ${name}`);
-  return value;
-}
-
-function retained(value: unknown): RetainedPackage {
-  const row = record(value);
-  return {
-    id: text(row['id'], (v) => MODULE_ID_PATTERN.test(v), 'id'),
-    version: text(row['version'], (v) => parseSemanticVersion(v) !== null, 'version'),
-    sha256: text(row['sha256'], (v) => DIGEST.test(v), 'sha256'),
-  };
-}
-
-function installed(value: unknown): InstalledModule {
-  const row = record(value);
-  const dataClass = DATA_CLASSES.find((item) => item === row['dataClass']);
-  if (dataClass === undefined || row['source'] !== 'signed' || typeof row['pinned'] !== 'boolean')
-    throw new Error('Invalid module set: module');
-  return {
-    ...retained(row),
-    keyId: text(row['keyId'], (v) => KEY_ID.test(v), 'keyId'),
-    source: 'signed',
-    dataClass,
-    pinned: row['pinned'],
-    installedAt: text(row['installedAt'], (v) => Number.isFinite(Date.parse(v)), 'installedAt'),
-  };
-}
-
-/** Reads the set as untrusted input; one module id appears once. */
-export function parseModuleSet(value: unknown): ModuleSet {
-  const row = record(value);
-  if (row['format'] !== 1 || !Array.isArray(row['modules']) || !Array.isArray(row['retained']))
-    throw new Error('Invalid module set');
-  const modules = row['modules'].map((item: unknown) => installed(item));
-  if (new Set(modules.map((m) => m.id)).size !== modules.length)
-    throw new Error('Invalid module set: duplicate module');
-  return { format: 1, modules, retained: row['retained'].map((item: unknown) => retained(item)) };
 }
 
 export async function readModuleSet(root: string): Promise<ModuleSet> {
@@ -118,9 +49,21 @@ export async function writeModuleSet(root: string, set: ModuleSet): Promise<void
 export async function prepareModuleDirectories(root: string): Promise<void> {
   const layout = moduleLayout(root);
   await mkdir(layout.directory, { recursive: true, mode: 0o755 });
+  if (process.platform === 'win32') await grantServiceRead(layout.directory);
   await mkdir(layout.archives, { recursive: true, mode: 0o755 });
   await rm(layout.staging, { recursive: true, force: true });
   await mkdir(layout.staging, { mode: 0o700 });
+}
+
+/**
+ * Windows: the services run as LocalService (S-1-5-19), which must read and list the packages
+ * the loader verifies and imports, and nothing more; the administrators keep the inherited full
+ * control. `/grant:r` replaces an earlier grant of the same account, so the call is repeatable.
+ * Linux needs nothing: directories 0755 and files 0644 of root are readable by the service.
+ */
+async function grantServiceRead(directory: string): Promise<void> {
+  const icacls = join(process.env['SystemRoot'] ?? 'C:\\Windows', 'System32', 'icacls.exe');
+  await commandOutput(icacls, [directory, '/grant:r', '*S-1-5-19:(OI)(CI)RX']);
 }
 
 function referenced(set: ModuleSet, id: string, version: string): boolean {
@@ -158,10 +101,6 @@ export async function discardUnreferenced(root: string, set: ModuleSet): Promise
   }
 }
 
-function retainedOf(value: unknown): readonly RetainedPackage[] {
-  return Array.isArray(value) ? value.map((item: unknown) => retained(item)) : [];
-}
-
 /**
  * `recover` of a module set change (ADR 0059): the previous set returns. Packages that set
  * retained (`modules.retained` of the journal) stay retained, and so do the packages of the
@@ -179,7 +118,7 @@ export async function recoverModuleSet(
     (m) => !previous.some((p) => p.id === m.id && p.version === m.version),
   );
   const kept: RetainedPackage[] = [];
-  for (const item of [...retainedOf(modules['retained']), ...set.retained, ...left])
+  for (const item of [...parseRetained(modules['retained']), ...set.retained, ...left])
     if (!kept.some((p) => p.id === item.id && p.version === item.version))
       kept.push({ id: item.id, version: item.version, sha256: item.sha256 });
   await writeModuleSet(root, { format: 1, modules: previous, retained: kept });
