@@ -76,6 +76,9 @@ test('install, repair and native Setup protect the root before code from it runs
     "if ($name -eq 'runtime' -and (Test-Path -LiteralPath (Join-Path $Root 'database'))) { $readers += 'S-1-5-20' }",
     'Protect-CodeDirectory $path $readers',
     "'config/bootstrap-token.txt','config/postgres.env','github-token.txt','bootstrap.owner'",
+    'Assert-NotLink $path',
+    '& takeown.exe /F $path /A',
+    "& icacls.exe $path /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F'",
   ]);
   inOrder(await read('deploy/register-windows.ps1'), [
     'if (-not $ServicesOnly) {',
@@ -85,6 +88,7 @@ test('install, repair and native Setup protect the root before code from it runs
   inOrder(await read('deploy/native/prepare.ps1'), [
     "if ($fresh) { $protect.Create = @('runtime') }",
     "& (Join-Path $PSScriptRoot 'protect-windows.ps1') @protect",
+    "[IO.File]::Delete((Join-Path $Root 'bootstrap.owner'))",
     'Copy-Item -LiteralPath $shipped',
     'is not part of the shipped runtime',
   ]);

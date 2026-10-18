@@ -9,6 +9,10 @@ if ($fresh) { $protect.Create = @('runtime') }
 & (Join-Path $PSScriptRoot 'protect-windows.ps1') @protect
 # Existing installations keep their runtime and database major. Updates use the journalled updater.
 if ($fresh) {
+  # Setup writes the owner credentials to bootstrap.owner next. A file of that name from before
+  # is removed rather than reused, so no handle opened on it earlier can read them; only
+  # Administrators can create it again in the protected root. File.Delete ignores a missing file.
+  [IO.File]::Delete((Join-Path $Root 'bootstrap.owner'))
   $shipped = Join-Path $Payload 'runtime'
   $runtime = Join-Path $Root 'runtime'
   Copy-Item -LiteralPath $shipped -Destination $Root -Recurse -Force

@@ -122,9 +122,15 @@ foreach ($name in $codeDirectories) {
     Protect-CodeDirectory $path $readers
 }
 # After the code directories: a reset of config gives its files the inherited grants again.
+# github-token.txt and bootstrap.owner may exist in the root before Setup: their owner could
+# rewrite the DACL again, so Administrators take each file first.
 foreach ($name in @('config/bootstrap-token.txt','config/postgres.env','github-token.txt','bootstrap.owner')) {
     $path = Join-Path $Root $name
-    if (Test-Path -LiteralPath $path) {
+    # A link, even a dangling one, would pass what follows to its target.
+    if ($null -ne (Get-EntryAttributes $path)) {
+        Assert-NotLink $path
+        & takeown.exe /F $path /A | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot take ownership of credential file' }
         & icacls.exe $path /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Cannot secure credential file' }
     }

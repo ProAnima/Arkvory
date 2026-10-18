@@ -62,7 +62,8 @@ const codeDirectories = ['runtime', 'releases', 'config', 'modules'];
 
 /**
  * Before registration: the code directories belong to the running user, one grants Users
- * write and holds an entry with its own DACL, as if another account had made them.
+ * write and holds an entry with its own DACL, as if another account had made them. The same
+ * user owns the GitHub token file in the root and a file in the data tree.
  */
 export async function foreignCodeDirectories(root) {
   const user = self();
@@ -74,6 +75,9 @@ export async function foreignCodeDirectories(root) {
   execFileSync('icacls.exe', [join(root, 'releases'), '/grant', '*S-1-5-32-545:(OI)(CI)M']);
   const code = join(root, 'releases', '0.0.1', 'code.js');
   execFileSync('icacls.exe', [code, '/inheritance:r', '/grant:r', `*${user}:F`]);
+  await writeFile(join(root, 'data', 'foreign.marker'), '');
+  for (const file of [join(root, 'github-token.txt'), join(root, 'data', 'foreign.marker')])
+    execFileSync('icacls.exe', [file, '/setowner', `*${user}`]);
 }
 /** After full registration: Administrators own the code directories and only they change them. */
 export function assertCodeDirectories(root) {
@@ -86,12 +90,16 @@ export function assertCodeDirectories(root) {
     nested.rules.every((rule) => rule.endsWith(':True')),
     'No own grants below',
   );
-  // The reset of config does not leave the credential files readable by the services.
-  const token = security(join(root, 'config', 'bootstrap-token.txt'));
-  assert.deepEqual(token.rules, [
-    `S-1-5-18:${fullControl}:False`,
-    `S-1-5-32-544:${fullControl}:False`,
-  ]);
+  // The reset of config does not leave the credential files readable by the services, and a
+  // credential file that another account owned now belongs to Administrators.
+  for (const file of [join(root, 'config', 'bootstrap-token.txt'), join(root, 'github-token.txt')])
+    assert.deepEqual(security(file), {
+      owner: 'S-1-5-32-544',
+      protected: true,
+      rules: [`S-1-5-18:${fullControl}:False`, `S-1-5-32-544:${fullControl}:False`],
+    });
+  // The data tree is not walked.
+  assert.equal(security(join(root, 'data', 'foreign.marker')).owner, self(), 'data keeps owners');
 }
 /** A link at or below a code directory stops registration with a clear error. */
 export async function refuseLinkedCodeDirectories(base, node, prefix) {
