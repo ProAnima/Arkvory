@@ -147,6 +147,15 @@ curl -fsS -H "Authorization: Bearer $ARKVORY_KEY" "https://arkvory.example/api/v
 - 그래픽 설치 프로그램과 `.deb` 및 `.rpm` 패키지는 아직 게시자 인증서로 서명되지 않았습니다. Windows는 게시자를 알 수 없음으로 표시합니다. [GitHub Releases](https://github.com/ProAnima/Arkvory/releases)에서만 다운로드하고 SHA-256 값을 `release-checksums.json`과 비교하세요.
 - 데이터베이스 스키마를 변경하는 릴리스는 서버가 새 백업을 만들고 검증한 후에만 설치됩니다. [업데이트](../install/updates)를 참조하세요.
 
+## Arkvory가 불러오는 코드 {#code-loading}
+
+모든 Arkvory 프로세스는 자신의 릴리스 디렉터리와 Node.js 내장 모듈에서만 JavaScript를 불러옵니다. 서비스, `arkvory`, 설치 프로그램, `arkvoryctl`, Remote Setup이 모두 해당됩니다. Node.js는 원래 모든 상위 디렉터리의 `node_modules` 폴더, 계정의 홈 디렉터리, `NODE_PATH`에서도 라이브러리를 찾습니다. Arkvory는 이 모든 위치를 거부하므로 다른 사람이 그곳에 둔 라이브러리는 절대 실행되지 않습니다.
+
+- 서명된 모듈은 설치의 모듈 디렉터리에서 불러오며, 각 모듈은 자신의 패키지에서만 불러옵니다. [모듈](./modules)을 참고하세요.
+- 서비스 정의는 `NODE_PATH`를 비웁니다.
+- Windows에서는 기본 루트 위의 `%ProgramData%\ProAnima`를 관리자만 변경할 수 있습니다. `%ProgramData%` 자체에는 모든 사용자가 폴더를 만들 수 있습니다. 설치 프로그램은 Arkvory를 설치하거나 서비스를 복구할 때 권한을 변경합니다. 다른 위치의 루트는 상위 폴더의 권한을 그대로 유지합니다. 상위 폴더를 관리자만 변경할 수 있는 위치를 선택하세요.
+- 거부된 라이브러리는 `Cannot find module '…': module resolution is confined to the release directory`와 파일 경로로 끝납니다. Arkvory에는 그 파일이 필요하지 않습니다. 누가 그 파일을 두었는지 확인하세요.
+
 ## ProAnimaStudio 허브로 전송되는 내용 {#hub}
 
 업데이트는 ProAnimaStudio의 허브(`https://hub.proanima.net`)에서 승인됩니다. 서버는 다음 경우에 허브에 접속합니다:

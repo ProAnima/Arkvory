@@ -8,20 +8,21 @@
 
 ## Направление зависимостей
 
-| Модуль         | Разрешённые внутренние зависимости                            | Что запрещено                                               |
-| -------------- | ------------------------------------------------------------- | ----------------------------------------------------------- |
-| domain         | Нет                                                           | HTTP, БД, Node/browser globals, внешние runtime-библиотеки  |
-| application    | domain                                                        | Конкретные адаптеры, transport DTO, глобальная конфигурация |
-| contracts      | Нет                                                           | Домен, application, storage и HTTP server framework         |
-| infrastructure | application, domain, extension-api                            | Приложения, UI и SDK                                        |
-| sdk            | contracts                                                     | Серверные пакеты и Node-only API                            |
-| extension-api  | Нет                                                           | Node/browser globals, внешние runtime-библиотеки, apps      |
-| signing        | extension-api                                                 | Внешние runtime-библиотеки, apps, БД и сеть                 |
-| apps/api       | application, domain, contracts, infrastructure, extension-api | Другие apps и SDK                                           |
-| apps/worker    | application, domain, infrastructure                           | HTTP/Web/SDK                                                |
-| apps/scheduler | application, domain, infrastructure                           | HTTP/Web/SDK                                                |
-| apps/backup    | application, domain, infrastructure                           | HTTP/Web/SDK и другие apps                                  |
-| apps/web       | sdk, contracts                                                | Все серверные пакеты и другие apps                          |
+| Модуль         | Разрешённые внутренние зависимости                                        | Что запрещено                                               |
+| -------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| domain         | Нет                                                                       | HTTP, БД, Node/browser globals, внешние runtime-библиотеки  |
+| application    | domain                                                                    | Конкретные адаптеры, transport DTO, глобальная конфигурация |
+| contracts      | Нет                                                                       | Домен, application, storage и HTTP server framework         |
+| infrastructure | application, domain, extension-api                                        | Приложения, UI и SDK                                        |
+| sdk            | contracts                                                                 | Серверные пакеты и Node-only API                            |
+| extension-api  | Нет                                                                       | Node/browser globals, внешние runtime-библиотеки, apps      |
+| signing        | extension-api                                                             | Внешние runtime-библиотеки, apps, БД и сеть                 |
+| resolution     | Нет                                                                       | Внешние runtime-библиотеки, apps и пакеты репозитория       |
+| apps/api       | application, domain, contracts, infrastructure, extension-api, resolution | Другие apps и SDK                                           |
+| apps/worker    | application, domain, infrastructure, resolution                           | HTTP/Web/SDK                                                |
+| apps/scheduler | application, domain, infrastructure                                       | HTTP/Web/SDK                                                |
+| apps/backup    | application, domain, infrastructure, resolution                           | HTTP/Web/SDK и другие apps                                  |
+| apps/web       | sdk, contracts                                                            | Все серверные пакеты и другие apps                          |
 
 Импорты типов также соблюдают границы. Межпакетный доступ — по workspace-имени через `src/index.ts`; даже разрешённый соседний пакет не открывает все свои внутренние файлы. Граф проверяется dependency-cruiser. Для domain/application дополнительно запрещены runtime-зависимости на сторонние пакеты и Node builtins; `import type` не должен использоваться для обхода модели.
 
@@ -98,7 +99,9 @@ SDK использует композицию: публичный ArkvoryClient 
 
 Комплекты запуска делегируют тому же deploy CLI. Релизный pipeline разделяет read-only сборку/приёмку и привилегированную публикацию уже проверенных байтов; состав и хеши assets проверяются перед публикацией. [ADR 0032](adr/0032-tested-release-bundles.md).
 
-Удалённый `arkvoryctl` находится в `apps/cli`, зависит только от SDK/contracts и не имеет доступа к внутренним слоям сервера. CLI владеет профилями и локальными чекпойнтами; протокол, авторизация и сетевые повторы остаются в SDK. Устанавливается отдельными клиентскими пакетами с private runtime. [ADR 0034](adr/0034-remote-client-cli.md), [справка](CLI.md).
+Каждая поставляемая точка входа (`apps/api`, `apps/worker`, `apps/backup`, `apps/deploy`, `apps/cli`) первым импортом подключает `confine.js` своего приложения: пакет `resolution` ограничивает разрешение модулей Node.js каталогом релиза и встроенными модулями, бандлы — только встроенными, пока код не назовёт релиз. [ADR 0031, дополнение 2026-10-18](adr/0031-release-installation-and-supervision.md#confinement).
+
+Удалённый `arkvoryctl` находится в `apps/cli`, зависит только от SDK/contracts (и `resolution` для ограничения своей загрузки) и не имеет доступа к внутренним слоям сервера. CLI владеет профилями и локальными чекпойнтами; протокол, авторизация и сетевые повторы остаются в SDK. Устанавливается отдельными клиентскими пакетами с private runtime. [ADR 0034](adr/0034-remote-client-cli.md), [справка](CLI.md).
 
 Единая идентичность Arkvory и чистая дорелизная установка описаны в [ADR 0040](adr/0040-arkvory-identity.md). Все имена конфигурации, SQL, сервисных ключей и локального состояния используют Arkvory; нормализатор альтернативных имён и зависимость worker от contracts удалены.
 

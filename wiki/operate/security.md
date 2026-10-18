@@ -147,6 +147,15 @@ Every release has a manifest `arkvory-release.json` with the SHA-256 of its arch
 - The graphical installer and the `.deb` and `.rpm` packages are not signed with a publisher certificate yet. Windows shows the publisher as unknown. Download them only from [GitHub Releases](https://github.com/ProAnima/Arkvory/releases) and compare the SHA-256 values with `release-checksums.json`.
 - A release that changes the database schema installs only after the server has made and verified a fresh backup. See [Updates](../install/updates).
 
+## Code that Arkvory loads {#code-loading}
+
+Every Arkvory process loads JavaScript only from its own release directory and from the built-in modules of Node.js: the services, `arkvory`, the installers, `arkvoryctl` and Remote Setup. Node.js would also look for a library in the `node_modules` folder of every parent directory, in the home directory of the account and in `NODE_PATH`. Arkvory refuses all of these places, so a library that someone else puts there never runs.
+
+- Signed modules load from the module directory of the installation, and each module only from its own package. See [Modules](./modules).
+- The service definitions clear `NODE_PATH`.
+- On Windows only administrators may change `%ProgramData%\ProAnima` above the default root. Every user may create folders in `%ProgramData%` itself. Setup changes the permissions when it installs Arkvory or repairs the services. A root in another place keeps the permissions of its parents: choose one whose parent folders only administrators can change.
+- A refused library ends with `Cannot find module '…': module resolution is confined to the release directory` and the path of the file. Arkvory does not need that file. Find out who put it there.
+
 ## What is sent to the ProAnimaStudio hub {#hub}
 
 Updates are approved in the hub of ProAnimaStudio (`https://hub.proanima.net`). The server contacts it in these cases:
