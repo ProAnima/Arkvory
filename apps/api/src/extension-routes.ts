@@ -7,6 +7,7 @@ import { READING_ACTIONS, type CheckedRoute } from './extension-route-check.js';
 import {
   answerOf,
   closeBody,
+  immutableCaching,
   ModuleResponseError,
   sendAnswer,
   type ResponseServices,
@@ -235,6 +236,7 @@ export function registerExtensionRoutes(
       method: route.method === 'GET' ? ['GET', 'HEAD'] : route.method,
       url: route.path,
       ...(route.body.kind === 'json' ? { bodyLimit: route.body.limit } : {}),
+      onSend: immutableCaching,
       handler: (request, reply) => handleRoute(route, request, reply, services, receiver),
     });
   };

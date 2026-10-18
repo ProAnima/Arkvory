@@ -45,8 +45,11 @@ export class ModuleResponseError extends Error {
 
 const MEDIA_TYPE =
   /^[a-z0-9][a-z0-9!#$&^_.+-]{0,63}\/[a-z0-9][a-z0-9!#$&^_.+-]{0,63}(?:; ?charset=[a-z0-9_-]{1,32})?$/;
-/** Types a browser may render as a document or run (ADR 0082, 7.6): refused for every module. */
-const ACTIVE_TYPE = /html|xml|svg|javascript|ecmascript/;
+/**
+ * Types a browser may render as a document or run (ADR 0082, 7.6): refused for every module. The
+ * script part covers every JavaScript MIME type of the WHATWG MIME Sniffing standard.
+ */
+const ACTIVE_TYPE = /html|xml|svg|javascript|ecmascript|jscript|livescript/;
 const STRONG_ETAG = /^"[\x21\x23-\x7e]{1,128}"$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 /** A year: the longest a private cache keeps a published blob (ADR 0083, N7). */
@@ -102,11 +105,7 @@ function streamAnswer(value: unknown, route: CheckedRoute): Answer {
   return { kind: 'stream', contentType, length, etag, body };
 }
 
-/**
- * Reads a handler's answer as untrusted input (`ModuleResponse` of extension-api). The JSON of a
- * `json` answer is serialized here, within the route's limit.
- */
-export function answerOf(value: unknown, route: CheckedRoute): Answer {
+function readAnswer(value: unknown, route: CheckedRoute): Answer {
   const kind = field(value, 'kind');
   if (kind === 'json') {
     const status = field(value, 'status');
@@ -137,15 +136,33 @@ export function answerOf(value: unknown, route: CheckedRoute): Answer {
   return { kind: 'error', code };
 }
 
-/** Closes the body of an answer the core does not send; a failure to close is the module's. */
-export function closeBody(value: unknown): void {
-  const body = field(value, 'body');
-  if (!isIterable(body)) return;
+/**
+ * Reads a handler's answer as untrusted input (`ModuleResponse` of extension-api). The JSON of a
+ * `json` answer is serialized here, within the route's limit. Whatever fails while the answer is
+ * read (a getter or a proxy of the module that throws) is an answer outside the contract too.
+ */
+export function answerOf(value: unknown, route: CheckedRoute): Answer {
   try {
+    return readAnswer(value, route);
+  } catch (error) {
+    if (error instanceof ModuleResponseError) throw error;
+    throw new ModuleResponseError('Unreadable answer', { cause: error });
+  }
+}
+
+/**
+ * Closes the body of an answer the core does not send; a failure to close is the module's. It
+ * never throws: it also runs on late answers, where a throw would be an unhandled rejection
+ * and stop the process (crash-only policy).
+ */
+export function closeBody(value: unknown): void {
+  try {
+    const body = field(value, 'body');
+    if (!isIterable(body)) return;
     const iterator = body[Symbol.asyncIterator]();
     void Promise.resolve(iterator.return?.()).catch(() => undefined);
   } catch {
-    // A body that cannot even give an iterator holds nothing the core could release.
+    // An answer that cannot even give its body holds nothing the core could release.
   }
 }
 
@@ -212,6 +229,31 @@ export interface ResponseCall {
   readonly signal: AbortSignal;
 }
 
+/** Replies of `content` answers with `cache: 'immutable'`, until they are sent. */
+const immutable = new WeakSet<FastifyReply>();
+/** The published bytes, whole or in part, or the confirmation that a cached copy is current. */
+const CACHEABLE = [200, 206, 304];
+
+/**
+ * `onSend` of module routes: a year of private caching only for the published bytes of a
+ * `content` answer with `cache: 'immutable'`. A refusal, a queued download (503), an
+ * unsatisfiable range (416) or any other answer on the same URL is `no-store`: a cache must
+ * never keep it in place of the bytes. The content sender answers some of them without a throw,
+ * so the status decides here, right before the headers leave.
+ */
+export function immutableCaching(
+  _request: FastifyRequest,
+  reply: FastifyReply,
+  payload: unknown,
+): Promise<unknown> {
+  if (immutable.has(reply))
+    reply.header(
+      'Cache-Control',
+      CACHEABLE.includes(reply.statusCode) ? IMMUTABLE_CACHE : 'private, no-store',
+    );
+  return Promise.resolve(payload);
+}
+
 /**
  * Sends a checked answer: JSON as it is, content through the core's content sender (pin,
  * `content.read`, ETag, 304, Range, `If-Range`, the download queue and bandwidth), a stream
@@ -234,15 +276,7 @@ export async function sendAnswer(
     case 'stream':
       return sendStream(answer, route, call);
     case 'content':
-      if (!answer.immutable)
-        return services.sendContent(request, reply, answer.repository, answer.artifact);
-      reply.header('Cache-Control', IMMUTABLE_CACHE);
-      try {
-        return await services.sendContent(request, reply, answer.repository, answer.artifact);
-      } catch (error) {
-        // A refusal or a queued download is not the published bytes: nothing may cache it.
-        reply.header('Cache-Control', 'private, no-store');
-        throw error;
-      }
+      if (answer.immutable) immutable.add(reply);
+      return services.sendContent(request, reply, answer.repository, answer.artifact);
   }
 }

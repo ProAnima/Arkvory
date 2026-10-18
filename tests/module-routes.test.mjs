@@ -629,6 +629,76 @@ test('requests and answers outside the contract never reach the client as they a
   assert.equal(readOnly.json().code, 'read_only');
 });
 
+test('an answer that throws while the core reads it fails the request, never the process', async (t) => {
+  const rejections = [];
+  const record = (reason) => rejections.push(reason);
+  process.on('unhandledRejection', record);
+  t.after(() => process.off('unhandledRejection', record));
+  // A getter that throws, as an answer class whose body was already taken would.
+  const hostile = () => ({
+    kind: 'stream',
+    contentType: 'text/plain',
+    length: null,
+    etag: null,
+    get body() {
+      throw new Error('body already taken');
+    },
+  });
+  const s = await server(t, [
+    route({ path: `${prefix}now`, operationId: 'echo.now', handle: async () => hostile() }),
+    route({
+      path: `${prefix}later`,
+      operationId: 'echo.later',
+      timeoutMs: 20,
+      handle: () => new Promise((resolve) => setTimeout(() => resolve(hostile()), 60)),
+    }),
+  ]);
+  const now = await s.app.inject({ url: `${prefix}now` });
+  assert.equal(now.statusCode, 500);
+  assert.ok(s.log.some((r) => r.code === 'module.response_invalid' && r.module === 'echo'));
+  assert.equal((await s.app.inject({ url: `${prefix}later` })).statusCode, 503);
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  assert.deepEqual(rejections, [], 'a late answer the core cannot close is dropped quietly');
+});
+
+test('stream answers never carry a script type; immutable caching only for the bytes', async (t) => {
+  const typed = (contentType) =>
+    route({
+      path: `${prefix}typed/:n`,
+      operationId: 'echo.typed',
+      handle: async () => ({
+        kind: 'stream',
+        contentType,
+        length: 0,
+        etag: null,
+        body: (async function* () {})(),
+      }),
+    });
+  for (const type of ['text/jscript', 'text/livescript', 'application/x-javascript']) {
+    const s = await server(t, [typed(type)]);
+    assert.equal((await s.app.inject({ url: `${prefix}typed/1` })).statusCode, 500, type);
+  }
+  const s = await server(t, [
+    route({
+      path: `${prefix}files/:id`,
+      operationId: 'echo.file',
+      handle: async (request) => ({
+        kind: 'content',
+        repository: 'releases',
+        artifact: request.params.id,
+        cache: 'immutable',
+      }),
+    }),
+  ]);
+  const url = `${prefix}files/artifact`;
+  const whole = await s.app.inject({ url });
+  assert.equal(whole.statusCode, 200);
+  assert.equal(whole.headers['cache-control'], 'private, max-age=31536000, immutable');
+  const unsatisfiable = await s.app.inject({ url, headers: { range: 'bytes=9000-' } });
+  assert.equal(unsatisfiable.statusCode, 416);
+  assert.equal(unsatisfiable.headers['cache-control'], 'private, no-store');
+});
+
 test('the combined document shows a caller only what it may call', () => {
   const routes = checkRoutes(
     [
