@@ -233,12 +233,17 @@ export function modulePackage(signer, manifest = {}, options = {}) {
 export async function protectRoot(root) {
   if (process.platform !== 'win32') return chmod(root, 0o700);
   const script = [
-    '$owner = (Get-Acl -LiteralPath $env:ARKVORY_TEST_ROOT).GetOwner([Security.Principal.SecurityIdentifier]).Value',
+    '$owner = [IO.Directory]::GetAccessControl($env:ARKVORY_TEST_ROOT).GetOwner([Security.Principal.SecurityIdentifier]).Value',
     "& icacls.exe $env:ARKVORY_TEST_ROOT /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' ('*' + $owner + ':(OI)(CI)F') | Out-Null",
     'exit $LASTEXITCODE',
   ].join('; ');
+  // .NET rather than Get-Acl, and no PSModulePath: a runner step in PowerShell 7 hands its module
+  // path down, and Windows PowerShell cannot load the Security module of PowerShell 7.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
+  );
   execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
-    env: { ...process.env, ARKVORY_TEST_ROOT: root },
+    env: { ...env, ARKVORY_TEST_ROOT: root },
     windowsHide: true,
   });
 }
