@@ -46,6 +46,7 @@ export const SECTIONS: readonly Section[] = [
       'monitoring',
       'self-healing',
       'modules',
+      'licenses',
       'security',
       'troubleshooting',
     ],
