@@ -82,7 +82,7 @@ arkvoryctl storage placement --repository releases --revision 0 --file rules.jso
 - 정책을 읽으려면 `storage.read`, 변경하려면 `storage.manage`가 필요합니다. 응답에는 모든 스토리지와 그 상태도 나열됩니다: `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` 또는 `not_loaded`.
 - 규칙에는 구성된 스토리지만 지정할 수 있습니다. 다른 이름은 400 `backend_unknown`으로 거부됩니다.
 - 정책은 리비전과 함께 저장됩니다. 다른 사람이 변경했다면 다시 읽고 다시 저장하세요.
-- 변경은 새 업로드에만 적용됩니다. 이미 저장된 파일은 볼륨 사이에서 절대 이동하지 않습니다.
+- 변경은 새 업로드에만 적용됩니다. 이미 저장된 파일은 그 자리에 남습니다. 옮기려면 [저장된 파일을 다른 볼륨으로 이동](#rehome)을 참조하세요.
 
 ### 볼륨이 새 업로드를 받지 않을 때 {#placement-fallback}
 
@@ -94,9 +94,30 @@ arkvoryctl storage placement --repository releases --revision 0 --file rules.jso
 - **할당량과 한도.** 할당량과 `ARKVORY_CAPACITY_BYTES`는 모든 볼륨을 합쳐 계산합니다. 예약 공간은 볼륨마다 적용됩니다.
 - raw, OCI, 미러 업로드의 **임시 파일**은 스토리지 디렉터리 `default`에 남습니다.
 - **클러스터.** [고가용성 클러스터](./cluster)에서는 스토리지 디렉터리처럼 모든 볼륨이 복제되는 볼륨 위의 디렉터리여야 합니다. 다른 디스크는 다른 서버로 복사되지 않습니다. 그렇지 않으면 API가 시작되지 않습니다.
-- **구성에서 제거된 볼륨.** Arkvory는 데이터를 담았던 모든 볼륨을 기억합니다. 볼륨이 더 이상 모듈 파일에 없으면 그 파일은 다운로드하거나 정리하거나 백업할 수 없으며, 백업은 `blob_missing`으로 실패합니다. 모든 프로세스가 메트릭 `arkvory_storage_backend_unconfigured`, 로그 줄 `storage.backend_unconfigured`, 경고 `ArkvoryStorageVolumeUnconfigured`로 이를 알리고, 배치 응답은 이 볼륨을 `not_loaded` 상태로 표시합니다. 해결하려면 다시 구성하세요. 볼륨을 퇴역시키려면 `acceptsWrites: false`로 구성에 남겨 두세요. 저장된 파일은 볼륨 간에 이동하지 않습니다.
+- **구성에서 제거된 볼륨.** Arkvory는 데이터를 담았던 모든 볼륨을 기억합니다. 볼륨이 더 이상 모듈 파일에 없으면 그 파일은 다운로드하거나 정리하거나 백업할 수 없으며, 백업은 `blob_missing`으로 실패합니다. 모든 프로세스가 메트릭 `arkvory_storage_backend_unconfigured`, 로그 줄 `storage.backend_unconfigured`, 경고 `ArkvoryStorageVolumeUnconfigured`로 이를 알리고, 배치 응답은 이 볼륨을 `not_loaded` 상태로 표시합니다. 해결하려면 다시 구성하세요. 볼륨을 퇴역시키려면 `acceptsWrites: false`를 설정하고, 그 [파일을 다른 볼륨으로 옮긴](#rehome) 뒤 이동이 끝날 때까지 구성에 남겨 두세요.
 
 `arkvory_storage_backend_up`과 `arkvory_storage_backend_accepting`을 관찰하세요. [모니터링](./monitoring#metrics)을 참조하세요. 백업은 모든 볼륨을 복사합니다. 복원에는 볼륨마다 빈 디렉터리가 필요합니다. [여러 볼륨 복원](./backups#restore-volumes)을 참조하세요.
+
+### 저장된 파일을 다른 볼륨으로 이동 {#rehome}
+
+볼륨을 퇴역시키거나 새 볼륨을 채우는 경우처럼 이미 저장된 파일을 옮기려면 서버에서 이동을 계획하세요. 서비스는 계속 실행됩니다.
+
+```bash
+arkvory storage rehome --root /opt/proanima-arkvory --from volume-2 --to default
+arkvory storage moves --root /opt/proanima-arkvory
+```
+
+1. `rehome`은 `--from` 스토리지의 게시된 모든 파일에 대해 이동을 계획하고, 계획한 수와 상태별 이동을 출력합니다. `--repository <name>`은 리포지토리 하나로, `--limit <n>`은 파일 수로 범위를 제한합니다(기본값 10 000, 최대 100 000). 이미 진행 중인 이동이 있는 파일은 다시 계획하지 않습니다. 두 스토리지 모두 구성되어 있어야 합니다. 대상은 새 업로드를 받아야 하며, 그렇지 않으면 명령이 `backend_read_only`로 실패합니다. 원본은 읽기 전용이어도 됩니다.
+2. 워커가 이동을 한 번에 두 개씩 수행합니다. 각 파일에 대해 바이트를 대상으로 복사하고 크기와 SHA-256을 확인한 다음, 파일을 대상으로 전환하고 원본의 복사본을 제거합니다. 파일은 ID를 유지하므로 링크, 경로, 스테이지, 참조가 그대로 유효합니다.
+3. `moves`는 상태별 이동을 출력합니다: `planned`, `copied`, `switched`, `released`(완료), `skipped`(그 사이에 파일이 삭제됨, 대상의 복사본은 제거됨), `failed`.
+
+- **다운로드와 백업.** 전환 전에 시작된 다운로드는 끝까지 원본에서 읽습니다. 원본 복사본은 그 다운로드와 해당 파일을 포함하는 모든 백업이 끝난 뒤에만 제거됩니다. 제거는 기다릴 뿐 다운로드를 막지 않습니다.
+- **실패.** 실패한 단계는 점점 길어지는 간격으로 반복됩니다. 5번 시도에 실패하거나 대상이 업로드를 받지 않게 되면 이동은 `failed`가 되고 파일은 제자리에 남습니다. 새 이동을 계획하려면 `rehome`을 다시 실행하세요. 다음 이동은 실패한 이동이 대상에 남긴 복사본을 확인하고 재사용합니다.
+- **속도.** `ARKVORY_REHOME_BYTES_PER_SECOND`는 워커의 복사 속도를 제한합니다. 기본적으로 제한이 없습니다.
+- **할당량**은 이동 중과 이동 후 모두 각 파일을 한 번만 계산합니다.
+- Docker Compose에서는 명령이 일회성 워커 컨테이너를 실행합니다.
+
+워커는 로그 줄 `storage.move_completed`, `storage.move_skipped`, `storage.move_failed`를 기록합니다.
 
 ## 디스크 계획 {#disk}
 
@@ -113,6 +134,8 @@ arkvoryctl storage placement --repository releases --revision 0 --file rules.jso
 스토리지 외에도 PostgreSQL 데이터베이스, 로그, 백업 보관소를 가능하면 각각 별도의 볼륨에 계획하세요. [백업](./backups)을 참조하세요.
 
 Arkvory는 스토리지 볼륨에 여유 공간의 **예비 영역**을 유지합니다. 기본값은 1 GiB(`ARKVORY_STORAGE_RESERVE_BYTES`)입니다. 예비 영역을 사용하게 될 업로드는 HTTP 507과 사유 `storage_full`로 거부됩니다. 다운로드는 계속 동작합니다. 새 데이터를 위한 공간이 없는 동안 `GET /health/ready`는 `writable: false`를 표시합니다.
+
+Arkvory는 각 볼륨에 inode 100 000개도 비워 둡니다(`ARKVORY_STORAGE_RESERVE_INODES`). 저장된 파일과 파트는 모두 각각 하나의 파일이므로, 볼륨은 바이트보다 inode가 먼저 바닥날 수 있습니다. 이 inode를 사용하게 될 쓰기도 같은 방식으로 거부됩니다. NTFS처럼 inode 수가 없는 파일 시스템은 바이트만 확인합니다.
 
 두 가지 제한은 디스크와 독립적으로 동작합니다:
 
@@ -314,7 +337,7 @@ API 작업 [runStoragePolicy](../api/reference/storage#runStoragePolicy)로 배�
 - 물리적 정리는 기본적으로 꺼져 있으며 리포지토리별로 설정합니다.
 - 삭제된 아티팩트는 복원할 수 없습니다. 백업에서 데이터를 복원하세요. [백업](./backups)을 참조하세요.
 - 미러된 리포지토리는 스토리지 정책을 실행하지 않습니다. [미러](./mirrors)를 참조하세요.
-- 스토리지는 로컬 파일 시스템이어야 합니다. 네트워크 공유는 지원하지 않습니다. 추가 [볼륨](#volumes)도 로컬 디렉터리이며, Arkvory는 저장된 파일을 볼륨 사이에서 옮기지 않습니다.
+- 스토리지는 로컬 파일 시스템이어야 합니다. 네트워크 공유는 지원하지 않습니다. 추가 [볼륨](#volumes)도 로컬 디렉터리입니다. 저장된 파일은 API가 아니라 서버의 명령 [`arkvory storage rehome`](#rehome)으로만 볼륨 사이에서 옮겨집니다.
 - Windows에서 Arkvory는 각 파일을 디스크에 동기화하지만, 파일을 게시하는 디렉터리 항목은 동기화할 수 없습니다. Node.js가 그곳에서 디렉터리 동기화를 제공하지 않기 때문입니다. 업로드 직후 정전이 일어나면 게시된 파일이 디스크에서 사라질 수 있습니다. UPS를 사용하고 [백업](./backups)이나 [미러](./mirrors)를 유지하십시오. Linux에서는 디렉터리 항목도 동기화됩니다.
 
 ## 관련 페이지 {#related-pages}

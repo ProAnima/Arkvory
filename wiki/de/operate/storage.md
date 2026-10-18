@@ -82,7 +82,7 @@ Die Datei `rules.json` enthält die Liste der Regeln, zum Beispiel alle Dateien 
 - Zum Lesen der Richtlinie ist `storage.read` nötig, zum Ändern `storage.manage`. Die Antwort listet außerdem jeden Speicher mit seinem Zustand: `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` oder `not_loaded`.
 - Eine Regel kann nur einen konfigurierten Speicher nennen. Ein anderer Name wird mit 400 `backend_unknown` abgelehnt.
 - Die Richtlinie wird mit einer Revision gespeichert. Wenn jemand anderes sie geändert hat, lesen Sie sie erneut und speichern Sie noch einmal.
-- Eine Änderung gilt nur für neue Uploads. Bereits gespeicherte Dateien wandern nie zwischen Volumes.
+- Eine Änderung gilt nur für neue Uploads. Bereits gespeicherte Dateien bleiben, wo sie sind; um sie zu verschieben, siehe [Gespeicherte Dateien auf ein anderes Volume verschieben](#rehome).
 
 ### Wenn ein Volume keine neuen Uploads annimmt {#placement-fallback}
 
@@ -94,9 +94,30 @@ Die Veröffentlichung schlägt nie wegen der Platzierung fehl. Wenn der gewählt
 - **Kontingente und Grenzen.** Kontingente und `ARKVORY_CAPACITY_BYTES` zählen alle Volumes zusammen. Die Reserve gilt für jedes Volume einzeln.
 - **Temporäre Dateien** von Raw-, OCI- und Spiegel-Uploads bleiben im Speicherverzeichnis `default`.
 - **Cluster.** In einem [Hochverfügbarkeitscluster](./cluster) muss jedes Volume ein Verzeichnis auf dem replizierten Volume sein, wie das Speicherverzeichnis: Eine andere Festplatte wird nicht auf die anderen Server kopiert. Sonst startet die API nicht.
-- **Ein aus der Konfiguration entferntes Volume.** Arkvory merkt sich jedes Volume, das Daten enthielt. Steht eines nicht mehr in der Moduldatei, können seine Dateien weder heruntergeladen noch bereinigt noch gesichert werden: Eine Sicherung schlägt mit `blob_missing` fehl. Jeder Prozess meldet das mit der Metrik `arkvory_storage_backend_unconfigured`, der Logzeile `storage.backend_unconfigured` und dem Alarm `ArkvoryStorageVolumeUnconfigured`, und die Antwort der Platzierung führt es mit dem Zustand `not_loaded`. Konfigurieren Sie es wieder, um das zu beheben. Um ein Volume außer Betrieb zu nehmen, lassen Sie es mit `acceptsWrites: false` konfiguriert: Gespeicherte Dateien wandern nie zwischen Volumes.
+- **Ein aus der Konfiguration entferntes Volume.** Arkvory merkt sich jedes Volume, das Daten enthielt. Steht eines nicht mehr in der Moduldatei, können seine Dateien weder heruntergeladen noch bereinigt noch gesichert werden: Eine Sicherung schlägt mit `blob_missing` fehl. Jeder Prozess meldet das mit der Metrik `arkvory_storage_backend_unconfigured`, der Logzeile `storage.backend_unconfigured` und dem Alarm `ArkvoryStorageVolumeUnconfigured`, und die Antwort der Platzierung führt es mit dem Zustand `not_loaded`. Konfigurieren Sie es wieder, um das zu beheben. Um ein Volume außer Betrieb zu nehmen, setzen Sie `acceptsWrites: false`, [verschieben Sie seine Dateien](#rehome) auf ein anderes Volume und lassen Sie es konfiguriert, bis die Verschiebungen abgeschlossen sind.
 
 Beobachten Sie `arkvory_storage_backend_up` und `arkvory_storage_backend_accepting`, siehe [Monitoring](./monitoring#metrics). Backups kopieren jedes Volume. Eine Wiederherstellung braucht ein leeres Verzeichnis für jedes Volume, siehe [Mehrere Volumes wiederherstellen](./backups#restore-volumes).
+
+### Gespeicherte Dateien auf ein anderes Volume verschieben {#rehome}
+
+Um bereits gespeicherte Dateien zu verschieben, zum Beispiel um ein Volume außer Betrieb zu nehmen oder ein neues zu füllen, planen Sie die Verschiebungen auf dem Server. Die Dienste laufen weiter.
+
+```bash
+arkvory storage rehome --root /opt/proanima-arkvory --from volume-2 --to default
+arkvory storage moves --root /opt/proanima-arkvory
+```
+
+1. `rehome` plant eine Verschiebung für jede veröffentlichte Datei des Speichers `--from` und gibt aus, wie viele es geplant hat und wie viele Verschiebungen in welchem Zustand sind. `--repository <name>` beschränkt es auf ein Repository, `--limit <n>` auf eine Anzahl von Dateien (standardmäßig 10 000, höchstens 100 000). Eine Datei, für die bereits eine Verschiebung läuft, wird nicht erneut eingeplant. Beide Speicher müssen konfiguriert sein. Das Ziel muss neue Uploads annehmen, sonst schlägt der Befehl mit `backend_read_only` fehl. Die Quelle darf schreibgeschützt sein.
+2. Der Worker führt die Verschiebungen aus, jeweils zwei gleichzeitig. Für jede Datei kopiert er die Bytes zum Ziel und prüft Größe und SHA-256, schaltet die Datei auf das Ziel um und entfernt dann die Kopie in der Quelle. Die Datei behält ihre ID: Links, Pfade, Stufen und Referenzen bleiben gültig.
+3. `moves` gibt die Verschiebungen nach Zustand aus: `planned`, `copied`, `switched`, `released` (erledigt), `skipped` (die Datei wurde inzwischen gelöscht; ihre Kopie im Ziel wurde entfernt) und `failed`.
+
+- **Downloads und Backups.** Ein Download, der vor dem Umschalten begonnen hat, liest bis zu seinem Ende aus der Quelle. Die Kopie in der Quelle wird erst nach diesem Download und nach jedem Backup entfernt, das die Datei enthält. Das Entfernen wartet; es blockiert nie einen Download.
+- **Fehler.** Ein fehlgeschlagener Schritt wird mit wachsender Pause wiederholt. Nach 5 fehlgeschlagenen Versuchen oder wenn das Ziel keine Uploads mehr annimmt, ist die Verschiebung `failed`, und die Datei bleibt, wo sie ist. Führen Sie `rehome` erneut aus, um eine neue Verschiebung zu planen. Die nächste Verschiebung prüft eine Kopie, die eine fehlgeschlagene Verschiebung im Ziel hinterlassen hat, und verwendet sie weiter.
+- **Geschwindigkeit.** `ARKVORY_REHOME_BYTES_PER_SECOND` begrenzt, wie schnell der Worker kopiert. Standardmäßig gibt es keine Grenze.
+- **Kontingente** zählen jede Datei einmal, während und nach der Verschiebung.
+- Mit Docker Compose startet der Befehl einen einmaligen Worker-Container.
+
+Der Worker schreibt die Logzeilen `storage.move_completed`, `storage.move_skipped` und `storage.move_failed`.
 
 ## Den Datenträger planen {#disk}
 
@@ -113,6 +134,8 @@ Folgendes belegt Datenträgerspeicher auf dem Speicher-Volume:
 Planen Sie neben dem Speicher nach Möglichkeit die PostgreSQL-Datenbank, die Logs und den Backup-Speicher auf eigenen Volumes. Siehe [Backups](./backups).
 
 Arkvory hält eine **Reserve** an freiem Speicherplatz auf dem Speicher-Volume. Standardmäßig sind es 1 GiB (`ARKVORY_STORAGE_RESERVE_BYTES`). Ein Upload, der die Reserve nutzen würde, wird mit HTTP 507 und dem Grund `storage_full` abgelehnt. Downloads funktionieren weiter. `GET /health/ready` zeigt `writable: false`, solange kein Platz für neue Daten ist.
+
+Arkvory hält außerdem auf jedem Volume 100 000 Inodes frei (`ARKVORY_STORAGE_RESERVE_INODES`): Jede gespeicherte Datei und jeder Teil ist eine Datei, daher können einem Volume die Inodes ausgehen, bevor ihm die Bytes ausgehen. Ein Schreibvorgang, der sie verwenden würde, wird auf dieselbe Weise abgelehnt. Dateisysteme ohne Inode-Zählung, etwa NTFS, werden nur auf Bytes geprüft.
 
 Zwei Grenzen wirken unabhängig vom Datenträger:
 
@@ -314,7 +337,7 @@ Wenn ein Upload stattdessen mit dem Grund `storage_quota` oder `catalog_limit` f
 - Die physische Bereinigung ist standardmäßig aus und wird für jedes Repository festgelegt.
 - Ein gelöschtes Artefakt kann nicht wiederhergestellt werden. Stellen Sie Daten aus einem Backup wieder her. Siehe [Backups](./backups).
 - Gespiegelte Repositorys führen keine Speicherrichtlinie aus. Siehe [Spiegel](./mirrors).
-- Der Speicher muss ein lokales Dateisystem sein. Es gibt keine Unterstützung für Netzwerkfreigaben. Zusätzliche [Volumes](#volumes) sind ebenfalls lokale Verzeichnisse, und Arkvory verschiebt gespeicherte Dateien nicht zwischen ihnen.
+- Der Speicher muss ein lokales Dateisystem sein. Es gibt keine Unterstützung für Netzwerkfreigaben. Zusätzliche [Volumes](#volumes) sind ebenfalls lokale Verzeichnisse. Gespeicherte Dateien wandern zwischen ihnen nur durch den Befehl auf dem Server, [`arkvory storage rehome`](#rehome), nicht über die API.
 - Unter Windows schreibt Arkvory jede Datei fest auf den Datenträger, kann aber den Verzeichniseintrag, der sie veröffentlicht, nicht synchronisieren: Node.js bietet dort keine Verzeichnissynchronisierung. Ein Stromausfall kurz nach einem Upload kann eine veröffentlichte Datei ohne Inhalt auf dem Datenträger hinterlassen. Verwenden Sie eine USV und halten Sie [Backups](./backups) oder einen [Spiegel](./mirrors) vor. Unter Linux werden auch die Verzeichniseinträge synchronisiert.
 
 ## Verwandte Seiten {#related-pages}

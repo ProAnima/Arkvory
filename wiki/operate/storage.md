@@ -82,7 +82,7 @@ The file `rules.json` holds the list of rules, for example all files of 1 GiB or
 - Reading the policy needs `storage.read`, changing it needs `storage.manage`. The answer also lists every storage with its state: `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` or `not_loaded`.
 - A rule can only name a configured storage. Another name is refused with 400 `backend_unknown`.
 - The policy saves with a revision. If someone else changed it, read it again and save again.
-- A change applies to new uploads only. Files that are already stored never move between volumes.
+- A change applies to new uploads only. Files that are already stored stay where they are; to move them, see [Move stored files to another volume](#rehome).
 
 ### When a volume takes no new uploads {#placement-fallback}
 
@@ -94,9 +94,30 @@ Publication never fails because of placement. If the chosen storage does not acc
 - **Quotas and limits.** Quotas and `ARKVORY_CAPACITY_BYTES` count all volumes together. The reserve applies to each volume.
 - **Temporary files** of raw, OCI and mirror uploads stay in the storage directory `default`.
 - **Cluster.** In a [high availability cluster](./cluster), every volume must be a directory on the replicated volume, like the storage directory: another disk is not copied to the other servers. Otherwise the API does not start.
-- **A volume removed from the configuration.** Arkvory remembers every volume that held data. If one is no longer in the modules file, its files cannot be downloaded, cleaned up or backed up: a backup fails with `blob_missing`. Every process reports it with the metric `arkvory_storage_backend_unconfigured`, the log line `storage.backend_unconfigured` and the alert `ArkvoryStorageVolumeUnconfigured`, and the placement answer lists it as `not_loaded`. Configure it again to fix this. To retire a volume, keep it configured with `acceptsWrites: false`: stored files never move between volumes.
+- **A volume removed from the configuration.** Arkvory remembers every volume that held data. If one is no longer in the modules file, its files cannot be downloaded, cleaned up or backed up: a backup fails with `blob_missing`. Every process reports it with the metric `arkvory_storage_backend_unconfigured`, the log line `storage.backend_unconfigured` and the alert `ArkvoryStorageVolumeUnconfigured`, and the placement answer lists it as `not_loaded`. Configure it again to fix this. To retire a volume, set `acceptsWrites: false`, [move its files](#rehome) to another volume and keep it configured until the moves are done.
 
 Watch `arkvory_storage_backend_up` and `arkvory_storage_backend_accepting`, see [Monitoring](./monitoring#metrics). Backups copy every volume. A restore needs an empty directory for each volume, see [Restore several volumes](./backups#restore-volumes).
+
+### Move stored files to another volume {#rehome}
+
+To move files that are already stored, for example to retire a volume or to fill a new one, plan the moves on the server. The services keep running.
+
+```bash
+arkvory storage rehome --root /opt/proanima-arkvory --from volume-2 --to default
+arkvory storage moves --root /opt/proanima-arkvory
+```
+
+1. `rehome` plans a move for every published file of the `--from` storage and prints how many it planned and the moves by state. `--repository <name>` limits it to one repository, `--limit <n>` to a number of files (10 000 by default, 100 000 at most). A file that already has a move in progress is not planned again. Both storages must be configured. The target must take new uploads, otherwise the command fails with `backend_read_only`. The source may be read-only.
+2. The worker performs the moves, two at a time. For each file it copies the bytes to the target and checks the size and SHA-256, switches the file to the target, then removes the copy in the source. The file keeps its ID: links, paths, stages and references stay valid.
+3. `moves` prints the moves by state: `planned`, `copied`, `switched`, `released` (done), `skipped` (the file was deleted meanwhile; its copy in the target was removed) and `failed`.
+
+- **Downloads and backups.** A download that started before the switch reads to its end from the source. The source copy is removed only after that download and after any backup that includes the file. The removal waits; it never blocks a download.
+- **Failures.** A failed step is repeated with a growing pause. After 5 failed attempts, or when the target stops taking uploads, the move is `failed` and the file stays where it is. Run `rehome` again to plan a new move. The next move checks and reuses a copy that a failed move left in the target.
+- **Speed.** `ARKVORY_REHOME_BYTES_PER_SECOND` limits how fast the worker copies. By default there is no limit.
+- **Quotas** count each file once, during and after the move.
+- With Docker Compose, the command runs a one-off worker container.
+
+The worker writes the log lines `storage.move_completed`, `storage.move_skipped` and `storage.move_failed`.
 
 ## Plan the disk {#disk}
 
@@ -113,6 +134,8 @@ The following uses disk space on the storage volume:
 Besides the storage, plan the PostgreSQL database, the logs and the backup vault on their own volumes if you can. See [Backups](./backups).
 
 Arkvory keeps a **reserve** of free space on the storage volume. By default it is 1 GiB (`ARKVORY_STORAGE_RESERVE_BYTES`). An upload that would use the reserve is refused with HTTP 507 and the reason `storage_full`. Downloads keep working. `GET /health/ready` shows `writable: false` while there is no room for new data.
+
+Arkvory also keeps 100 000 inodes free on each volume (`ARKVORY_STORAGE_RESERVE_INODES`): every stored file and every part is a file, so a volume can run out of inodes before it runs out of bytes. A write that would use them is refused the same way. File systems without an inode count, such as NTFS, are checked for bytes only.
 
 Two limits work independently of the disk:
 
@@ -314,7 +337,7 @@ If an upload fails with the reason `storage_quota` or `catalog_limit` instead, t
 - Physical cleanup is off by default and is set for each repository.
 - A deleted artifact cannot be restored. Restore data from a backup. See [Backups](./backups).
 - Mirrored repositories run no storage policy. See [Mirrors](./mirrors).
-- The storage must be a local file system. There is no support for network shares. Extra [volumes](#volumes) are local directories too, and Arkvory does not move stored files between them.
+- The storage must be a local file system. There is no support for network shares. Extra [volumes](#volumes) are local directories too. Stored files move between them only by the command on the server, [`arkvory storage rehome`](#rehome), not through the API.
 - On Windows, Arkvory syncs each file to disk but cannot sync the directory entry that publishes it: Node.js has no directory sync there. A power loss shortly after an upload can leave a published file missing from the disk. Use a UPS and keep [backups](./backups) or a [mirror](./mirrors). On Linux, the directory entries are synced too.
 
 ## Related pages {#related-pages}

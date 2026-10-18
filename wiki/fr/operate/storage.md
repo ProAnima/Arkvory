@@ -82,7 +82,7 @@ Le fichier `rules.json` contient la liste des règles, par exemple tous les fich
 - La lecture de la politique nécessite `storage.read`, sa modification `storage.manage`. La réponse liste aussi chaque stockage avec son état : `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` ou `not_loaded`.
 - Une règle ne peut nommer qu’un stockage configuré. Un autre nom est refusé avec 400 `backend_unknown`.
 - La politique est enregistrée avec une révision. Si quelqu’un d’autre l’a modifiée, relisez-la et enregistrez à nouveau.
-- Une modification ne s’applique qu’aux nouveaux téléversements. Les fichiers déjà stockés ne passent jamais d’un volume à l’autre.
+- Une modification ne s’applique qu’aux nouveaux téléversements. Les fichiers déjà stockés restent où ils sont ; pour les déplacer, voir [Déplacer les fichiers stockés vers un autre volume](#rehome).
 
 ### Quand un volume n’accepte pas de nouveaux téléversements {#placement-fallback}
 
@@ -94,9 +94,30 @@ La publication n’échoue jamais à cause du placement. Si le stockage choisi n
 - **Quotas et limites.** Les quotas et `ARKVORY_CAPACITY_BYTES` comptent tous les volumes ensemble. La réserve s’applique à chaque volume.
 - **Les fichiers temporaires** des téléversements raw, OCI et de miroir restent dans le répertoire de stockage `default`.
 - **Cluster.** Dans un [cluster haute disponibilité](./cluster), chaque volume doit être un répertoire sur le volume répliqué, comme le répertoire de stockage : un autre disque n’est pas copié sur les autres serveurs. Sinon, l’API ne démarre pas.
-- **Un volume retiré de la configuration.** Arkvory se souvient de chaque volume qui a contenu des données. S’il ne figure plus dans le fichier des modules, ses fichiers ne peuvent être ni téléchargés, ni nettoyés, ni sauvegardés : une sauvegarde échoue avec `blob_missing`. Chaque processus le signale par la métrique `arkvory_storage_backend_unconfigured`, la ligne de journal `storage.backend_unconfigured` et l’alerte `ArkvoryStorageVolumeUnconfigured`, et la réponse du placement l’affiche avec l’état `not_loaded`. Pour corriger cela, configurez-le de nouveau. Pour retirer un volume, gardez-le configuré avec `acceptsWrites: false` : les fichiers enregistrés ne passent jamais d’un volume à l’autre.
+- **Un volume retiré de la configuration.** Arkvory se souvient de chaque volume qui a contenu des données. S’il ne figure plus dans le fichier des modules, ses fichiers ne peuvent être ni téléchargés, ni nettoyés, ni sauvegardés : une sauvegarde échoue avec `blob_missing`. Chaque processus le signale par la métrique `arkvory_storage_backend_unconfigured`, la ligne de journal `storage.backend_unconfigured` et l’alerte `ArkvoryStorageVolumeUnconfigured`, et la réponse du placement l’affiche avec l’état `not_loaded`. Pour corriger cela, configurez-le de nouveau. Pour retirer un volume, définissez `acceptsWrites: false`, [déplacez ses fichiers](#rehome) vers un autre volume et gardez-le configuré jusqu’à la fin des déplacements.
 
 Surveillez `arkvory_storage_backend_up` et `arkvory_storage_backend_accepting`, voir [Supervision](./monitoring#metrics). Les sauvegardes copient chaque volume. Une restauration a besoin d’un répertoire vide pour chaque volume, voir [Restaurer plusieurs volumes](./backups#restore-volumes).
+
+### Déplacer les fichiers stockés vers un autre volume {#rehome}
+
+Pour déplacer des fichiers déjà stockés, par exemple pour retirer un volume ou en remplir un nouveau, planifiez les déplacements sur le serveur. Les services continuent de fonctionner.
+
+```bash
+arkvory storage rehome --root /opt/proanima-arkvory --from volume-2 --to default
+arkvory storage moves --root /opt/proanima-arkvory
+```
+
+1. `rehome` planifie un déplacement pour chaque fichier publié du stockage `--from` et affiche combien il en a planifié ainsi que les déplacements par état. `--repository <name>` le limite à un dépôt, `--limit <n>` à un nombre de fichiers (10 000 par défaut, 100 000 au maximum). Un fichier qui a déjà un déplacement en cours n’est pas planifié de nouveau. Les deux stockages doivent être configurés. La cible doit accepter de nouveaux téléversements, sinon la commande échoue avec `backend_read_only`. La source peut être en lecture seule.
+2. Le worker effectue les déplacements, deux à la fois. Pour chaque fichier, il copie les octets vers la cible et vérifie la taille et le SHA-256, bascule le fichier vers la cible, puis supprime la copie dans la source. Le fichier garde son ID : les liens, les chemins, les étapes et les références restent valides.
+3. `moves` affiche les déplacements par état : `planned`, `copied`, `switched`, `released` (terminé), `skipped` (le fichier a été supprimé entre-temps ; sa copie dans la cible a été supprimée) et `failed`.
+
+- **Téléchargements et sauvegardes.** Un téléchargement commencé avant la bascule lit jusqu’au bout depuis la source. La copie dans la source n’est supprimée qu’après ce téléchargement et après toute sauvegarde qui inclut le fichier. La suppression attend ; elle ne bloque jamais un téléchargement.
+- **Échecs.** Une étape en échec est répétée avec une pause croissante. Après 5 tentatives échouées, ou lorsque la cible n’accepte plus de téléversements, le déplacement passe à `failed` et le fichier reste où il est. Relancez `rehome` pour planifier un nouveau déplacement. Le déplacement suivant vérifie et réutilise une copie qu’un déplacement en échec a laissée dans la cible.
+- **Débit.** `ARKVORY_REHOME_BYTES_PER_SECOND` limite la vitesse de copie du worker. Par défaut, il n’y a pas de limite.
+- **Les quotas** comptent chaque fichier une seule fois, pendant et après le déplacement.
+- Avec Docker Compose, la commande lance un conteneur worker ponctuel.
+
+Le worker écrit les lignes de journal `storage.move_completed`, `storage.move_skipped` et `storage.move_failed`.
 
 ## Planifier le disque {#disk}
 
@@ -113,6 +134,8 @@ Ce qui suit occupe de l’espace disque sur le volume de stockage :
 En plus du stockage, prévoyez si possible la base de données PostgreSQL, les journaux et le stockage des sauvegardes (coffre) sur leurs propres volumes. Voir [Sauvegardes](./backups).
 
 Arkvory conserve une **réserve** d’espace libre sur le volume de stockage. Par défaut, elle est de 1 GiB (`ARKVORY_STORAGE_RESERVE_BYTES`). Un téléversement qui entamerait la réserve est refusé avec HTTP 507 et la raison `storage_full`. Les téléchargements continuent de fonctionner. `GET /health/ready` affiche `writable: false` tant qu’il n’y a pas de place pour de nouvelles données.
+
+Arkvory garde aussi 100 000 inodes libres sur chaque volume (`ARKVORY_STORAGE_RESERVE_INODES`) : chaque fichier stocké et chaque partie est un fichier, donc un volume peut manquer d’inodes avant de manquer d’octets. Une écriture qui les entamerait est refusée de la même façon. Les systèmes de fichiers sans compteur d’inodes, comme NTFS, ne sont vérifiés que pour les octets.
 
 Deux limites fonctionnent indépendamment du disque :
 
@@ -314,7 +337,7 @@ Si un téléversement échoue avec la raison `storage_quota` ou `catalog_limit` 
 - Le nettoyage physique est désactivé par défaut et se définit pour chaque dépôt.
 - Un artefact supprimé ne peut pas être restauré. Restaurez les données depuis une sauvegarde. Voir [Sauvegardes](./backups).
 - Les dépôts en miroir n’exécutent aucune politique de stockage. Voir [Miroirs](./mirrors).
-- Le stockage doit être un système de fichiers local. Les partages réseau ne sont pas pris en charge. Les [volumes](#volumes) supplémentaires sont aussi des répertoires locaux, et Arkvory ne déplace pas les fichiers stockés entre eux.
+- Le stockage doit être un système de fichiers local. Les partages réseau ne sont pas pris en charge. Les [volumes](#volumes) supplémentaires sont aussi des répertoires locaux. Les fichiers stockés ne passent de l’un à l’autre que par la commande sur le serveur, [`arkvory storage rehome`](#rehome), pas par l’API.
 - Sous Windows, Arkvory synchronise chaque fichier sur le disque, mais ne peut pas synchroniser l’entrée de répertoire qui le publie : Node.js n’y offre pas de synchronisation de répertoire. Une coupure de courant peu après un téléversement peut laisser un fichier publié absent du disque. Utilisez un onduleur et gardez des [sauvegardes](./backups) ou un [miroir](./mirrors). Sous Linux, les entrées de répertoire sont aussi synchronisées.
 
 ## Pages associées {#related-pages}

@@ -52,8 +52,9 @@ description: 在主机上安装、启用、检查和移除已签名的模块包�
    { "format": 1, "modules": { "sample": { "enabled": true } } }
    ```
 
-2. 按照[应用更改](../install/configuration#apply-change)重启服务。
-3. 以全局管理员身份检查模块：`GET /api/v1/system/modules` 在 API 和每个读取网关上都显示它为 `running: true`，`health.status` 为 `ok`。
+2. 如果模块会保存文件，请用 `resources` 批准其数据目录的大小，例如在 `enabled` 旁边写 `"resources": { "dataMiB": 512, "dataFiles": 10000 }`。它会取代包所请求的大小。参见[模块的数据目录](#data)。
+3. 按照[应用更改](../install/configuration#apply-change)重启服务。
+4. 以全局管理员身份检查模块：`GET /api/v1/system/modules` 在 API 和每个读取网关上都显示它为 `running: true`，`health.status` 为 `ok`。
 
 API 和读取网关运行模块。worker 检查相同的模块，但不运行任何模块。此版本拒绝在 worker 或备份代理中运行的模块（`role_unsupported`）以及声明自有路由的模块（`routes_unsupported`）。Docker Compose 安装目前还不加载模块。
 
@@ -74,6 +75,12 @@ API 和读取网关运行模块。worker 检查相同的模块，但不运行任
 只有当另一个已启用的模块需要失败的模块时，它才会使 Arkvory 退出就绪状态（`/health/ready` 返回 503 和 `module_failed`）。保存已发布文件字节的模块（数据 `layout`）永远不会这样：Arkvory 继续提供其数据，并把新的上传写入自己的存储而不是模块的存储。日志会记录 `module.refused` 和 `module.failed`，代码在 `errorCode` 中。
 
 要修复被更改或缺失的包，请重新安装它。安装的所有服务必须看到相同的模块，无论是否启用：模块不同的读取网关或 worker 不会就绪（`module_plan_mismatch`）。请在每个读取网关的主机上安装相同的包。
+
+### 模块的数据目录 {#data}
+
+保存自有索引、缓存或状态的模块会在数据卷上获得一个目录：`default` 存储目录中的 `module-data/<id>/`。其中 `data` 部分用于备份，`cache` 部分则不用于备份。Arkvory 把每次写入都计入批准的大小，以 MiB 和文件数计算，两部分合计。超出该大小的写入会被拒绝（`module_quota_exceeded`），模块继续运行。没有批准的大小时，模块只能读取。[卷的预留空间](./storage#disk)同样适用。在读取网关上，模块读取相同的文件，但不能更改它们。
+
+移除模块时会保留其目录。不再需要这些数据时，请自行删除 `module-data/<id>/`。备份目前还不包含模块目录。
 
 ## 更新、固定和降级 {#versions}
 

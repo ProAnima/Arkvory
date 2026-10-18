@@ -52,8 +52,9 @@ Un module installé reste désactivé jusqu’à ce que vous l’activiez. Les s
    { "format": 1, "modules": { "sample": { "enabled": true } } }
    ```
 
-2. Redémarrez les services, comme dans [Appliquer une modification](../install/configuration#apply-change).
-3. Vérifiez le module en tant qu’administrateur global : `GET /api/v1/system/modules` l’affiche avec `running: true` et `health.status` `ok` sur l’API et sur chaque passerelle de lecture.
+2. Si le module conserve des fichiers, approuvez la taille de son répertoire de données avec `resources`, par exemple `"resources": { "dataMiB": 512, "dataFiles": 10000 }` à côté de `enabled`. Elle remplace la taille demandée par le paquet. Voir [Répertoire de données d’un module](#data).
+3. Redémarrez les services, comme dans [Appliquer une modification](../install/configuration#apply-change).
+4. Vérifiez le module en tant qu’administrateur global : `GET /api/v1/system/modules` l’affiche avec `running: true` et `health.status` `ok` sur l’API et sur chaque passerelle de lecture.
 
 L’API et les passerelles de lecture exécutent les modules. Le worker vérifie les mêmes modules et n’en exécute aucun. Cette version refuse les modules qui s’exécutent dans le worker ou dans l’agent de sauvegarde (`role_unsupported`) et ceux qui déclarent leurs propres routes (`routes_unsupported`). Les installations Docker Compose ne chargent pas encore de modules.
 
@@ -74,6 +75,12 @@ Un module qui échoue à une vérification n’est pas chargé ; les autres modu
 Un module en échec ne rend Arkvory non prêt (`/health/ready` répond 503 avec `module_failed`) que si un autre module activé en a besoin. Un module qui stocke les octets des fichiers publiés (données `layout`) ne le fait jamais : Arkvory continue de servir ses données et écrit les nouveaux envois dans son propre stockage au lieu de celui du module. Le journal enregistre `module.refused` et `module.failed` avec le code dans `errorCode`.
 
 Pour réparer un paquet modifié ou absent, installez-le de nouveau. Tous les services de l’installation doivent voir les mêmes modules, activés ou non : une passerelle de lecture ou un worker avec d’autres modules n’est pas prêt (`module_plan_mismatch`). Installez les mêmes paquets sur l’hôte de chaque passerelle de lecture.
+
+### Répertoire de données d’un module {#data}
+
+Un module qui conserve ses propres index, caches ou état obtient un répertoire sur le volume de données : `module-data/<id>/` dans le répertoire de stockage `default`. Sa partie `data` est destinée aux sauvegardes, sa partie `cache` ne l’est pas. Arkvory compte chaque écriture dans la taille approuvée, en Mio et en fichiers, pour les deux parties ensemble. Une écriture au-delà est refusée (`module_quota_exceeded`) et le module continue de fonctionner. Sans taille approuvée, le module peut seulement lire. La [réserve du volume](./storage#disk) s’applique aussi. Sur une passerelle de lecture, le module lit les mêmes fichiers et ne peut pas les modifier.
+
+La suppression d’un module conserve son répertoire. Supprimez `module-data/<id>/` vous-même lorsque vous n’avez plus besoin des données. Les sauvegardes n’incluent pas encore les répertoires des modules.
 
 ## Mettre à jour, épingler, revenir en arrière {#versions}
 

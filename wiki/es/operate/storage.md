@@ -82,7 +82,7 @@ El archivo `rules.json` contiene la lista de reglas, por ejemplo todos los archi
 - Leer la política requiere `storage.read`, y cambiarla, `storage.manage`. La respuesta también enumera cada almacenamiento con su estado: `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` o `not_loaded`.
 - Una regla solo puede nombrar un almacenamiento configurado. Otro nombre se rechaza con 400 `backend_unknown`.
 - La política se guarda con una revisión. Si otra persona la cambió, léala de nuevo y vuelva a guardarla.
-- Un cambio se aplica solo a las subidas nuevas. Los archivos ya almacenados nunca se mueven entre volúmenes.
+- Un cambio se aplica solo a las subidas nuevas. Los archivos ya almacenados se quedan donde están; para moverlos, consulte [Trasladar archivos almacenados a otro volumen](#rehome).
 
 ### Cuando un volumen no acepta subidas nuevas {#placement-fallback}
 
@@ -94,9 +94,30 @@ La publicación nunca falla por la ubicación. Si el almacenamiento elegido no a
 - **Cuotas y límites.** Las cuotas y `ARKVORY_CAPACITY_BYTES` cuentan todos los volúmenes juntos. La reserva se aplica a cada volumen.
 - **Los archivos temporales** de las subidas raw, OCI y de espejo se quedan en el directorio de almacenamiento `default`.
 - **Clúster.** En un [clúster de alta disponibilidad](./cluster), cada volumen debe ser un directorio en el volumen replicado, como el directorio de almacenamiento: otro disco no se copia a los demás servidores. De lo contrario, la API no se inicia.
-- **Un volumen eliminado de la configuración.** Arkvory recuerda cada volumen que tuvo datos. Si uno ya no está en el archivo de módulos, sus archivos no se pueden descargar, limpiar ni copiar: una copia de seguridad falla con `blob_missing`. Cada proceso lo informa con la métrica `arkvory_storage_backend_unconfigured`, la línea de registro `storage.backend_unconfigured` y la alerta `ArkvoryStorageVolumeUnconfigured`, y la respuesta de la ubicación lo muestra con el estado `not_loaded`. Para corregirlo, vuelva a configurarlo. Para retirar un volumen, manténgalo configurado con `acceptsWrites: false`: los archivos guardados nunca se mueven entre volúmenes.
+- **Un volumen eliminado de la configuración.** Arkvory recuerda cada volumen que tuvo datos. Si uno ya no está en el archivo de módulos, sus archivos no se pueden descargar, limpiar ni copiar: una copia de seguridad falla con `blob_missing`. Cada proceso lo informa con la métrica `arkvory_storage_backend_unconfigured`, la línea de registro `storage.backend_unconfigured` y la alerta `ArkvoryStorageVolumeUnconfigured`, y la respuesta de la ubicación lo muestra con el estado `not_loaded`. Para corregirlo, vuelva a configurarlo. Para retirar un volumen, establezca `acceptsWrites: false`, [traslade sus archivos](#rehome) a otro volumen y manténgalo configurado hasta que terminen los traslados.
 
 Vigile `arkvory_storage_backend_up` y `arkvory_storage_backend_accepting`; consulte [Monitorización](./monitoring#metrics). Las copias de seguridad copian todos los volúmenes. Una restauración necesita un directorio vacío para cada volumen; consulte [Restaurar varios volúmenes](./backups#restore-volumes).
+
+### Trasladar archivos almacenados a otro volumen {#rehome}
+
+Para mover archivos que ya están almacenados, por ejemplo para retirar un volumen o para llenar uno nuevo, planifique los traslados en el servidor. Los servicios siguen funcionando.
+
+```bash
+arkvory storage rehome --root /opt/proanima-arkvory --from volume-2 --to default
+arkvory storage moves --root /opt/proanima-arkvory
+```
+
+1. `rehome` planifica un traslado para cada archivo publicado del almacenamiento `--from` e imprime cuántos planificó y los traslados por estado. `--repository <name>` lo limita a un repositorio y `--limit <n>`, a un número de archivos (10 000 de forma predeterminada, 100 000 como máximo). Un archivo que ya tiene un traslado en curso no se vuelve a planificar. Ambos almacenamientos deben estar configurados. El destino debe aceptar subidas nuevas; de lo contrario, el comando falla con `backend_read_only`. El origen puede ser de solo lectura.
+2. El worker realiza los traslados, dos a la vez. Para cada archivo, copia los bytes al destino y comprueba el tamaño y el SHA-256, cambia el archivo al destino y después elimina la copia del origen. El archivo conserva su ID: los enlaces, las rutas, las etapas y las referencias siguen siendo válidos.
+3. `moves` imprime los traslados por estado: `planned`, `copied`, `switched`, `released` (terminado), `skipped` (el archivo se eliminó mientras tanto; su copia en el destino se eliminó) y `failed`.
+
+- **Descargas y copias de seguridad.** Una descarga que empezó antes del cambio lee hasta el final desde el origen. La copia del origen se elimina solo después de esa descarga y de cualquier copia de seguridad que incluya el archivo. La eliminación espera; nunca bloquea una descarga.
+- **Fallos.** Un paso fallido se repite con una pausa cada vez mayor. Tras 5 intentos fallidos, o cuando el destino deja de aceptar subidas, el traslado queda en `failed` y el archivo se queda donde está. Ejecute `rehome` de nuevo para planificar un traslado nuevo. El siguiente traslado comprueba y reutiliza la copia que un traslado fallido dejó en el destino.
+- **Velocidad.** `ARKVORY_REHOME_BYTES_PER_SECOND` limita la velocidad a la que copia el worker. De forma predeterminada no hay límite.
+- **Las cuotas** cuentan cada archivo una sola vez, durante el traslado y después.
+- Con Docker Compose, el comando ejecuta un contenedor de worker puntual.
+
+El worker escribe las líneas de registro `storage.move_completed`, `storage.move_skipped` y `storage.move_failed`.
 
 ## Planificar el disco {#disk}
 
@@ -113,6 +134,8 @@ Lo siguiente ocupa espacio en el volumen de almacenamiento:
 Además del almacenamiento, prevea PostgreSQL, los registros y el almacén de copias, si es posible en volúmenes propios. Consulte [Copias de seguridad](./backups).
 
 Arkvory mantiene una **reserva** de espacio libre en el volumen de almacenamiento. De forma predeterminada es 1 GiB (`ARKVORY_STORAGE_RESERVE_BYTES`). Una subida que usaría la reserva se rechaza con HTTP 507 y el motivo `storage_full`. Las descargas siguen funcionando. `GET /health/ready` muestra `writable: false` mientras no hay espacio para datos nuevos.
+
+Arkvory también mantiene libres 100 000 inodos en cada volumen (`ARKVORY_STORAGE_RESERVE_INODES`): cada archivo almacenado y cada parte es un archivo, así que un volumen puede quedarse sin inodos antes que sin bytes. Una escritura que los usaría se rechaza del mismo modo. Los sistemas de archivos sin recuento de inodos, como NTFS, solo se comprueban por bytes.
 
 Dos límites funcionan con independencia del disco:
 
@@ -314,7 +337,7 @@ Si una subida falla en cambio con el motivo `storage_quota` o `catalog_limit`, e
 - La limpieza física está desactivada de forma predeterminada y se configura para cada repositorio.
 - Un artefacto eliminado no se puede restaurar. Restaure los datos desde una copia de seguridad. Consulte [Copias de seguridad](./backups).
 - Los repositorios espejo no ejecutan ninguna política de almacenamiento. Consulte [Espejos](./mirrors).
-- El almacenamiento debe ser un sistema de archivos local. No se admiten recursos compartidos de red. Los [volúmenes](#volumes) adicionales también son directorios locales, y Arkvory no mueve los archivos almacenados entre ellos.
+- El almacenamiento debe ser un sistema de archivos local. No se admiten recursos compartidos de red. Los [volúmenes](#volumes) adicionales también son directorios locales. Los archivos almacenados solo se mueven entre ellos con el comando del servidor, [`arkvory storage rehome`](#rehome), no a través de la API.
 - En Windows, Arkvory sincroniza cada archivo con el disco, pero no puede sincronizar la entrada de directorio que lo publica: Node.js no ofrece sincronización de directorios allí. Un corte de energía poco después de una subida puede dejar un archivo publicado sin su contenido en el disco. Use un SAI y mantenga [copias de seguridad](./backups) o un [espejo](./mirrors). En Linux, las entradas de directorio también se sincronizan.
 
 ## Páginas relacionadas {#related-pages}

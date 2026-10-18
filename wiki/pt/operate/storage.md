@@ -82,7 +82,7 @@ O arquivo `rules.json` contém a lista de regras, por exemplo todos os arquivos 
 - Ler a política exige `storage.read`, alterá-la exige `storage.manage`. A resposta também lista cada armazenamento com seu estado: `accepting`, `not_accepting`, `read_only`, `disabled`, `unavailable` ou `not_loaded`.
 - Uma regra só pode citar um armazenamento configurado. Outro nome é recusado com 400 `backend_unknown`.
 - A política é salva com uma revisão. Se outra pessoa a alterou, leia-a de novo e salve novamente.
-- Uma alteração vale somente para novos uploads. Arquivos já armazenados nunca mudam de volume.
+- Uma alteração vale somente para novos uploads. Arquivos já armazenados ficam onde estão; para movê-los, consulte [Mover arquivos armazenados para outro volume](#rehome).
 
 ### Quando um volume não aceita novos uploads {#placement-fallback}
 
@@ -94,9 +94,30 @@ A publicação nunca falha por causa da alocação. Se o armazenamento escolhido
 - **Cotas e limites.** As cotas e `ARKVORY_CAPACITY_BYTES` contam todos os volumes juntos. A reserva vale para cada volume.
 - **Arquivos temporários** de uploads raw, OCI e de espelhos ficam no diretório de armazenamento `default`.
 - **Cluster.** Em um [cluster de alta disponibilidade](./cluster), cada volume deve ser um diretório no volume replicado, como o diretório de armazenamento: outro disco não é copiado para os demais servidores. Caso contrário, a API não inicia.
-- **Um volume removido da configuração.** O Arkvory lembra cada volume que teve dados. Se um deles não estiver mais no arquivo de módulos, seus arquivos não podem ser baixados, limpos nem copiados: um backup falha com `blob_missing`. Cada processo informa isso com a métrica `arkvory_storage_backend_unconfigured`, a linha de log `storage.backend_unconfigured` e o alerta `ArkvoryStorageVolumeUnconfigured`, e a resposta do posicionamento o lista com o estado `not_loaded`. Para corrigir, configure-o de novo. Para aposentar um volume, mantenha-o configurado com `acceptsWrites: false`: arquivos armazenados nunca passam de um volume para outro.
+- **Um volume removido da configuração.** O Arkvory lembra cada volume que teve dados. Se um deles não estiver mais no arquivo de módulos, seus arquivos não podem ser baixados, limpos nem copiados: um backup falha com `blob_missing`. Cada processo informa isso com a métrica `arkvory_storage_backend_unconfigured`, a linha de log `storage.backend_unconfigured` e o alerta `ArkvoryStorageVolumeUnconfigured`, e a resposta do posicionamento o lista com o estado `not_loaded`. Para corrigir, configure-o de novo. Para aposentar um volume, defina `acceptsWrites: false`, [mova seus arquivos](#rehome) para outro volume e mantenha-o configurado até as movimentações terminarem.
 
 Acompanhe `arkvory_storage_backend_up` e `arkvory_storage_backend_accepting`; consulte [Monitoramento](./monitoring#metrics). Os backups copiam todos os volumes. Uma restauração precisa de um diretório vazio para cada volume; consulte [Restaurar vários volumes](./backups#restore-volumes).
+
+### Mover arquivos armazenados para outro volume {#rehome}
+
+Para mover arquivos já armazenados, por exemplo para aposentar um volume ou preencher um novo, planeje as movimentações no servidor. Os serviços continuam funcionando.
+
+```bash
+arkvory storage rehome --root /opt/proanima-arkvory --from volume-2 --to default
+arkvory storage moves --root /opt/proanima-arkvory
+```
+
+1. `rehome` planeja uma movimentação para cada arquivo publicado do armazenamento `--from` e mostra quantas planejou e as movimentações por estado. `--repository <name>` limita a um repositório, `--limit <n>` a um número de arquivos (10.000 por padrão, no máximo 100.000). Um arquivo que já tem uma movimentação em andamento não é planejado de novo. Os dois armazenamentos devem estar configurados. O destino deve aceitar novos uploads; caso contrário, o comando falha com `backend_read_only`. A origem pode ser somente leitura.
+2. O worker executa as movimentações, duas de cada vez. Para cada arquivo, ele copia os bytes para o destino e verifica o tamanho e o SHA-256, passa o arquivo para o destino e então remove a cópia na origem. O arquivo mantém seu ID: links, caminhos, estágios e referências continuam válidos.
+3. `moves` mostra as movimentações por estado: `planned`, `copied`, `switched`, `released` (concluída), `skipped` (o arquivo foi excluído nesse meio-tempo; sua cópia no destino foi removida) e `failed`.
+
+- **Downloads e backups.** Um download iniciado antes da troca lê da origem até o fim. A cópia na origem só é removida depois desse download e de qualquer backup que inclua o arquivo. A remoção espera; ela nunca bloqueia um download.
+- **Falhas.** Uma etapa com falha é repetida com uma pausa crescente. Após 5 tentativas com falha, ou quando o destino deixa de aceitar uploads, a movimentação fica `failed` e o arquivo permanece onde está. Execute `rehome` de novo para planejar uma nova movimentação. A próxima movimentação verifica e reaproveita uma cópia que uma movimentação com falha deixou no destino.
+- **Velocidade.** `ARKVORY_REHOME_BYTES_PER_SECOND` limita a velocidade de cópia do worker. Por padrão, não há limite.
+- **Cotas** contam cada arquivo uma vez, durante e depois da movimentação.
+- Com Docker Compose, o comando executa um contêiner avulso do worker.
+
+O worker grava as linhas de log `storage.move_completed`, `storage.move_skipped` e `storage.move_failed`.
 
 ## Planeje o disco {#disk}
 
@@ -113,6 +134,8 @@ O seguinte ocupa espaço no volume de armazenamento:
 Além do armazenamento, planeje o banco PostgreSQL, os logs e o armazenamento de backups em volumes separados, se possível. Consulte [Backups](./backups).
 
 O Arkvory mantém uma **reserva** de espaço livre no volume. Por padrão, é 1 GiB (`ARKVORY_STORAGE_RESERVE_BYTES`). Um upload que usaria a reserva é recusado com HTTP 507 e motivo `storage_full`. Downloads continuam funcionando. `GET /health/ready` mostra `writable: false` enquanto não há espaço para novos dados.
+
+O Arkvory também mantém 100.000 inodes livres em cada volume (`ARKVORY_STORAGE_RESERVE_INODES`): cada arquivo armazenado e cada parte é um arquivo, então um volume pode ficar sem inodes antes de ficar sem bytes. Uma gravação que os usaria é recusada da mesma forma. Sistemas de arquivos sem contagem de inodes, como o NTFS, são verificados apenas quanto a bytes.
 
 Dois limites funcionam independentemente do disco:
 
@@ -314,7 +337,7 @@ Se o motivo for `storage_quota` ou `catalog_limit`, o problema não é o disco. 
 - A limpeza física é desativada por padrão e definida por repositório.
 - Um artefato excluído não pode ser restaurado. Restaure os dados de um backup. Consulte [Backups](./backups).
 - Repositórios espelhados não executam políticas de armazenamento. Consulte [Espelhos](./mirrors).
-- O armazenamento deve ser um sistema de arquivos local. Não há suporte a compartilhamentos de rede. Os [volumes](#volumes) extras também são diretórios locais, e o Arkvory não move arquivos armazenados entre eles.
+- O armazenamento deve ser um sistema de arquivos local. Não há suporte a compartilhamentos de rede. Os [volumes](#volumes) extras também são diretórios locais. Arquivos armazenados só passam de um para outro pelo comando no servidor, [`arkvory storage rehome`](#rehome), não pela API.
 - No Windows, o Arkvory sincroniza cada arquivo com o disco, mas não consegue sincronizar a entrada de diretório que o publica: o Node.js não oferece sincronização de diretórios ali. Uma queda de energia logo após um upload pode deixar um arquivo publicado ausente do disco. Use um nobreak e mantenha [backups](./backups) ou um [espelho](./mirrors). No Linux, as entradas de diretório também são sincronizadas.
 
 ## Páginas relacionadas {#related-pages}

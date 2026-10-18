@@ -82,7 +82,7 @@ arkvoryctl storage placement --repository releases --revision 0 --file rules.jso
 - 读取策略需要 `storage.read`，更改策略需要 `storage.manage`。响应还会列出每个存储及其状态：`accepting`、`not_accepting`、`read_only`、`disabled`、`unavailable` 或 `not_loaded`。
 - 规则只能指定已配置的存储。其他名称会以 400 `backend_unknown` 被拒绝。
 - 策略保存时会带有修订版本。如果其他人更改了它，请重新读取并再次保存。
-- 更改只适用于新上传。已经存储的文件绝不会在卷之间移动。
+- 更改只适用于新上传。已经存储的文件保留在原处；要移动它们，请参见[将已存储的文件移动到另一个卷](#rehome)。
 
 ### 卷不接受新上传时 {#placement-fallback}
 
@@ -94,9 +94,30 @@ arkvoryctl storage placement --repository releases --revision 0 --file rules.jso
 - **配额和限制。** 配额和 `ARKVORY_CAPACITY_BYTES` 把所有卷合并计算。预留空间适用于每个卷。
 - raw、OCI 和镜像上传的**临时文件**保留在存储目录 `default` 中。
 - **集群。** 在[高可用集群](./cluster)中，每个卷都必须像存储目录一样，是复制卷上的一个目录：另一块磁盘不会被复制到其他服务器。否则 API 不会启动。
-- **从配置中移除的卷。** Arkvory 会记住每个存过数据的卷。如果某个卷不再出现在模块文件中，它的文件就无法下载、清理或备份：备份会以 `blob_missing` 失败。每个进程都会通过指标 `arkvory_storage_backend_unconfigured`、日志行 `storage.backend_unconfigured` 和告警 `ArkvoryStorageVolumeUnconfigured` 报告它，放置策略的应答会以状态 `not_loaded` 列出它。要修复，请重新配置它。要让卷退役，请保留其配置并设置 `acceptsWrites: false`：已存储的文件不会在卷之间移动。
+- **从配置中移除的卷。** Arkvory 会记住每个存过数据的卷。如果某个卷不再出现在模块文件中，它的文件就无法下载、清理或备份：备份会以 `blob_missing` 失败。每个进程都会通过指标 `arkvory_storage_backend_unconfigured`、日志行 `storage.backend_unconfigured` 和告警 `ArkvoryStorageVolumeUnconfigured` 报告它，放置策略的应答会以状态 `not_loaded` 列出它。要修复，请重新配置它。要让卷退役，请设置 `acceptsWrites: false`，把它的文件[移动](#rehome)到另一个卷，并在移动完成之前保留其配置。
 
 请关注 `arkvory_storage_backend_up` 和 `arkvory_storage_backend_accepting`，参见[监控](./monitoring#metrics)。备份会复制每个卷。恢复需要为每个卷准备一个空目录，参见[恢复多个卷](./backups#restore-volumes)。
+
+### 将已存储的文件移动到另一个卷 {#rehome}
+
+要移动已经存储的文件，例如让某个卷退役或填充一个新卷，请在服务器上规划移动。服务会继续运行。
+
+```bash
+arkvory storage rehome --root /opt/proanima-arkvory --from volume-2 --to default
+arkvory storage moves --root /opt/proanima-arkvory
+```
+
+1. `rehome` 为 `--from` 存储中的每个已发布文件规划一次移动，并输出规划的数量以及按状态统计的移动。`--repository <name>` 将其限制在一个仓库内，`--limit <n>` 限制文件数量（默认 10 000，最多 100 000）。已有移动正在进行的文件不会被再次规划。两个存储都必须已配置。目标必须接受新上传，否则命令以 `backend_read_only` 失败。源可以是只读的。
+2. worker 执行移动，每次两个。对每个文件，它把字节复制到目标并检查大小和 SHA-256，将文件切换到目标，然后删除源中的副本。文件保留其 ID：链接、路径、阶段和引用都保持有效。
+3. `moves` 按状态输出移动：`planned`、`copied`、`switched`、`released`（已完成）、`skipped`（文件在此期间已被删除；它在目标中的副本已被移除）和 `failed`。
+
+- **下载和备份。** 在切换之前开始的下载会从源一直读到结束。只有在该下载以及所有包含该文件的备份完成之后，源中的副本才会被删除。删除会等待；它绝不会阻塞下载。
+- **失败。** 失败的步骤会以逐渐增长的间隔重试。失败 5 次之后，或者当目标停止接受上传时，移动变为 `failed`，文件留在原处。再次运行 `rehome` 以规划新的移动。下一次移动会检查并复用失败的移动留在目标中的副本。
+- **速度。** `ARKVORY_REHOME_BYTES_PER_SECOND` 限制 worker 的复制速度。默认不限制。
+- **配额**对每个文件只计算一次，无论是在移动期间还是之后。
+- 使用 Docker Compose 时，该命令会运行一个一次性的 worker 容器。
+
+worker 会写入日志行 `storage.move_completed`、`storage.move_skipped` 和 `storage.move_failed`。
 
 ## 规划磁盘 {#disk}
 
@@ -113,6 +134,8 @@ arkvoryctl storage placement --repository releases --revision 0 --file rules.jso
 除存储之外，如果可能，请为 PostgreSQL 数据库、日志和备份存储规划各自的卷。参见[备份](./backups)。
 
 Arkvory 在存储卷上预留一份可用空间。默认是 1 GiB（`ARKVORY_STORAGE_RESERVE_BYTES`）。会动用该预留的上传会被拒绝，返回 HTTP 507 和原因 `storage_full`。下载继续工作。在没有空间容纳新数据期间，`GET /health/ready` 显示 `writable: false`。
+
+Arkvory 还会在每个卷上保留 100 000 个空闲 inode（`ARKVORY_STORAGE_RESERVE_INODES`）：每个已存储的文件和每个分片都是一个文件，因此卷可能在字节用完之前先用完 inode。会动用这些 inode 的写入会以同样的方式被拒绝。没有 inode 计数的文件系统（例如 NTFS）只检查字节。
 
 有两个限制独立于磁盘运行：
 
@@ -314,7 +337,7 @@ Arkvory 在存储卷上预留一份可用空间。默认是 1 GiB（`ARKVORY_STO
 - 物理清理默认关闭，并按每个仓库设置。
 - 已删除的制品无法恢复。请从备份恢复数据。参见[备份](./backups)。
 - 镜像仓库不运行存储策略。参见[镜像](./mirrors)。
-- 存储必须是本地文件系统。不支持网络共享。额外的[卷](#volumes)也是本地目录，Arkvory 不会在它们之间移动已存储的文件。
+- 存储必须是本地文件系统。不支持网络共享。额外的[卷](#volumes)也是本地目录。已存储的文件只能通过服务器上的命令 [`arkvory storage rehome`](#rehome) 在它们之间移动，不能通过 API。
 - 在 Windows 上，Arkvory 会把每个文件同步到磁盘，但无法同步发布该文件的目录项：Node.js 在那里不提供目录同步。上传完成后不久断电，可能导致已发布的文件在磁盘上缺失。请使用 UPS，并保留[备份](./backups)或[镜像](./mirrors)。在 Linux 上，目录项也会同步。
 
 ## 相关页面 {#related-pages}

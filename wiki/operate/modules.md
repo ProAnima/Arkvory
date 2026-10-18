@@ -52,8 +52,9 @@ An installed module stays disabled until you enable it. The services load module
    { "format": 1, "modules": { "sample": { "enabled": true } } }
    ```
 
-2. Restart the services, as in [Apply a change](../install/configuration#apply-change).
-3. Check the module as a global administrator: `GET /api/v1/system/modules` lists it with `running: true` and `health.status` `ok` on the API and on each read gateway.
+2. If the module keeps files, approve the size of its data directory with `resources`, for example `"resources": { "dataMiB": 512, "dataFiles": 10000 }` beside `enabled`. It replaces the size the package asks for. See [Data directory of a module](#data).
+3. Restart the services, as in [Apply a change](../install/configuration#apply-change).
+4. Check the module as a global administrator: `GET /api/v1/system/modules` lists it with `running: true` and `health.status` `ok` on the API and on each read gateway.
 
 The API and the read gateways run modules. The worker checks the same modules and runs none of them. This release refuses modules that run in the worker or the backup agent (`role_unsupported`) and modules that declare their own routes (`routes_unsupported`). Docker Compose installations do not load modules yet.
 
@@ -74,6 +75,12 @@ A module that fails a check is not loaded; the other modules and Arkvory go on. 
 A module that failed takes Arkvory out of readiness (`/health/ready` answers 503 with `module_failed`) only when another enabled module needs it. A module that stores the bytes of published files (data `layout`) never does: Arkvory keeps serving its data and writes new uploads to its own storage instead of the module's. The log records `module.refused` and `module.failed` with the code in `errorCode`.
 
 Install the package again to repair a changed or missing package. Every service of the installation must see the same modules, enabled or not: a read gateway or worker with other modules is not ready (`module_plan_mismatch`). Install the same packages on the host of each read gateway.
+
+### Data directory of a module {#data}
+
+A module that keeps indexes, caches or state of its own gets a directory on the data volume: `module-data/<id>/` in the storage directory of `default`. Its `data` part is meant for backups, its `cache` part is not. Arkvory counts every write against the approved size, in MiB and in files, for both parts together. A write beyond it is refused (`module_quota_exceeded`) and the module keeps running. Without an approved size, the module can only read. The [reserve of the volume](./storage#disk) applies too. On a read gateway the module reads the same files and cannot change them.
+
+Removing a module keeps its directory. Delete `module-data/<id>/` yourself when you no longer need the data. Backups do not include module directories yet.
 
 ## Update, pin and downgrade {#versions}
 
