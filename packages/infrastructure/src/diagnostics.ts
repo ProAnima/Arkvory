@@ -13,6 +13,7 @@ export type LogComponent =
   | 'mirror'
   | 'webhook'
   | 'events'
+  | 'tree'
   | 'fleet'
   | 'module'
   | 'migrate'
@@ -122,6 +123,9 @@ export interface DiagnosticFields {
   /** A module of ADR 0079: its id, and a count it reports about itself. */
   module?: string;
   count?: number;
+  /** Archive tables of contents (ADR 0083, N8): file entries, and the pause before a retry. */
+  entries?: number;
+  retryInSeconds?: number;
 }
 export interface DiagnosticRecord extends DiagnosticFields {
   level: LogLevel;
