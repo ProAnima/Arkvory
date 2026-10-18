@@ -28,6 +28,8 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
   put FILE PATH [--label TAG] [--state CHECKPOINT.json]  ${ru ? 'Файл как новая ревизия пути; то же содержимое не грузится' : 'File as the next revision of a path; same bytes upload nothing'}
   get PATH OUTPUT                             ${ru ? 'Текущая ревизия пути, с проверкой SHA-256' : 'Current revision of a path, SHA-256 verified'}
   link ID [--ttl SECONDS]                     ${ru ? 'Ссылка на скачивание без ключа, 60 с – 24 ч (1 ч по умолчанию)' : 'Download link without a key, 60 s to 24 h (1 h by default)'}
+  tree push DIR [--name NAME.zip] [--label TAG] [--compress]  ${ru ? 'Каталог как один ZIP, с продолжением' : 'Folder as one ZIP, resumable'}
+  tree pull ID DIR | verify ID DIR | repair ID DIR  ${ru ? 'Получить, сверить по SHA-256, докачать отличия' : 'Fetch, check by SHA-256, fetch what differs'}
   uploads status ID | cancel ID
   packages list [--group GROUP] [--name NAME] [--after CURSOR]
   packages publish FILE [--label TAG] [--file METADATA.json] [--state CHECKPOINT.json]
@@ -48,6 +50,8 @@ ${ru ? 'КОМАНДЫ' : 'COMMANDS'}
                                               ${ru ? 'События установки JSON-строками; --repository фильтрует' : 'Installation events as JSON lines; --repository filters'}
   mcp [--root DIR] [--max-output-bytes N] [--write [--write-repositories R1,R2]]
                                               ${ru ? 'MCP-сервер на stdio для ИИ-агентов; без --write только чтение' : 'MCP server on stdio for AI agents; read-only without --write'}
+  module install FILE [--yes] | list | enable ID | disable ID | remove ID | revocations FILE
+                                              ${ru ? 'Подписанные клиентские модули (--profile NAME для enable/disable)' : 'Signed client modules (--profile NAME for enable/disable)'}
   skill install [--target DIR] [--force]      ${ru ? 'Навык для агентов в ~/.claude/skills/arkvory' : 'Agent skill into ~/.claude/skills/arkvory'}
 
 ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
@@ -57,6 +61,7 @@ ${ru ? 'ОБЩИЕ ПАРАМЕТРЫ' : 'GLOBAL OPTIONS'}
   --class CLASS    ${ru ? 'класс очереди скачивания: release, bulk или background (только понижает)' : 'download queue class: release, bulk or background (only lowers yours)'}
   --not-before T   ${ru ? 'не начинать скачивание раньше T (RFC 3339 или ЧЧ:ММ)' : 'do not start a download before T (RFC 3339 or HH:MM)'}
   --not-after T    ${ru ? 'прекратить, если очередь начнёт скачивание позже T' : 'give up if the queue would start the download after T'}
+  --transfer auto|strict|core  ${ru ? 'расширения передачи клиентских модулей (core — без них)' : 'transfer extensions of client modules (core: none)'}
   --verbose  ${ru ? 'метод, путь, статус, время и ID запроса в stderr (без ключей)' : 'method, path, status, duration and request ID on stderr (no credentials)'}
   -- ${ru ? 'завершает разбор параметров (для имён файлов с дефисом)' : 'ends option parsing (for filenames starting with a dash)'}
 
