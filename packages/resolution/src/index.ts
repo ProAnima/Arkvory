@@ -111,6 +111,11 @@ export function confineResolution(): void {
   });
 }
 
+/** Whether module resolution of this thread is confined (`confineResolution`). */
+export function resolutionConfined(): boolean {
+  return current() !== undefined;
+}
+
 /**
  * Lets resolution reach files under `directory`, by its real path in both forms Windows can
  * give (a short 8.3 name stays in the JavaScript form). The caller names a directory only

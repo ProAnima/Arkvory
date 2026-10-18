@@ -190,6 +190,8 @@ export async function importVerifiedEntry(
   entry: string,
   signed: ModuleManifest,
   budgetMs = SIGNED_IMPORT_BUDGET_MS,
+  /** Admits the verified directory to the process's own confinement of resolution, if any. */
+  admit: (directory: string) => void = () => undefined,
 ): Promise<ModuleDescriptor<unknown, unknown>> {
   const url = pathToFileURL(join(directory, ...entry.split('/'))).href;
   // Node resolves a file URL to its real path, so the package is known by its real path too.
@@ -197,6 +199,9 @@ export async function importVerifiedEntry(
   verifiedPackages.add(root);
   verifiedEntries.set(url, root);
   confine();
+  // Only now, after the checks: the core confinement of every entry knows the release alone,
+  // and a package directory joins it one by one, never the whole modules directory.
+  admit(directory);
   let exported: unknown;
   try {
     exported = await bounded(import(url), budgetMs);

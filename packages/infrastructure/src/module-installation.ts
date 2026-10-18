@@ -146,7 +146,7 @@ async function loadSigned<Context>(
   planned: PreparedModule<Context>,
   role: ModuleRole,
   selection: ModuleSelection | undefined,
-  budgetMs: number | undefined,
+  options: Pick<LoadOptions, 'importBudgetMs' | 'admit'>,
 ): Promise<PreparedModule<Context>> {
   const entry = module.manifest.package.entry[role];
   try {
@@ -155,7 +155,8 @@ async function loadSigned<Context>(
       module.directory,
       entry,
       module.manifest.module,
-      budgetMs,
+      options.importBudgetMs,
+      options.admit,
     );
     let config: unknown;
     try {
@@ -198,6 +199,12 @@ export interface LoadOptions {
   readonly now: number;
   /** How long one entry may take to import; tests shorten SIGNED_IMPORT_BUDGET_MS. */
   readonly importBudgetMs?: number | undefined;
+  /**
+   * Adds a verified package directory to the resolution confinement of the process
+   * (`allowResolutionUnder` of the entries, ADR 0031), right before its entry is imported and
+   * only after every check passed. Absent: the process confines nothing (tests).
+   */
+  readonly admit?: ((directory: string) => void) | undefined;
 }
 
 /**
@@ -232,13 +239,7 @@ export async function loadInstallation<Context>(
       continue;
     prepared.set(
       id,
-      await loadSigned(
-        module,
-        current,
-        options.role,
-        options.selections.get(id),
-        options.importBudgetMs,
-      ),
+      await loadSigned(module, current, options.role, options.selections.get(id), options),
     );
   }
   return { ...planned, prepared };

@@ -9,6 +9,7 @@ import {
   loadInstallation,
   processIdentity,
 } from '@proanima/arkvory-infrastructure';
+import { allowResolutionUnder, resolutionConfined } from '@proanima/arkvory-resolution';
 import type { FleetControl } from '@proanima/arkvory-application';
 import { createFleetControl, registerFleetControlRoutes } from './fleet-control-routes.js';
 import type { PostgresCatalog, ProcessIdentity } from '@proanima/arkvory-infrastructure';
@@ -170,6 +171,10 @@ async function processRuntime(
       coreVersion: identity.version,
       selections: config.modules ?? new Map(),
       installed: config.installedModules,
+      // The entry confined resolution to the release; a verified package joins it (ADR 0031).
+      admit: (directory) => {
+        if (resolutionConfined()) allowResolutionUnder(directory);
+      },
       now: Date.now(),
     });
     const runtime = new ApiRuntime(config, identity.version, diagnostics, installation);
