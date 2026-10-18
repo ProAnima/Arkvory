@@ -63,9 +63,16 @@ export function treeIndexable(name: string): boolean {
 
 /**
  * The key two entry paths collide under on some client: Windows compares names without case
- * and macOS without Unicode normalization, so `A.txt`, `a.txt` and `á` against `á` would
- * overwrite each other when the tree is written there.
+ * and macOS without Unicode normalization, so `A.txt`, `a.txt` and `á` against `á` would
+ * overwrite each other when the tree is written there. Case is folded per character through
+ * its upper case when that is one character, as Windows does (`ſ` and `s`, `ı` and `i` are one
+ * name there), otherwise by its lower case. `arkvoryctl` folds tree paths the same way.
  */
 export function treePathKey(path: string): string {
-  return path.normalize('NFC').toLowerCase();
+  let folded = '';
+  for (const char of path.normalize('NFC')) {
+    const upper = char.toUpperCase();
+    folded += [...upper].length === 1 ? upper.toLowerCase() : char.toLowerCase();
+  }
+  return folded.normalize('NFC');
 }

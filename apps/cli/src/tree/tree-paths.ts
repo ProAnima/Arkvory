@@ -35,8 +35,23 @@ export function treePath(raw: string): string {
 }
 
 /**
+ * The name two paths share on a file system that ignores case (Windows, macOS) or Unicode
+ * normalization (macOS): NFC, then each character folded through its upper case when that is
+ * one character (`ſ` and `s`, `ı` and `i` are one name on Windows), else its lower case. The
+ * server's table of contents folds paths the same way (`treePathKey`, ADR 0083, N8).
+ */
+export function foldTreePath(path: string): string {
+  let folded = '';
+  for (const char of path.normalize('NFC')) {
+    const upper = char.toUpperCase();
+    folded += [...upper].length === 1 ? upper.toLowerCase() : char.toLowerCase();
+  }
+  return folded.normalize('NFC');
+}
+
+/**
  * Every path of one tree: a second entry with the same path is `duplicate_entry`; paths equal
- * without letter case (one file on Windows and macOS), or a file that is also the directory of
+ * by `foldTreePath` (one file on Windows or macOS), or a file that is also the directory of
  * another entry, are `case_collision`.
  */
 export class TreeNames {
@@ -48,13 +63,13 @@ export class TreeNames {
     const segments = path.split('/');
     for (let depth = 1; depth < segments.length; depth++) {
       const directory = segments.slice(0, depth).join('/');
-      const folded = directory.toLowerCase();
+      const folded = foldTreePath(directory);
       const spelling = this.#directories.get(folded);
       if (this.#files.has(folded) || (spelling !== undefined && spelling !== directory))
         throw new CliError('case_collision', 5);
       this.#directories.set(folded, directory);
     }
-    const folded = path.toLowerCase();
+    const folded = foldTreePath(path);
     if (this.#files.has(folded) || this.#directories.has(folded))
       throw new CliError(this.#exact.has(path) ? 'duplicate_entry' : 'case_collision', 5);
     if (this.#files.size >= TREE_LIMITS.entries) throw new CliError('too_many_entries', 5);

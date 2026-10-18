@@ -195,6 +195,17 @@ test('tree paths stay inside the root and mean the same on Windows', () => {
   assert.throws(() => names.add('Docs/README.md'), { code: 'case_collision' });
   assert.throws(() => names.add('Docs/readme.md'), { code: 'duplicate_entry' });
   assert.throws(() => names.add('Docs/readme.md/inner'), { code: 'case_collision' });
+  // macOS compares names without normalization, Windows and macOS without case: one file there.
+  for (const [first, second] of [
+    ['café.txt', 'café.txt'],
+    ['café/a', 'café/b'],
+    ['ſ.txt', 's.txt'],
+    ['ıd', 'Id'],
+  ]) {
+    const set = new TreeNames();
+    set.add(first);
+    assert.throws(() => set.add(second), { code: 'case_collision' }, `${first} ${second}`);
+  }
 });
 
 test('pull, verify and repair with the table of contents fetch only what differs', async (t) => {

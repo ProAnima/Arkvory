@@ -184,6 +184,9 @@ test('the same path twice is refused, also when it differs only in case or norma
     ['Docs/Read.me', 'docs/read.ME'],
     ['caf\u00e9.txt', 'cafe\u0301.txt'],
     ['dir/', 'DIR/'],
+    // Upper case of the long s and the dotless i is S and I: one name on Windows.
+    ['ſ.txt', 's.txt'],
+    ['ıd', 'Id'],
   ];
   for (const [first, second] of same) {
     const entries = [first, second].map((name) =>
