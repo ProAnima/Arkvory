@@ -65,9 +65,11 @@ export async function runRole(
   configuration: string,
   role: string,
   args: readonly string[] = [],
+  /** Defaults of the installation root, which runtime.json may override. */
+  defaults: Readonly<Record<string, string>> = {},
 ): Promise<void> {
   const selected = roleCommand(role, args);
-  Object.assign(process.env, runtimeEnvironment(await jsonFile(configuration)));
+  Object.assign(process.env, defaults, runtimeEnvironment(await jsonFile(configuration)));
   process.env['ARKVORY_WEB_DIR'] = join(directory, 'apps/web/public');
   process.chdir(directory);
   const entry = join(directory, selected.entry);
@@ -104,5 +106,18 @@ export async function launch(root: string, role: string, args: readonly string[]
     join(root, 'config/runtime.json'),
     role,
     args,
+    moduleEnvironment(root),
   );
+}
+
+/**
+ * Where the services of a native installation find the installed signed modules and the stored
+ * revocation list (ADR 0079, X4): `modules/` and `config/module-revocations.json` of the root.
+ * Compose containers do not see the host's `modules/` and load no signed module.
+ */
+export function moduleEnvironment(root: string): Record<string, string> {
+  return {
+    ARKVORY_MODULES_DIR: inside(root, 'modules'),
+    ARKVORY_MODULE_REVOCATIONS_FILE: inside(root, 'config', 'module-revocations.json'),
+  };
 }

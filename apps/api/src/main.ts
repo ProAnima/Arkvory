@@ -17,7 +17,7 @@ import { plaintextExposed } from './tls-config.js';
 import { loadConfig } from './config.js';
 import { RequestDrain } from './drain.js';
 import { defaultDrainTimeoutMs } from './operability-config.js';
-import { createShutdown } from './shutdown.js';
+import { createShutdown, exitIfLingering } from './shutdown.js';
 import type { ShutdownRequest } from './shutdown.js';
 import { RecentLog } from './recent-log.js';
 
@@ -128,4 +128,5 @@ try {
     'Arkvory startup failed. Check configuration, database migration, and storage access.\n',
   );
   process.exitCode = 1;
+  exitIfLingering(diagnostics, (code) => process.exit(code), 1);
 }

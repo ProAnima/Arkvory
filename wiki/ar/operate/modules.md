@@ -1,6 +1,6 @@
 ---
 title: 'Modules'
-description: 'Install signed module packages on a host, check them, remove them, and keep the keys of plugin authors you trust.'
+description: 'Install signed module packages on a host, enable and check them, remove them, and keep the keys of plugin authors you trust.'
 ---
 
 <!-- arkvory-untranslated -->
