@@ -76,6 +76,10 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_webhook_state', key: ['subscription'], since: 33 },
   // Where new uploads go (ADR 0083, N11); the restored storages carry the same ids.
   { name: 'arkvory_storage_placement', key: ['repository'], since: 44 },
+  // Accepted licence documents (ADR 0078, R2); the activation secrets are files, never here.
+  { name: 'arkvory_license_activations', key: ['activation_id'], since: 45 },
+  { name: 'arkvory_license_clock', key: ['id'], since: 45 },
+  { name: 'arkvory_license_revocations', key: ['id'], since: 45 },
 ];
 
 /**
@@ -142,6 +146,10 @@ export const excludedTables: readonly ExcludedTable[] = [
   {
     name: 'arkvory_event_state',
     reason: 'epoch and positions of the source; migrating the target starts a new epoch',
+  },
+  {
+    name: 'arkvory_license_requests',
+    reason: 'offline licence requests wait on the source installation; a restore asks again',
   },
   {
     name: 'arkvory_module_plan',

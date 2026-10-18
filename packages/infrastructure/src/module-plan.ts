@@ -73,10 +73,11 @@ export function planOrThrow<Context>(
 }
 
 /**
- * Services of ADR 0083 this core implements for modules. None yet: each arrives with its stage
- * and contract suite, and a module that uses another one is refused (`service_unavailable`).
+ * Services of ADR 0083 this core implements for modules; each arrives with its stage and
+ * contract suite, and a module that uses another one is refused (`service_unavailable`).
+ * `license` (ADR 0078, R2) is open to signed ProAnimaStudio modules only (ADR 0082, 18).
  */
-export const PROVIDED_HOST_SERVICES: readonly HostService[] = [];
+export const PROVIDED_HOST_SERVICES: readonly HostService[] = ['license'];
 
 export const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
