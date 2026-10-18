@@ -1,0 +1,18 @@
+{
+  "description": "Throwaway keys of the vectors, from fixed seeds: never trusted anywhere. Verify with roots = [root]; `online` is the key the root delegates, `stranger` is no root.",
+  "online": {
+    "keyId": "2000000000000002",
+    "publicKey": "oJql9HpnWYAv+VX43C0qFKXJnSO+l/hkEn/5ODRVpPA=",
+    "seed": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "root": {
+    "keyId": "1000000000000001",
+    "publicKey": "0EqyMnQrtKs6E2i9RhXk5tAiSrcaAWuvhSCjMsl3hzc=",
+    "seed": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "stranger": {
+    "keyId": "3000000000000003",
+    "publicKey": "F8t5+ytBIPKx7GXkGY1uCLKOgT/rAeSkAIObheGAgM4=",
+    "seed": "3333333333333333333333333333333333333333333333333333333333333333"
+  }
+}

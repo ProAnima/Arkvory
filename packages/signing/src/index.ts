@@ -74,3 +74,35 @@ export {
   type ModuleSet,
   type RetainedPackage,
 } from './module-set.js';
+export {
+  LICENCE_FORMAT,
+  LICENCE_PRODUCT,
+  LICENCE_PROBLEMS,
+  MAX_LICENCE_DOCUMENT,
+  LicenceDocumentError,
+  licenceDocumentKind,
+  parseLicenceEnvelope,
+  type LicenceEnvelope,
+  type LicenceFailure,
+  type LicenceProblem,
+} from './licence-envelope.js';
+export {
+  DELEGATED_KINDS,
+  LICENCE_PURPOSES,
+  REVOCATION_REASONS,
+  TOKEN_WINDOW_DAYS,
+  verifyActivationToken,
+  verifyLicenceCertificate,
+  verifyLicenceRevocationList,
+  verifyOfflineActivation,
+  verifyRevocationStatement,
+  type ActivationToken,
+  type DelegatedKind,
+  type LicenceCertificate,
+  type LicenceRevocationList,
+  type RevocationStatement,
+  type VerifiedLicenceDocument,
+} from './licence-documents.js';
+export { DAY_MS, formatLicenceTime, licenceTime } from './licence-values.js';
+export { licenceKeyDigest, normaliseLicenceKey } from './licence-key.js';
+export { strictJson } from './licence-json.js';
