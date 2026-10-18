@@ -71,6 +71,18 @@ export {
   type StoragePlacementRule,
 } from './storage-placement.js';
 export {
+  ARTIFACT_TREE_PAGE,
+  artifactTreePaths,
+  artifactTreeSchema,
+  readArtifactTree,
+  readCapabilityOffers,
+  treeCapabilitySchema,
+  type ArtifactTree,
+  type ArtifactTreeEntry,
+  type ArtifactTreeStatus,
+  type TreeCapability,
+} from './tree-api.js';
+export {
   moduleOperations,
   readSystemModules,
   systemModulesSchema,
