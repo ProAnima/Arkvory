@@ -1,5 +1,5 @@
 import { ArkvoryError } from '@proanima/arkvory-domain';
-import { ModuleServiceError } from '@proanima/arkvory-extension-api';
+import { ModuleServiceError, SERVICE_ERROR_CODES } from '@proanima/arkvory-extension-api';
 import type { ModuleSignal, ServiceErrorCode } from '@proanima/arkvory-extension-api';
 import type { Cancellation } from '@proanima/arkvory-application';
 
@@ -28,6 +28,39 @@ export function fromModule(error: unknown): ArkvoryError {
   if (error instanceof ArkvoryError) return error;
   if (error instanceof ModuleServiceError) return CORE_ERRORS[error.code]();
   return new ArkvoryError('unavailable', 'Module failed');
+}
+
+const MODULE_CODES = new Set<string>([
+  'invalid_input',
+  'conflict',
+  'integrity_mismatch',
+  'unavailable',
+  'busy',
+  'read_only',
+  'capacity_exceeded',
+  'rate_limited',
+]);
+
+/**
+ * A core failure as a host service tells a module: the codes both contracts share, else
+ * `unavailable`. The core's message and stack stay in the core.
+ */
+export function toModule(error: unknown): ModuleServiceError {
+  if (error instanceof ModuleServiceError) return error;
+  if (error instanceof ArkvoryError && MODULE_CODES.has(error.code))
+    return new ModuleServiceError(
+      SERVICE_ERROR_CODES.find((code) => code === error.code) ?? 'unavailable',
+    );
+  return new ModuleServiceError('unavailable');
+}
+
+/** Runs core code for a host service; a failure reaches the module as `toModule` gives it. */
+export async function serviceCall<T>(work: () => Promise<T>): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    throw toModule(error);
+  }
 }
 
 /** Calls module code and turns its failure into a core error. */

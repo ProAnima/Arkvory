@@ -1,6 +1,8 @@
 import type {
+  HostServices,
   ModuleCapabilities,
   ModuleContext,
+  ModuleResources,
   ModuleSignal,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
@@ -10,10 +12,16 @@ import { ModuleRuntime } from './module-host.js';
 import { ModuleTelemetry } from './module-telemetry.js';
 
 /**
- * Services the API process gives modules (`HOST_SERVICES`, ADR 0083); none is implemented yet,
- * so the plan refuses a module that uses one and every module receives an empty object.
+ * Services the API process gives modules (`HOST_SERVICES`, ADR 0083): reading the catalog and
+ * content and the data directory; each module receives only those its manifest declares.
  */
-export type ApiServices = Readonly<Record<string, never>>;
+export type ApiServices = HostServices;
+
+/** The host services of one module, built right before its `create`. */
+export type ModuleServicesOf = (
+  module: PlannedModule,
+  resources: ModuleResources | null,
+) => ApiServices;
 
 /** What a module of the API process receives from the core (ADR 0083, section 2.4). */
 export type ApiModuleContext = ModuleContext<ApiServices> & { readonly role: 'api' | 'reader' };
@@ -28,6 +36,7 @@ export function apiModules(
   role: ApiModuleContext['role'],
   installation: InstallationPlan<ApiModuleContext>,
   telemetry: ModuleTelemetry,
+  services: ModuleServicesOf = () => ({}),
 ): ModuleRuntime<ApiModuleContext> {
   const context = (
     module: PlannedModule,
@@ -41,7 +50,7 @@ export function apiModules(
     signal,
     log: telemetry.log(module.manifest),
     metrics: telemetry.metrics(module.manifest),
-    services: {},
+    services: services(module, installation.prepared.get(module.manifest.id)?.resources ?? null),
     capabilities,
   });
   return new ModuleRuntime<ApiModuleContext>(

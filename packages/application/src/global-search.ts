@@ -142,6 +142,31 @@ export function listableRepositories(
 export class GlobalSearch {
   constructor(private readonly store: GlobalSearchStore) {}
   async search(principal: Principal, input: GlobalSearchInput): Promise<GlobalSearchPage> {
+    return this.searchIn(input, (requested) => listableRepositories(principal, requested));
+  }
+
+  /**
+   * One search with the rights of several principals at once (ADR 0083, N4): only repositories
+   * every one of them may list. An empty list of principals sees nothing.
+   */
+  async searchAll(
+    principals: readonly Principal[],
+    input: GlobalSearchInput,
+  ): Promise<GlobalSearchPage> {
+    return this.searchIn(input, (requested) => {
+      const [first, ...others] = principals;
+      if (first === undefined) return [];
+      const each = others.map((p) => new Set(listableRepositories(p, requested)));
+      return listableRepositories(first, requested).filter((name) =>
+        each.every((names) => names.has(name)),
+      );
+    });
+  }
+
+  private async searchIn(
+    input: GlobalSearchInput,
+    listable: (requested: readonly string[] | undefined) => readonly string[],
+  ): Promise<GlobalSearchPage> {
     const query = optionalText(input.q, 'q') ?? '';
     if (query.length > MAX_QUERY) throw fieldError('q', 'length', 'Search text too long');
     // PostgreSQL text cannot hold NUL; the statement would fail as a server error.
@@ -155,7 +180,7 @@ export class GlobalSearch {
     const limit = pageSize(input.limit);
     // An unreadable repository in the filter is dropped like an absent one: the answer is the
     // same either way, so the filter cannot be used to learn which repositories exist.
-    const repositories = listableRepositories(principal, requested.length ? requested : undefined);
+    const repositories = listable(requested.length ? requested : undefined);
     if (repositories.length === 0) return { items: [], next: null };
     const rows = await this.store.searchRepositories(
       { repositories, query, labels, stage, after },

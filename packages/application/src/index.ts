@@ -1,5 +1,6 @@
 export * from './ports.js';
 export * from './storage.js';
+export * from './catalog-read.js';
 export * from './storage-placement.js';
 export * from './operations.js';
 export * from './catalog.js';
