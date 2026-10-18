@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { chmod, lstat, open, readdir, rename, unlink } from 'node:fs/promises';
+import { chmod, lstat, open, readdir, realpath, rename, unlink } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { crc32 } from 'node:zlib';
 import { CliError } from '../errors.js';
@@ -40,6 +40,8 @@ export async function writeTreeFile(
   } catch (error) {
     if (!isMissing(error)) throw error;
   }
+  // The real folder now; checked again before the rename (see `unmoved`).
+  const real = await realpath(parent);
   const temporary = join(parent, `.${basename(file)}.arkvory-${randomUUID()}.tmp`);
   const handle = await open(temporary, 'wx', 0o600);
   let renamed = false;
@@ -67,7 +69,9 @@ export async function writeTreeFile(
     )
       throw new CliError('checksum_mismatch', 5);
     await handle.sync();
+    const written = await handle.stat({ bigint: true });
     await handle.close();
+    await unmoved(parent, real, temporary, written);
     if (process.platform !== 'win32')
       await chmod(temporary, expected.mode === 0o755 ? 0o755 : 0o644);
     await rename(temporary, file);
@@ -77,6 +81,36 @@ export async function writeTreeFile(
     await handle.close().catch(() => undefined);
     if (!renamed) await unlink(temporary).catch(() => undefined);
   }
+}
+
+/**
+ * Whether the folder of the write is still the one it was and still holds our temporary file.
+ * Someone who may write the target folder could swap a folder on the way for a link and move
+ * the file along while it is written, so that the rename lands outside the root: that is
+ * `path_outside_root`. Node has no rename relative to an open folder, so a swap between this
+ * check and the rename remains possible; it needs write access to the target folder, which is
+ * the caller's to keep private (Windows refuses to rename a folder while a file in it is open).
+ */
+async function unmoved(
+  parent: string,
+  real: string,
+  temporary: string,
+  written: { readonly dev: bigint; readonly ino: bigint },
+): Promise<void> {
+  let current;
+  try {
+    current = await lstat(temporary, { bigint: true });
+  } catch (error) {
+    if (isMissing(error)) throw new CliError('path_outside_root', 5);
+    throw error;
+  }
+  if (
+    (await realpath(parent)) !== real ||
+    !current.isFile() ||
+    current.dev !== written.dev ||
+    current.ino !== written.ino
+  )
+    throw new CliError('path_outside_root', 5);
 }
 
 /** Size and SHA-256 of a regular file; null when it is missing or not a regular file. */

@@ -2,7 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
-import { chmod, mkdir, mkdtemp, open, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  open,
+  readFile,
+  readdir,
+  rename,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { crc32 } from 'node:zlib';
@@ -12,6 +23,7 @@ import { treeCommand } from '../apps/cli/dist/tree/tree-command.js';
 import { treeFiles, writeTreeArchive } from '../apps/cli/dist/tree/zip-write.js';
 import { archiveEntries, dataOffset } from '../apps/cli/dist/tree/zip-read.js';
 import { TreeNames, treePath } from '../apps/cli/dist/tree/tree-paths.js';
+import { writeTreeFile } from '../apps/cli/dist/tree/local-tree.js';
 import { removeTestDirectory } from './helpers.mjs';
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -436,4 +448,43 @@ test('a table of contents must page through its entries once, in order', async (
     await writeFile(join(target, 'keep.txt'), 'local');
     await assert.rejects(run(connected, 'verify', 'a1', target), { code: 'invalid_response' });
   }
+});
+
+test('a folder swapped for a link while a file is written never receives it', async (t) => {
+  const work = await temporary(t);
+  const root = join(work, 'root');
+  const outside = join(work, 'outside');
+  await mkdir(join(root, 'sub'), { recursive: true });
+  await mkdir(outside);
+  const content = Buffer.from('verified content of the tree file');
+  let swapped = false;
+  async function* swapping() {
+    yield content.subarray(0, 8);
+    // Another account that may write the target folder replaces `sub` with a link outside and
+    // moves our temporary file along, so that the final rename would land outside.
+    try {
+      await rename(join(root, 'sub'), join(root, 'moved'));
+      await symlink(outside, join(root, 'sub'), process.platform === 'win32' ? 'junction' : 'dir');
+      for (const name of await readdir(join(root, 'moved')))
+        await rename(join(root, 'moved', name), join(outside, name));
+      swapped = true;
+    } catch (error) {
+      // Windows does not rename a folder while a file in it is open.
+      assert.equal(process.platform, 'win32', String(error));
+    }
+    yield content.subarray(8);
+  }
+  const expected = { size: content.length, sha256: sha256(content), crc32: null, mode: 0o644 };
+  const write = writeTreeFile(root, 'sub/file.txt', swapping(), expected, signal());
+  if (process.platform !== 'win32') {
+    await assert.rejects(write, { code: 'path_outside_root' });
+    assert.ok(swapped);
+  } else {
+    await write;
+    assert.deepEqual(await readFile(join(root, 'sub', 'file.txt')), content);
+  }
+  assert.deepEqual(
+    (await readdir(outside)).filter((name) => name === 'file.txt'),
+    [],
+  );
 });
