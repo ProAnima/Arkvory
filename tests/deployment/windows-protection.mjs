@@ -14,7 +14,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
   installCommand,
   makeRemoteStage,
@@ -111,12 +111,13 @@ export function assertCodeDirectories(root) {
 /** A link at or below a code directory stops registration with a clear error. */
 export async function refuseLinkedCodeDirectories(base, node, prefix) {
   const target = await mkdtemp(join(base, 'arkvory-link-target-'));
+  // The code directory itself is the link, or a directory inside it is.
   for (const [name, link] of [
     ['releases', 'releases'],
     ['runtime', join('runtime', 'nested')],
   ]) {
     const root = await mkdtemp(join(base, 'arkvory-link-gate-'));
-    await mkdir(join(root, name), { recursive: true });
+    await mkdir(dirname(join(root, link)), { recursive: true });
     await symlink(target, join(root, link), 'junction');
     try {
       const owner = security(root).owner;

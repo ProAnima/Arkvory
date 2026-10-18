@@ -3,6 +3,9 @@ param([string]$Root = 'C:\ProgramData\ProAnima\Arkvory', [string]$Version = '',
     [ValidateSet('docker','podman')][string]$Engine = 'docker',
     [string]$Config = '', [string]$Artifact = '', [switch]$AutomaticUpdates, [switch]$Pin)
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell 5 draws progress for every block of Invoke-WebRequest and Expand-Archive,
+# which slows the Node.js download and extraction by minutes.
+$ProgressPreference = 'SilentlyContinue'
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $admin = [Security.Principal.WindowsPrincipal]::new($identity)
 # Native services need Administrator. Compose uses the installing user's container engine:
