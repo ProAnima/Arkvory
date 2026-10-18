@@ -14,6 +14,7 @@ import {
   modulePackage,
   moduleInstallation,
   openToEveryone,
+  protectRoot,
   revocationList,
   temporaryDirectory,
 } from './module-fixtures.mjs';
@@ -185,4 +186,13 @@ test('which ACL entries make a path unsafe on Windows, rule by rule', () => {
     aclProblem({ owner: ADMINS, rules: [] }, { owner: ADMINS, rules: [rule(USERS, 0x116)] }),
     'rule S-1-5-32-545 rights 0x116; owner S-1-5-32-544; root owner S-1-5-32-544',
   );
+});
+
+test('a test root is locked down like an installation, explicit rules of others included', async (t) => {
+  const root = await temporaryDirectory(t, 'arkvory-lockdown-');
+  // A rule written on the directory itself, as the default DACL of a CI runner's token writes
+  // one for the runner account: removing inheritance alone keeps it.
+  await openDirectory(root);
+  await protectRoot(root);
+  assert.deepEqual([...(await unsafeEntries([root], root))], []);
 });

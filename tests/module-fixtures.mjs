@@ -234,6 +234,10 @@ export async function protectRoot(root) {
   if (process.platform !== 'win32') return chmod(root, 0o700);
   const script = [
     '$owner = [IO.Directory]::GetAccessControl($env:ARKVORY_TEST_ROOT).GetOwner([Security.Principal.SecurityIdentifier]).Value',
+    // /reset drops rules written on the directory itself (a runner's default DACL writes one for
+    // its account, which is not the owner when an elevated process creates for Administrators).
+    '& icacls.exe $env:ARKVORY_TEST_ROOT /reset | Out-Null',
+    'if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }',
     "& icacls.exe $env:ARKVORY_TEST_ROOT /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' ('*' + $owner + ':(OI)(CI)F') | Out-Null",
     'exit $LASTEXITCODE',
   ].join('; ');
