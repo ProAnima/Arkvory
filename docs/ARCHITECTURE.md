@@ -8,21 +8,22 @@
 
 ## Направление зависимостей
 
-| Модуль         | Разрешённые внутренние зависимости                                        | Что запрещено                                               |
-| -------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| domain         | Нет                                                                       | HTTP, БД, Node/browser globals, внешние runtime-библиотеки  |
-| application    | domain                                                                    | Конкретные адаптеры, transport DTO, глобальная конфигурация |
-| contracts      | Нет                                                                       | Домен, application, storage и HTTP server framework         |
-| infrastructure | application, domain, extension-api                                        | Приложения, UI и SDK                                        |
-| sdk            | contracts                                                                 | Серверные пакеты и Node-only API                            |
-| extension-api  | Нет                                                                       | Node/browser globals, внешние runtime-библиотеки, apps      |
-| signing        | extension-api                                                             | Внешние runtime-библиотеки, apps, БД и сеть                 |
-| resolution     | Нет                                                                       | Внешние runtime-библиотеки, apps и пакеты репозитория       |
-| apps/api       | application, domain, contracts, infrastructure, extension-api, resolution | Другие apps и SDK                                           |
-| apps/worker    | application, domain, infrastructure, resolution                           | HTTP/Web/SDK                                                |
-| apps/scheduler | application, domain, infrastructure                                       | HTTP/Web/SDK                                                |
-| apps/backup    | application, domain, infrastructure, resolution                           | HTTP/Web/SDK и другие apps                                  |
-| apps/web       | sdk, contracts                                                            | Все серверные пакеты и другие apps                          |
+| Модуль            | Разрешённые внутренние зависимости                                        | Что запрещено                                               |
+| ----------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| domain            | Нет                                                                       | HTTP, БД, Node/browser globals, внешние runtime-библиотеки  |
+| application       | domain                                                                    | Конкретные адаптеры, transport DTO, глобальная конфигурация |
+| contracts         | Нет                                                                       | Домен, application, storage и HTTP server framework         |
+| infrastructure    | application, domain, extension-api                                        | Приложения, UI и SDK                                        |
+| sdk               | contracts                                                                 | Серверные пакеты и Node-only API                            |
+| extension-api     | Нет                                                                       | Node/browser globals, внешние runtime-библиотеки, apps      |
+| signing           | extension-api                                                             | Внешние runtime-библиотеки, apps, БД и сеть                 |
+| extension-testkit | extension-api                                                             | Код продукта его не импортирует; только тесты               |
+| resolution        | Нет                                                                       | Внешние runtime-библиотеки, apps и пакеты репозитория       |
+| apps/api          | application, domain, contracts, infrastructure, extension-api, resolution | Другие apps и SDK                                           |
+| apps/worker       | application, domain, infrastructure, resolution                           | HTTP/Web/SDK                                                |
+| apps/scheduler    | application, domain, infrastructure                                       | HTTP/Web/SDK                                                |
+| apps/backup       | application, domain, infrastructure, resolution                           | HTTP/Web/SDK и другие apps                                  |
+| apps/web          | sdk, contracts                                                            | Все серверные пакеты и другие apps                          |
 
 Импорты типов также соблюдают границы. Межпакетный доступ — по workspace-имени через `src/index.ts`; даже разрешённый соседний пакет не открывает все свои внутренние файлы. Граф проверяется dependency-cruiser. Для domain/application дополнительно запрещены runtime-зависимости на сторонние пакеты и Node builtins; `import type` не должен использоваться для обхода модели.
 

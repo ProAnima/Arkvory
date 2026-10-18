@@ -1,13 +1,7 @@
+import type { ModuleCapabilities } from './capabilities.js';
 import type { ModuleSignal } from './descriptor.js';
 import type { ModuleRole } from './manifest.js';
-
-/**
- * Where a module comes from (ADR 0082, section 1): the core release itself, a package signed by
- * ProAnimaStudio, an operator's plugin signed by a key the host trusts, or an unsigned plugin of a
- * `development` installation. Every source but `builtin` is external to the release.
- */
-export const MODULE_SOURCES = ['builtin', 'signed', 'operator', 'development'] as const;
-export type ModuleSource = (typeof MODULE_SOURCES)[number];
+import type { ModuleSource } from './sources.js';
 
 /**
  * Services of the core a module may declare in `uses` (ADR 0083, section 2.4). A module receives
@@ -81,4 +75,6 @@ export interface ModuleContext<Services> {
   readonly metrics: ModuleMetrics;
   /** Only the services the manifest declared in `uses`. */
   readonly services: Services;
+  /** Values of the capabilities the manifest declared in `requires` and `optional`. */
+  readonly capabilities: ModuleCapabilities;
 }

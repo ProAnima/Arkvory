@@ -1,4 +1,9 @@
-import type { ModuleContext, ModuleSignal, PlannedModule } from '@proanima/arkvory-extension-api';
+import type {
+  ModuleCapabilities,
+  ModuleContext,
+  ModuleSignal,
+  PlannedModule,
+} from '@proanima/arkvory-extension-api';
 import { planBuiltinModules } from '@proanima/arkvory-infrastructure';
 import type { InstallationPlan, ModuleSelections } from '@proanima/arkvory-infrastructure';
 import { ModuleRuntime } from './module-host.js';
@@ -24,7 +29,11 @@ export function apiModules(
   installation: InstallationPlan<ApiModuleContext>,
   telemetry: ModuleTelemetry,
 ): ModuleRuntime<ApiModuleContext> {
-  const context = (module: PlannedModule, signal: ModuleSignal): ApiModuleContext => ({
+  const context = (
+    module: PlannedModule,
+    signal: ModuleSignal,
+    capabilities: ModuleCapabilities,
+  ): ApiModuleContext => ({
     role,
     source: module.source,
     // A read gateway serves reads only (ADR 0009); its modules refuse writes with read_only.
@@ -33,6 +42,7 @@ export function apiModules(
     log: telemetry.log(module.manifest),
     metrics: telemetry.metrics(module.manifest),
     services: {},
+    capabilities,
   });
   return new ModuleRuntime<ApiModuleContext>(
     installation.plan,

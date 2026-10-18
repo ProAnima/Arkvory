@@ -101,17 +101,17 @@ test('refused and failing modules keep the API serving by the readiness rules', 
   await host.install(modulePackage(module, { id: 'changed' }));
   await host.install(modulePackage(module, { id: 'withdrawn' }));
   await host.install(
-    modulePackage(module, { id: 'feeder', provides: ['feed'] }, { startFails: true }),
+    modulePackage(module, { id: 'feeder', provides: ['feed@1.0.0'] }, { startFails: true }),
   );
-  await host.install(modulePackage(module, { id: 'reporter', requires: ['feed'] }));
+  await host.install(modulePackage(module, { id: 'reporter', requires: ['feed@^1.0.0'] }));
   await host.install(
     modulePackage(
       module,
-      { id: 'storer', provides: ['blobs'], dataClass: 'layout' },
+      { id: 'storer', provides: ['blobs@1.0.0'], dataClass: 'layout' },
       { startFails: true },
     ),
   );
-  await host.install(modulePackage(module, { id: 'archiver', requires: ['blobs'] }));
+  await host.install(modulePackage(module, { id: 'archiver', requires: ['blobs@^1.0.0'] }));
   await writeFile(join(host.modules, 'changed/1.0.0/files/main.mjs'), 'export default {};\n');
   const list = revocationList(module, {
     sequence: 2,

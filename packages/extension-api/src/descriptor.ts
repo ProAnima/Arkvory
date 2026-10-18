@@ -43,6 +43,19 @@ export interface ModuleLifecycle {
   stop(): Promise<void>;
   /** Current state without I/O; must not throw. */
   health(): ModuleHealth;
+  /**
+   * The value of a capability of `provides` by name (ADR 0083, N13), asked once by the core
+   * after a successful `start`. Required of a module that provides capabilities.
+   */
+  capability?(name: string): unknown;
+  /**
+   * Brings the `data` area of the module's data directory to a consistent state and holds it
+   * there until `thaw`, within `deadlineMs` (ADR 0083, N6). A module without it, or one that
+   * misses the deadline, has its directory copied as it is and marked `fuzzy`.
+   */
+  freeze?(deadlineMs: number): Promise<void>;
+  /** Resumes writing after `freeze`; called once after every `freeze`, also a failed one. */
+  thaw?(): Promise<void>;
 }
 
 /**

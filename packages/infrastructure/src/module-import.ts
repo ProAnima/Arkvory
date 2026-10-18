@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { canonicalJson, parseModuleManifest } from '@proanima/arkvory-extension-api';
 import type {
+  ModuleJson,
   ModuleDescriptor,
   ModuleHealth,
   ModuleLifecycle,
@@ -57,7 +58,7 @@ function descriptorOf(
   } catch (error) {
     throw new ModuleLoadError('descriptor_invalid', { cause: error });
   }
-  if (canonicalJson({ ...manifest }) !== canonicalJson({ ...signed }))
+  if (canonicalJson(manifestJson(manifest)) !== canonicalJson(manifestJson(signed)))
     throw new ModuleLoadError('descriptor_mismatch');
   return {
     manifest: signed,
@@ -67,6 +68,12 @@ function descriptorOf(
     describeConfig: () => null,
     create: (context, config) => instanceOf(create.call(descriptor, context, config)),
   };
+}
+
+/** A manifest as plain JSON, for comparing two of them field by field. */
+function manifestJson(manifest: ModuleManifest): ModuleJson {
+  const { resources, ...rest } = manifest;
+  return { ...rest, resources: resources ? { ...resources } : null };
 }
 
 /** A created module checked for the lifecycle the host calls; anything else is refused. */

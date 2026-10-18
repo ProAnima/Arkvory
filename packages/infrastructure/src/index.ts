@@ -199,3 +199,5 @@ export type { InstallationPlan, LoadOptions } from './module-installation.js';
 export { parseModuleSelections, readModuleSelections } from './module-selection.js';
 export type { ModuleSelection, ModuleSelections } from './module-selection.js';
 export { PostgresModulePlan, type ModulePlanFingerprints } from './module-plan-store.js';
+// Host services of ADR 0083 (N1, N2, N4, N6, N13).
+export { CapabilityRegistry } from './module-capabilities.js';

@@ -82,9 +82,9 @@ const states = (runtime) =>
 test('a signed module that fails to start fails alone; its consumers are not created', async () => {
   const log = [];
   const runtime = runtimeOf([
-    signed(log, 'feed', { provides: ['feed'], start: () => Promise.reject(new Error('no')) }),
-    signed(log, 'digest', { requires: ['feed'], provides: ['digest'] }),
-    signed(log, 'report', { requires: ['digest'] }),
+    signed(log, 'feed', { provides: ['feed@1.0.0'], start: () => Promise.reject(new Error('no')) }),
+    signed(log, 'digest', { requires: ['feed@^1.0.0'], provides: ['digest@1.0.0'] }),
+    signed(log, 'report', { requires: ['digest@^1.0.0'] }),
     signed(log, 'alone'),
   ]);
   await runtime.start();
@@ -137,11 +137,11 @@ test('code that did not load, a create that throws and a start beyond its budget
 test('a module that stores published bytes never takes the process out of readiness', async () => {
   const runtime = runtimeOf([
     signed([], 'layout', {
-      provides: ['blobs'],
+      provides: ['blobs@1.0.0'],
       dataClass: 'layout',
       start: () => Promise.reject(new Error('no')),
     }),
-    signed([], 'user', { requires: ['blobs'] }),
+    signed([], 'user', { requires: ['blobs@^1.0.0'] }),
   ]);
   await runtime.start();
   assert.deepEqual(states(runtime).layout, [false, { status: 'failed', code: 'start_failed' }]);
