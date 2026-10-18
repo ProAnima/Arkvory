@@ -151,7 +151,6 @@ Jedes Release hat ein Manifest `arkvory-release.json` mit dem SHA-256 seines Arc
 
 Jeder Arkvory-Prozess lädt JavaScript nur aus seinem eigenen Release-Verzeichnis und aus den eingebauten Modulen von Node.js: die Dienste, `arkvory`, die Installer, `arkvoryctl` und Remote Setup. Node.js würde eine Bibliothek auch im Ordner `node_modules` jedes übergeordneten Verzeichnisses, im Home-Verzeichnis des Kontos und in `NODE_PATH` suchen. Arkvory lehnt alle diese Orte ab. Eine Bibliothek, die jemand anderes dort ablegt, wird also nie ausgeführt.
 
-- Signierte Module werden aus dem Modulverzeichnis der Installation geladen, und jedes Modul nur aus seinem eigenen Paket. Siehe [Module](./modules).
 - Die Dienstdefinitionen leeren `NODE_PATH`.
 - Unter Windows dürfen nur Administratoren `%ProgramData%\ProAnima` über dem Standardstamm ändern. In `%ProgramData%` selbst darf jeder Benutzer Ordner anlegen. Setup ändert die Berechtigungen, wenn es Arkvory installiert oder die Dienste repariert. Ein Stamm an einem anderen Ort behält die Berechtigungen seiner übergeordneten Ordner: Wählen Sie einen, dessen übergeordnete Ordner nur Administratoren ändern dürfen.
 - Eine abgelehnte Bibliothek endet mit `Cannot find module '…': module resolution is confined to the release directory` und dem Pfad der Datei. Arkvory braucht diese Datei nicht. Finden Sie heraus, wer sie dort abgelegt hat.

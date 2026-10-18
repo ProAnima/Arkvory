@@ -151,7 +151,6 @@ curl -fsS -H "Authorization: Bearer $ARKVORY_KEY" "https://arkvory.example/api/v
 
 每个 Arkvory 进程只从自己的版本目录和 Node.js 内置模块加载 JavaScript：服务、`arkvory`、安装程序、`arkvoryctl` 和 Remote Setup 都是如此。Node.js 本来还会在每个上级目录的 `node_modules` 文件夹、账户的主目录和 `NODE_PATH` 中查找库。Arkvory 拒绝所有这些位置，因此别人放在那里的库永远不会运行。
 
-- 签名模块从安装的模块目录加载，每个模块只从它自己的包加载。参见[模块](./modules)。
 - 服务定义会清空 `NODE_PATH`。
 - 在 Windows 上，只有管理员可以更改默认根目录之上的 `%ProgramData%\ProAnima`。在 `%ProgramData%` 本身中，任何用户都可以创建文件夹。安装程序在安装 Arkvory 或修复服务时更改权限。放在其他位置的根目录保留其上级文件夹的权限：请选择上级文件夹只有管理员才能更改的位置。
 - 被拒绝的库会以 `Cannot find module '…': module resolution is confined to the release directory` 和该文件的路径结束。Arkvory 不需要这个文件。请查明是谁把它放在那里的。

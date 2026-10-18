@@ -149,7 +149,6 @@ try { await import(${JSON.stringify(pathToFileURL(join(release, 'probe.mjs')).hr
 try { await import('data:text/javascript,export default 1'); } catch (error) { outcome.data = error.code; }
 for (const [name, directory] of [['relative', 'releases'], ['filesystem', ${JSON.stringify(resolve('/'))}], ['missing', ${JSON.stringify(join(root, 'missing'))}]])
   try { confinement.allowResolutionUnder(directory); } catch (error) { outcome[name] = error.code ?? error.message; }
-confinement.allowResolutionUnder(${JSON.stringify(join(root, 'missing'))}, { optional: true });
 console.log(JSON.stringify(outcome));`,
     env,
     root,
@@ -228,6 +227,29 @@ test('the release of an unbundled entry is three levels above it; a bundle has n
     undefined,
   );
   assert.equal(releaseDirectoryOf('data:text/javascript,0'), undefined);
+});
+
+test('the environment adds no root: only the release of the entry resolves', async (t) => {
+  const { root, release, plant, ran, env } = await tree(t);
+  await plant('parent');
+  // The API entry of this checkout allows its own release; a directory named by a variable of
+  // the environment (once ARKVORY_MODULES_DIR) holds no code the services load and is no root.
+  const api = pathToFileURL(resolve('apps/api/dist/confine.js')).href;
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      `await import(${JSON.stringify(api)});
+let outcome;
+try { await import(${JSON.stringify(pathToFileURL(join(release, 'probe.mjs')).href)}); outcome = 'reached'; } catch (error) { outcome = error.code; }
+console.log(JSON.stringify(outcome));`,
+    ],
+    { cwd: root, env: { ...env, ARKVORY_MODULES_DIR: root }, encoding: 'utf8' },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout.trim().split('\n').at(-1)), 'ERR_MODULE_NOT_FOUND');
+  assert.deepEqual(await ran(), [], 'refused code must never run');
 });
 
 /** A fake installation whose release entries probe for `cpu-features` like ssh2 does. */

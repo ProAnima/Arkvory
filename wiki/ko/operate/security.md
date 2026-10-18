@@ -151,7 +151,6 @@ curl -fsS -H "Authorization: Bearer $ARKVORY_KEY" "https://arkvory.example/api/v
 
 모든 Arkvory 프로세스는 자신의 릴리스 디렉터리와 Node.js 내장 모듈에서만 JavaScript를 불러옵니다. 서비스, `arkvory`, 설치 프로그램, `arkvoryctl`, Remote Setup이 모두 해당됩니다. Node.js는 원래 모든 상위 디렉터리의 `node_modules` 폴더, 계정의 홈 디렉터리, `NODE_PATH`에서도 라이브러리를 찾습니다. Arkvory는 이 모든 위치를 거부하므로 다른 사람이 그곳에 둔 라이브러리는 절대 실행되지 않습니다.
 
-- 서명된 모듈은 설치의 모듈 디렉터리에서 불러오며, 각 모듈은 자신의 패키지에서만 불러옵니다. [모듈](./modules)을 참고하세요.
 - 서비스 정의는 `NODE_PATH`를 비웁니다.
 - Windows에서는 기본 루트 위의 `%ProgramData%\ProAnima`를 관리자만 변경할 수 있습니다. `%ProgramData%` 자체에는 모든 사용자가 폴더를 만들 수 있습니다. 설치 프로그램은 Arkvory를 설치하거나 서비스를 복구할 때 권한을 변경합니다. 다른 위치의 루트는 상위 폴더의 권한을 그대로 유지합니다. 상위 폴더를 관리자만 변경할 수 있는 위치를 선택하세요.
 - 거부된 라이브러리는 `Cannot find module '…': module resolution is confined to the release directory`와 파일 경로로 끝납니다. Arkvory에는 그 파일이 필요하지 않습니다. 누가 그 파일을 두었는지 확인하세요.

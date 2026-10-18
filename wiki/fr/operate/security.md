@@ -151,7 +151,6 @@ Chaque version possède un manifeste `arkvory-release.json` avec le SHA-256 de s
 
 Chaque processus Arkvory charge du JavaScript uniquement depuis son propre répertoire de version et depuis les modules intégrés de Node.js : les services, `arkvory`, les installateurs, `arkvoryctl` et Remote Setup. Node.js chercherait aussi une bibliothèque dans le dossier `node_modules` de chaque répertoire parent, dans le répertoire personnel du compte et dans `NODE_PATH`. Arkvory refuse tous ces emplacements : une bibliothèque déposée là par quelqu'un d'autre ne s'exécute jamais.
 
-- Les modules signés se chargent depuis le répertoire des modules de l'installation, et chaque module uniquement depuis son propre paquet. Voir [Modules](./modules).
 - Les définitions des services vident `NODE_PATH`.
 - Sous Windows, seuls les administrateurs peuvent modifier `%ProgramData%\ProAnima`, au-dessus de la racine par défaut. Dans `%ProgramData%` lui-même, tout utilisateur peut créer des dossiers. Le programme d'installation modifie les autorisations quand il installe Arkvory ou répare les services. Une racine placée ailleurs garde les autorisations de ses dossiers parents : choisissez-en une dont seuls les administrateurs peuvent modifier les dossiers parents.
 - Une bibliothèque refusée se termine par `Cannot find module '…': module resolution is confined to the release directory` avec le chemin du fichier. Arkvory n'a pas besoin de ce fichier. Cherchez qui l'a déposé.

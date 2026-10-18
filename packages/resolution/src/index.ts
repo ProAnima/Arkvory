@@ -1,4 +1,4 @@
-import { existsSync, realpathSync } from 'node:fs';
+import { realpathSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { basename, dirname, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -112,14 +112,12 @@ export function confineResolution(): void {
 /**
  * Lets resolution reach files under `directory`, by its real path in both forms Windows can
  * give (a short 8.3 name stays in the JavaScript form). The caller names a directory only
- * administrators can write: a release, or the signed module directory whose own loader
- * confines that code further (ADR 0079). `optional`: a missing directory is skipped.
+ * administrators can write: a release.
  */
-export function allowResolutionUnder(directory: string, options: { optional?: boolean } = {}) {
+export function allowResolutionUnder(directory: string): void {
   const confinement = current();
   if (confinement === undefined) throw new Error('Module resolution is not confined');
   if (!isAbsolute(directory)) throw new Error('A confinement root must be an absolute path');
-  if (options.optional === true && !existsSync(directory)) return;
   for (const form of new Set([realpathSync(directory), realpathSync.native(directory)])) {
     if (dirname(form) === form) throw new Error('A filesystem root cannot be a confinement root');
     confinement.roots.add(comparable(form.endsWith(sep) ? form : form + sep));
