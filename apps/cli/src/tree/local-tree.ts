@@ -132,7 +132,15 @@ export async function localPaths(
   while (pending.length) {
     signal.throwIfAborted();
     const directory = pending.pop() ?? root;
-    for (const item of await readdir(directory, { withFileTypes: true })) {
+    let items;
+    try {
+      items = await readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      // A target that does not exist yet holds nothing.
+      if (directory === root && isMissing(error)) break;
+      throw error;
+    }
+    for (const item of items) {
       const absolute = join(directory, item.name);
       if (item.isDirectory()) pending.push(absolute);
       else if (item.isFile() && TEMPORARY.test(item.name)) temporary.push(absolute);
