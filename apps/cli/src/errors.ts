@@ -70,6 +70,8 @@ const clientExit: Readonly<Record<ClientErrorCode, number>> = {
   completion_failed: 4,
   // The server's queue would start the download after --not-after: like a timeout.
   queue_deadline: 4,
+  // --transfer strict and no client module transfer the server offers (ADR 0079, 5.2).
+  transfer_unavailable: 4,
 };
 
 // C0/C1 controls (terminal escapes), zero-width, line separators and bidirectional overrides.

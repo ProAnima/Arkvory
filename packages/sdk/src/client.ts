@@ -24,6 +24,10 @@ import type { TransferPolicy } from './transfer.js';
 import { managementClients } from './management-client.js';
 import type { IdentityClient, AdministrationClient } from './management-client.js';
 import { repositoryClient } from './repository-client.js';
+import type { TransferExtension } from '@proanima/arkvory-extension-api';
+import { TransferExtensions } from './transfer-extensions.js';
+import type { TransferEvent, TransferMode } from './transfer-extensions.js';
+import { TreeApi } from './tree-api.js';
 import type { RepositoryClient } from './repository-client.js';
 
 export interface ClientOptions extends TransferPolicy {
@@ -43,6 +47,16 @@ export interface ClientOptions extends TransferPolicy {
    * (ADR 0081): printable ASCII, 1–64 characters, no outer spaces, such as `arkvoryctl-mcp/1.2.3`.
    */
   readonly clientName?: string;
+  /**
+   * Client-side ways to move bytes (ADR 0079, 5.2), in order of preference. Used only when the
+   * server offers the same name and a common version in `capabilities.transfer`; the SDK
+   * verifies every result itself and falls back to its own transfer unless `transferMode` is
+   * `strict`. The SDK contains no extension; client modules of `arkvoryctl` provide them.
+   */
+  readonly transferExtensions?: readonly TransferExtension[];
+  readonly transferMode?: TransferMode;
+  /** Called once per download or upload with the way its bytes travelled; diagnostics only. */
+  readonly onTransfer?: (event: TransferEvent) => void;
 }
 
 /** Compatible public facade. Each operation delegates to its responsible API module. */
@@ -56,6 +70,7 @@ export class ArkvoryClient extends AccountClient {
   private readonly uploads: UploadsApi;
   private readonly uploader: UploadTransfer;
   private readonly downloads: DownloadApi;
+  private readonly trees: TreeApi;
   readonly identity: IdentityClient;
   readonly administration: AdministrationClient;
   readonly updates: UpdatesApi;
@@ -97,9 +112,16 @@ export class ArkvoryClient extends AccountClient {
     this.raw = new RawApi(http);
     this.storage = new StorageApi(http);
     this.uploads = new UploadsApi(http, normalized);
+    this.trees = new TreeApi(http);
+    const extensions = new TransferExtensions(
+      http,
+      policy.transferExtensions,
+      policy.transferMode,
+      policy.onTransfer,
+    );
     // Narrow facade ports preserve overrides of status/parts/complete/artifact in transfer workflows.
-    this.uploader = new UploadTransfer(http, normalized, this);
-    this.downloads = new DownloadApi(http, normalized, this, (path) => http.href(path));
+    this.uploader = new UploadTransfer(http, normalized, this, extensions);
+    this.downloads = new DownloadApi(http, normalized, this, (path) => http.href(path), extensions);
     const namespaces = managementClients(this);
     this.identity = namespaces.identity;
     this.administration = namespaces.administration;
@@ -256,5 +278,11 @@ export class ArkvoryClient extends AccountClient {
   }
   downloadVerified(...args: Parameters<DownloadApi['downloadVerified']>) {
     return this.downloads.downloadVerified(...args);
+  }
+  downloadRangeVerified(...args: Parameters<DownloadApi['downloadRangeVerified']>) {
+    return this.downloads.downloadRangeVerified(...args);
+  }
+  artifactTree(...args: Parameters<TreeApi['artifactTree']>) {
+    return this.trees.artifactTree(...args);
   }
 }
