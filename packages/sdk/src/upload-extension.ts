@@ -72,16 +72,28 @@ export async function extensionUpload(
   }
 }
 
+/** A descriptor in one spelling: labels and metadata compare as sets, not by their order. */
+function descriptorKey(upload: UploadResponse): string {
+  const { name, size, sha256, labels, metadata } = upload.descriptor;
+  const entries = Object.entries(metadata).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return JSON.stringify([
+    upload.id,
+    upload.repository,
+    name,
+    size,
+    sha256,
+    [...labels].sort(),
+    entries,
+  ]);
+}
+
 /**
- * The published upload must name exactly the content that was asked for: the SDK checks it
- * itself whichever way the bytes travelled.
+ * The published upload must be exactly the one that was asked for — the same session,
+ * repository and descriptor (name, size, SHA-256, labels, metadata): the SDK checks it itself
+ * whichever way the bytes travelled.
  */
 export function publishedAsRequested(result: UploadResponse, requested: UploadResponse) {
-  if (
-    result.status !== 'available' ||
-    result.descriptor.size !== requested.descriptor.size ||
-    result.descriptor.sha256 !== requested.descriptor.sha256
-  )
+  if (result.status !== 'available' || descriptorKey(result) !== descriptorKey(requested))
     throw new ArkvoryIntegrityError();
   return result;
 }

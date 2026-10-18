@@ -391,7 +391,9 @@ test('an extension upload is accepted only when the published upload is the one 
       const status = state.sent ? 'available' : 'pending';
       const sha =
         state.forged && state.sent ? sha256(Buffer.from('other')) : meta.descriptor.sha256;
-      return res.end(JSON.stringify({ ...artifact(bytes, status, sha), id: 'u1' }));
+      const body = { ...artifact(bytes, status, sha), id: 'u1' };
+      if (state.sent && state.change) state.change(body);
+      return res.end(JSON.stringify(body));
     }
     res.statusCode = 500;
     res.end('{}');
@@ -427,6 +429,25 @@ test('an extension upload is accepted only when the published upload is the one 
     second.client.resume('releases', 'u1', new Blob([bytes])),
     ArkvoryIntegrityError,
   );
+  // The whole descriptor must be the one asked for, not only size and SHA-256.
+  for (const change of [
+    (body) => (body.descriptor.name = 'other.bin'),
+    (body) => (body.descriptor.labels = ['injected']),
+    (body) => (body.descriptor.metadata = { origin: 'module' }),
+    (body) => (body.repository = 'other'),
+    (body) => (body.id = 'u2'),
+  ]) {
+    const state = { change };
+    const changed = await server(t, bytes, {
+      offers: offer(),
+      extensions: [sender(state)],
+      upload: upload(state),
+    });
+    await assert.rejects(
+      changed.client.resume('releases', 'u1', new Blob([bytes])),
+      ArkvoryIntegrityError,
+    );
+  }
   // A declining extension in strict mode refuses instead of falling back.
   const declined = {};
   const third = await server(t, bytes, {
