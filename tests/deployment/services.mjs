@@ -14,6 +14,13 @@ import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { requireDisposableHost } from './disposable-host.mjs';
+import {
+  assertCodeDirectories,
+  foreignCodeDirectories,
+  refuseLinkedCodeDirectories,
+  remoteStage,
+  verifiedRuntime,
+} from './windows-protection.mjs';
 const windows = process.platform === 'win32';
 requireDisposableHost('Service acceptance');
 // LocalService cannot resolve Node entrypoints through another user's private AppData.
@@ -140,13 +147,22 @@ async function refuseLinkedVendor() {
 try {
   if (windows) {
     await refuseLinkedVendor();
+    // Installation hardening (ADR 0031): links in code directories, the verified runtime of
+    // install.ps1 and the Remote Setup stage, each in its own directory beside the gate's root.
+    await refuseLinkedCodeDirectories(join(root, '..'), process.execPath, prefix);
+    await verifiedRuntime(join(root, '..'));
+    await remoteStage(join(root, '..'));
+    await foreignCodeDirectories(root);
     // A root another account owns keeps that account able to rewrite its DACL: install and
     // repair give it to Administrators.
     const self = powershellValue('[Security.Principal.WindowsIdentity]::GetCurrent().User.Value');
     run('icacls.exe', [root, '/setowner', `*${self}`]);
   }
   register();
-  if (windows) assert.equal(ownerOf(root), 'S-1-5-32-544', 'Administrators own the root');
+  if (windows) {
+    assert.equal(ownerOf(root), 'S-1-5-32-544', 'Administrators own the root');
+    assertCodeDirectories(root);
+  }
   openVault();
   if (!windows) run('sudo', ['touch', marker]);
   // Repair must restore persisted boot/recovery settings, not merely rewrite configuration files.

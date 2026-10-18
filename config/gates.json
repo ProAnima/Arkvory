@@ -157,7 +157,7 @@
     },
     "deployment-services": {
       "needs": ["build"],
-      "timeoutSeconds": 300,
+      "timeoutSeconds": 480,
       "entries": ["tests/deployment/services.mjs"],
       "kind": "scenario"
     },
@@ -223,6 +223,7 @@
   "spawnedHelpers": [
     "tests/integration/api-child.mjs",
     "tests/deployment/service-child.mjs",
+    "tests/deployment/execution-probe.mjs",
     "tests/deployment/process-child.mjs",
     "tests/deployment/stand-probe.mjs",
     "tests/watchdog-child.mjs"
