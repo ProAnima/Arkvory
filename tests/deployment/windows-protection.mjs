@@ -63,7 +63,8 @@ const codeDirectories = ['runtime', 'releases', 'config', 'modules'];
 /**
  * Before registration: the code directories belong to the running user, one grants Users
  * write and holds an entry with its own DACL, as if another account had made them. The same
- * user owns the GitHub token file in the root and a file in the data tree.
+ * user owns the GitHub token file in the root and a file in the data tree. The root and
+ * modules carry an explicit full-control rule for Everyone that an earlier tool left.
  */
 export async function foreignCodeDirectories(root) {
   const user = self();
@@ -73,14 +74,20 @@ export async function foreignCodeDirectories(root) {
   for (const name of codeDirectories)
     execFileSync('icacls.exe', [join(root, name), '/setowner', `*${user}`, '/T']);
   execFileSync('icacls.exe', [join(root, 'releases'), '/grant', '*S-1-5-32-545:(OI)(CI)M']);
+  for (const directory of [root, join(root, 'modules')])
+    execFileSync('icacls.exe', [directory, '/grant', '*S-1-1-0:(OI)(CI)F']);
   const code = join(root, 'releases', '0.0.1', 'code.js');
   execFileSync('icacls.exe', [code, '/inheritance:r', '/grant:r', `*${user}:F`]);
   await writeFile(join(root, 'data', 'foreign.marker'), '');
   for (const file of [join(root, 'github-token.txt'), join(root, 'data', 'foreign.marker')])
     execFileSync('icacls.exe', [file, '/setowner', `*${user}`]);
 }
-/** After full registration: Administrators own the code directories and only they change them. */
+/**
+ * After full registration: Administrators own the root and the code directories, only they
+ * change them, and no explicit rule from before remains.
+ */
 export function assertCodeDirectories(root) {
+  assert.deepEqual(security(root), protectedDirectory(['S-1-5-19']), 'root');
   for (const name of codeDirectories)
     assert.deepEqual(security(join(root, name)), protectedDirectory(['S-1-5-19']), name);
   const nested = security(join(root, 'releases', '0.0.1', 'code.js'));

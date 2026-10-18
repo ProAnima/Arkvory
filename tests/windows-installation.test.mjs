@@ -28,13 +28,16 @@ test('install.ps1 and protect-windows.ps1 share one copy of the code-directory r
   assert.equal(region(install), region(protect));
   inOrder(region(protect), [
     "$codeDirectories = @('runtime', 'releases', 'config', 'modules')",
+    'function Set-ExactAccess',
+    '$acl = [Security.AccessControl.DirectorySecurity]::new()',
+    '$acl.SetAccessRuleProtection($true, $false)',
+    '[IO.Directory]::SetAccessControl($directory, $acl)',
     'function Protect-CodeDirectory',
     'Assert-NotLink $directory',
     'if (Test-CodeDirectory $directory $readers) { return }',
     'Assert-NoLinkBelow $directory',
     '& takeown.exe /F $directory /A /R',
-    '$acl.SetAccessRuleProtection($true, $false)',
-    '[IO.Directory]::SetAccessControl($directory, $acl)',
+    'Set-ExactAccess $directory $grants',
     '/reset /T /C /Q',
     'Assert-NoLinkBelow $directory',
   ]);
@@ -45,7 +48,7 @@ test('install.ps1 runs Node.js only after the runtime passed verification', asyn
   inOrder(install, [
     "foreach ($name in @('runtime', 'releases')) { Assert-NotLink (Join-Path $Root $name) }",
     '& takeown.exe /F $Root /A',
-    '& icacls.exe $Root /inheritance:r',
+    'try { Set-ExactAccess $Root $grants }',
     "Protect-CodeDirectory $path @('S-1-5-19')",
     "$nodeSha256 = 'BA4E6D110E8C1592A1ECD390F6B05F3DA124B13871A5BE62B341A07A853C6C32'",
     'return (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -eq $nodeSha256',
@@ -89,6 +92,8 @@ test('install, repair and native Setup protect the root before code from it runs
     'Assert-NotLink $Root',
     'foreach ($name in $codeDirectories) { Assert-NotLink (Join-Path $Root $name) }',
     '& takeown.exe /F $Root /A',
+    "$rootGrants += , @('S-1-5-20', 'ReadAndExecute', 'This folder only')",
+    'try { Set-ExactAccess $Root $rootGrants }',
     "if ($name -eq 'runtime' -and (Test-Path -LiteralPath (Join-Path $Root 'database'))) { $readers += 'S-1-5-20' }",
     'Protect-CodeDirectory $path $readers',
     "'config/bootstrap-token.txt','config/postgres.env','github-token.txt','bootstrap.owner'",
@@ -112,9 +117,12 @@ test('install, repair and native Setup protect the root before code from it runs
     await read('scripts/package-native.mjs'),
     /copyFile\('deploy\/protect-windows\.ps1', join\(payload, 'protect-windows\.ps1'\)\)/,
   );
-  // database-windows.ps1 still grants NetworkService the runtime it reads.
+  // database-windows.ps1 still grants NetworkService the runtime it reads and the root itself
+  // (this folder only), which the exact DACL of the root keeps.
+  const database = await read('deploy/database-windows.ps1');
   assert.match(
-    await read('deploy/database-windows.ps1'),
+    database,
     /icacls\.exe \(Join-Path \$Root 'runtime'\) \/grant:r '\*S-1-5-20:\(OI\)\(CI\)RX' \/T/,
   );
+  assert.ok(database.includes("& icacls.exe $Root /grant:r '*S-1-5-20:(RX)'"), 'root traversal');
 });

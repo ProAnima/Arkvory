@@ -52,6 +52,18 @@ function Test-CodeDirectory([string]$directory, [string[]]$readers) {
     }
     return $true
 }
+# Replaces the whole DACL with a protected one of exactly these grants (SID, rights, and
+# 'This folder only' as a third element, else inherited by everything below): explicit rules
+# that another account or an earlier tool left on the directory do not survive.
+function Set-ExactAccess([string]$directory, [object[]]$grants) {
+    $acl = [Security.AccessControl.DirectorySecurity]::new()
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($grant in $grants) {
+        $inheritance = if ($grant.Count -gt 2) { 'None' } else { 'ContainerInherit,ObjectInherit' }
+        $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($grant[0]), $grant[1], $inheritance, 'None', 'Allow'))
+    }
+    [IO.Directory]::SetAccessControl($directory, $acl)
+}
 function Protect-CodeDirectory([string]$directory, [string[]]$readers) {
     Assert-NotLink $directory
     # Once protected and owned by Administrators, only they could add entries below it.
@@ -62,13 +74,8 @@ function Protect-CodeDirectory([string]$directory, [string[]]$readers) {
     Assert-NoLinkBelow $directory
     & takeown.exe /F $directory /A /R | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Cannot take ownership of $directory" }
-    $acl = [Security.AccessControl.DirectorySecurity]::new()
-    $acl.SetAccessRuleProtection($true, $false)
     $grants = @($administratorSids | ForEach-Object { , @($_, 'FullControl') }) + @($readers | ForEach-Object { , @($_, 'ReadAndExecute') })
-    foreach ($grant in $grants) {
-        $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($grant[0]), $grant[1], 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-    }
-    [IO.Directory]::SetAccessControl($directory, $acl)
+    Set-ExactAccess $directory $grants
     # Entries below keep only what they inherit from the protected directory.
     if (@([IO.Directory]::EnumerateFileSystemEntries($directory) | Select-Object -First 1).Count -gt 0) {
         & icacls.exe (Join-Path $directory '*') /reset /T /C /Q | Out-Null
@@ -99,17 +106,15 @@ foreach ($name in $codeDirectories) { Assert-NotLink (Join-Path $Root $name) }
 & takeown.exe /F $Root /A | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot take ownership of the installation directory' }
 # SIDs are independent of the Windows display language. Application identity cannot modify releases or updater credentials.
-& icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'Cannot secure installation directory' }
+# The DACL is replaced as a whole, so explicit rules of whoever created the root go; the
+# managed database (NetworkService) keeps reading the root itself, as database-windows.ps1 grants.
+$rootGrants = @(@('S-1-5-18', 'FullControl'), @('S-1-5-32-544', 'FullControl'), @('S-1-5-19', 'ReadAndExecute'))
+if (Test-Path -LiteralPath (Join-Path $Root 'database')) { $rootGrants += , @('S-1-5-20', 'ReadAndExecute', 'This folder only') }
+try { Set-ExactAccess $Root $rootGrants } catch { throw "Cannot secure installation directory: $($_.Exception.Message)" }
 if ($defaultVendor) {
     & takeown.exe /F $vendor /A | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Cannot take ownership of the ProAnima directory' }
-    $acl = [Security.AccessControl.DirectorySecurity]::new()
-    $acl.SetAccessRuleProtection($true, $false)
-    foreach ($grant in @(@('S-1-5-18', 'FullControl'), @('S-1-5-32-544', 'FullControl'), @('S-1-5-32-545', 'ReadAndExecute'))) {
-        $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($grant[0]), $grant[1], 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
-    }
-    [IO.Directory]::SetAccessControl($vendor, $acl)
+    Set-ExactAccess $vendor @(@('S-1-5-18', 'FullControl'), @('S-1-5-32-544', 'FullControl'), @('S-1-5-32-545', 'ReadAndExecute'))
 }
 foreach ($name in $Create) { New-Item -ItemType Directory -Force -Path (Join-Path $Root $name) | Out-Null }
 # The services (LocalService) read and run the code; the database service (NetworkService) runs
