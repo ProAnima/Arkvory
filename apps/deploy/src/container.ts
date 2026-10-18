@@ -1,3 +1,4 @@
+import './confine.js';
 import { isAbsolute } from 'node:path';
 import { runRole } from './runtime.js';
 import { vaultContents } from './vault-location.js';

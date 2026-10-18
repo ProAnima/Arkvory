@@ -147,6 +147,14 @@ Jedes Release hat ein Manifest `arkvory-release.json` mit dem SHA-256 seines Arc
 - Der grafische Installer und die Pakete `.deb` und `.rpm` sind noch nicht mit einem Herausgeberzertifikat signiert. Windows zeigt den Herausgeber als unbekannt an. Laden Sie sie nur von [GitHub Releases](https://github.com/ProAnima/Arkvory/releases) herunter und vergleichen Sie die SHA-256-Werte mit `release-checksums.json`.
 - Ein Release, das das Datenbankschema ändert, wird erst installiert, nachdem der Server ein frisches Backup erstellt und geprüft hat. Siehe [Updates](../install/updates).
 
+## Welchen Code Arkvory lädt {#code-loading}
+
+Jeder Arkvory-Prozess lädt JavaScript nur aus seinem eigenen Release-Verzeichnis und aus den eingebauten Modulen von Node.js: die Dienste, `arkvory`, die Installer, `arkvoryctl` und Remote Setup. Node.js würde eine Bibliothek auch im Ordner `node_modules` jedes übergeordneten Verzeichnisses, im Home-Verzeichnis des Kontos und in `NODE_PATH` suchen. Arkvory lehnt alle diese Orte ab. Eine Bibliothek, die jemand anderes dort ablegt, wird also nie ausgeführt.
+
+- Die Dienstdefinitionen leeren `NODE_PATH`.
+- Unter Windows dürfen nur Administratoren `%ProgramData%\ProAnima` über dem Standardstamm ändern. In `%ProgramData%` selbst darf jeder Benutzer Ordner anlegen. Setup ändert die Berechtigungen, wenn es Arkvory installiert oder die Dienste repariert. Ein Stamm an einem anderen Ort behält die Berechtigungen seiner übergeordneten Ordner: Wählen Sie einen, dessen übergeordnete Ordner nur Administratoren ändern dürfen.
+- Eine abgelehnte Bibliothek endet mit `Cannot find module '…': module resolution is confined to the release directory` und dem Pfad der Datei. Arkvory braucht diese Datei nicht. Finden Sie heraus, wer sie dort abgelegt hat.
+
 ## Was an den Hub von ProAnimaStudio gesendet wird {#hub}
 
 Updates werden im Hub von ProAnimaStudio (`https://hub.proanima.net`) freigegeben. Der Server kontaktiert ihn in diesen Fällen:

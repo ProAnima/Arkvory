@@ -147,6 +147,14 @@ Cada release tem um manifesto `arkvory-release.json` com o SHA-256 do arquivo e 
 - O instalador gráfico e os pacotes `.deb` e `.rpm` ainda não são assinados com um certificado de editor. O Windows mostra o editor como desconhecido. Baixe-os somente do [GitHub Releases](https://github.com/ProAnima/Arkvory/releases) e compare os valores SHA-256 com `release-checksums.json`.
 - Um release que muda o esquema do banco de dados só é instalado depois que o servidor cria e verifica um backup recente. Consulte [Atualizações](../install/updates).
 
+## Que código o Arkvory carrega {#code-loading}
+
+Cada processo do Arkvory carrega JavaScript apenas do seu próprio diretório de versão e dos módulos integrados do Node.js: os serviços, `arkvory`, os instaladores, `arkvoryctl` e o Remote Setup. O Node.js também procuraria uma biblioteca na pasta `node_modules` de cada diretório acima, no diretório pessoal da conta e em `NODE_PATH`. O Arkvory recusa todos esses lugares, por isso uma biblioteca que outra pessoa coloque lá nunca é executada.
+
+- As definições dos serviços limpam `NODE_PATH`.
+- No Windows só os administradores podem alterar `%ProgramData%\ProAnima`, acima da raiz padrão. No próprio `%ProgramData%` qualquer usuário pode criar pastas. O instalador altera as permissões quando instala o Arkvory ou repara os serviços. Uma raiz em outro lugar mantém as permissões das pastas acima dela: escolha uma cujas pastas acima só os administradores possam alterar.
+- Uma biblioteca recusada termina com `Cannot find module '…': module resolution is confined to the release directory` e o caminho do arquivo. O Arkvory não precisa desse arquivo. Descubra quem o colocou lá.
+
 ## O que é enviado ao hub da ProAnimaStudio {#hub}
 
 As atualizações são aprovadas no hub da ProAnimaStudio (`https://hub.proanima.net`). O servidor o contata nestes casos:

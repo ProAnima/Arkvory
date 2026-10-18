@@ -1,3 +1,4 @@
+import './confine.js';
 import { GarbageCollector } from '@proanima/arkvory-application';
 import { PostgresCleanup } from '@proanima/arkvory-infrastructure';
 import { ArkvoryError } from '@proanima/arkvory-domain';

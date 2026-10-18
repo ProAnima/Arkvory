@@ -172,6 +172,8 @@ sudo arkvory configure --root /opt/proanima-arkvory --backup-vault-off
 | `journal.json`, `operation.lock`                 | Состояние переключения/восстановления                         |
 | `launcher.mjs`, `manage.mjs`                     | Загрузчики текущего релиза                                    |
 
+Каждый процесс Arkvory загружает код только из своего релиза и встроенных модулей Node.js: родительские `node_modules`, `~/.node_modules` и `NODE_PATH` отклоняются, определения служб очищают `NODE_PATH`. На Windows установка и восстановление служб оставляют `%ProgramData%\ProAnima` над корнем по умолчанию на запись только администраторам; родителей корня в другом месте выбирает и защищает оператор. [ADR 0031, дополнение 2026-10-18](../docs/adr/0031-release-installation-and-supervision.md#confinement).
+
 Контейнерные данные находятся в `proanima-arkvory_storage` и `proanima-arkvory_catalog`, а не в host data. Не запускайте `down --volumes` на установленном хранилище. Профиль имеет фиксированные Compose project и порт, одна установка на container host. Нельзя подключать второго writer к той же БД/root.
 
 Примеры используют `node`; при отсутствии в PATH укажите поставленный `runtime/node-v24.21.0-<platform>/bin/node` (Linux) либо `runtime/node-v24.21.0-win-x64/node.exe`. Выполняйте команды с правами администратора (для Compose без повышения — от пользователя, установившего его):
