@@ -69,6 +69,19 @@ function allowedToAll(
   }
 }
 
+/** The package filter rules of `ArtifactCatalog.resolvePackage`, checked before any rights. */
+function requirePackageQuery(query: {
+  readonly group: unknown;
+  readonly name: unknown;
+  readonly version: unknown;
+}): void {
+  const { group, name, version } = query;
+  const text = (value: unknown, min: number) =>
+    typeof value === 'string' && value.length >= min && value.length <= 128;
+  if (!text(group, 0) || !text(name, 1) || (version !== null && !text(version, 0)))
+    throw new ArkvoryError('invalid_input', 'Invalid package filter');
+}
+
 /**
  * Reading the catalog for modules with the rights of a scope (ADR 0083, N4): every principal
  * of the scope must be allowed, through the same use cases and checks as `/api/v1`. Absent,
@@ -143,6 +156,7 @@ export class ScopedCatalog {
     query: { readonly group: string; readonly name: string; readonly version: string | null },
   ): Promise<ScopedArtifact | null> {
     requireRepository(repository);
+    requirePackageQuery(query);
     let id: string | null = null;
     for (const principal of principals) {
       const resolved = await orNull(() =>

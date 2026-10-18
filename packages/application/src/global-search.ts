@@ -117,6 +117,7 @@ export function decodeSearchCursor(value: string): GlobalSearchPosition {
 export function listableRepositories(
   principal: Principal,
   only?: readonly string[],
+  cap: number = GLOBAL_SEARCH_REPOSITORIES,
 ): readonly string[] {
   const names = new Set<string>();
   for (const binding of effectivePermissions(principal))
@@ -127,7 +128,7 @@ export function listableRepositories(
       names.add(binding.resource.id);
   const allowed: string[] = [];
   for (const name of [...names].sort()) {
-    if (allowed.length === GLOBAL_SEARCH_REPOSITORIES) break;
+    if (allowed.length >= cap) break;
     try {
       authorizeAction(principal, name, 'artifact.list', ['read']);
       allowed.push(name);
@@ -156,10 +157,13 @@ export class GlobalSearch {
     return this.searchIn(input, (requested) => {
       const [first, ...others] = principals;
       if (first === undefined) return [];
-      const each = others.map((p) => new Set(listableRepositories(p, requested)));
-      return listableRepositories(first, requested).filter((name) =>
-        each.every((names) => names.has(name)),
-      );
+      // Intersected before the cap: a repository all may list is never cut by the order of
+      // the principals or by the first one's other repositories.
+      const all = (p: Principal) => listableRepositories(p, requested, Number.POSITIVE_INFINITY);
+      const each = others.map((p) => new Set(all(p)));
+      return all(first)
+        .filter((name) => each.every((names) => names.has(name)))
+        .slice(0, GLOBAL_SEARCH_REPOSITORIES);
     });
   }
 

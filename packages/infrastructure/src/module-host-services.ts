@@ -7,7 +7,8 @@ import type {
   ModuleResources,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
-import { AccessScopes } from './module-catalog.js';
+import type { ScopedCatalog } from '@proanima/arkvory-application';
+import { AccessScopes, moduleCatalog } from './module-catalog.js';
 import { openModuleData } from './module-data.js';
 import type { ModuleData } from './module-data.js';
 import type { VolumeReserve } from './volume-space.js';
@@ -23,11 +24,8 @@ export interface HostServiceSources {
   readonly reserve: VolumeReserve;
   /** A read gateway: data directories are read-only there. */
   readonly readOnly: boolean;
-  /** The catalog services, built when the first module that uses one is created. */
-  readonly catalog: (scopes: AccessScopes) => {
-    readonly catalog: CatalogRead;
-    readonly content: ContentRead;
-  };
+  /** The catalog use cases, built when the first module that uses one is created. */
+  readonly catalog: () => ScopedCatalog;
 }
 
 /**
@@ -70,8 +68,8 @@ function lazyFiles(
  * and their periodic reconciliation until `close`.
  */
 export class ModuleHostServices {
-  readonly scopes = new AccessScopes();
-  private catalogServices: ReturnType<HostServiceSources['catalog']> | undefined;
+  private readonly moduleScopes = new Map<string, AccessScopes>();
+  private scoped: ScopedCatalog | undefined;
   private readonly data = new Map<string, { opening: Promise<ModuleData>; opened?: ModuleData }>();
   private timer: ReturnType<typeof setInterval> | undefined;
 
@@ -80,7 +78,8 @@ export class ModuleHostServices {
   /** The services of one module; `resources` is the approved size of its data directory. */
   for(module: PlannedModule, resources: ModuleResources | null): HostServices {
     const uses = (name: string) => module.manifest.uses.includes(name);
-    const catalog = uses('catalog-read') || uses('content-read') ? this.catalog() : undefined;
+    const catalog =
+      uses('catalog-read') || uses('content-read') ? this.catalog(module.manifest.id) : undefined;
     return {
       ...(catalog && uses('catalog-read') ? { 'catalog-read': catalog.catalog } : {}),
       ...(catalog && uses('content-read') ? { 'content-read': catalog.content } : {}),
@@ -90,9 +89,26 @@ export class ModuleHostServices {
     };
   }
 
-  private catalog() {
-    this.catalogServices ??= this.sources.catalog(this.scopes);
-    return this.catalogServices;
+  /**
+   * The scopes of one module (ADR 0083, N4): the host makes a module's scopes here, from the
+   * principal of the module's request or its service principal, and only that module's
+   * services read with them.
+   */
+  scopes(moduleId: string): AccessScopes {
+    let scopes = this.moduleScopes.get(moduleId);
+    if (!scopes) {
+      scopes = new AccessScopes();
+      this.moduleScopes.set(moduleId, scopes);
+    }
+    return scopes;
+  }
+
+  private catalog(moduleId: string): {
+    readonly catalog: CatalogRead;
+    readonly content: ContentRead;
+  } {
+    this.scoped ??= this.sources.catalog();
+    return moduleCatalog(this.scoped, this.scopes(moduleId));
   }
 
   private directory(moduleId: string, resources: ModuleResources | null): ModuleDataDirectory {

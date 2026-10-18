@@ -8,7 +8,6 @@ import {
 import {
   defaultStorageReserveBytes,
   defaultStorageReserveInodes,
-  moduleCatalog,
   ModuleHostServices,
   PostgresBrowse,
   PostgresGlobalSearch,
@@ -43,7 +42,7 @@ export function apiHostServices(
       inodes: config.storageReserveInodes ?? defaultStorageReserveInodes,
     },
     readOnly: role === 'reader',
-    catalog: (scopes) => {
+    catalog: () => {
       // Reads only: no upload is created through this service, so placement is not needed.
       const storage = new StorageService(catalog, blobs, {
         next: randomUUID,
@@ -55,7 +54,7 @@ export function apiHostServices(
         new ZipManifestReader(blobs, pins),
       );
       const search = new GlobalSearch(new PostgresGlobalSearch(catalog.pool));
-      return moduleCatalog(new ScopedCatalog(storage, browse, search, pins), scopes);
+      return new ScopedCatalog(storage, browse, search, pins);
     },
   });
 }

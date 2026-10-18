@@ -14,10 +14,19 @@ import type { Principal } from '@proanima/arkvory-domain';
 import type { ScopedArtifact, ScopedCatalog, ScopedContent } from '@proanima/arkvory-application';
 import { serviceCall } from './module-errors.js';
 
+/** A copy of a principal nobody can change: a module never reaches the caller's object. */
+function sealed<T>(value: T): T {
+  if (typeof value === 'object' && value !== null)
+    for (const field of Object.values(value)) sealed(field);
+  return Object.freeze(value);
+}
+
 /**
- * The access scopes of one host (ADR 0083, N4). A scope is an empty frozen object the core
- * remembers with its principals; a module can pass it around but not read, build or widen it,
- * and an object the core did not make has no principals, so it sees nothing.
+ * The access scopes of one module in one host (ADR 0083, N4). A scope is an empty frozen object
+ * the core remembers with a frozen copy of its principals; a module can pass it around but not
+ * read, build or widen it, and an object these scopes did not make has no principals, so it
+ * sees nothing. The host keeps one `AccessScopes` per module: a scope handed to another module
+ * (through a capability value, say) reads nothing there.
  */
 export class AccessScopes {
   private readonly principals = new WeakMap<object, readonly Principal[]>();
@@ -25,7 +34,7 @@ export class AccessScopes {
   /** The scope of a request's or a module's principal, or of all of them at once. */
   of(principals: readonly Principal[]): AccessScope {
     const token: object = Object.freeze({});
-    this.principals.set(token, Object.freeze([...principals]));
+    this.principals.set(token, sealed(principals.map((principal) => structuredClone(principal))));
     // The brand exists only in types: this module is the one place that makes scopes.
     return token as AccessScope;
   }
@@ -63,13 +72,21 @@ function pageLimit(limit: number): string {
   return String(limit);
 }
 
-function handle(content: ScopedContent): ContentHandle {
+/**
+ * The bytes of an opened blob: `read()` without a range reads the range `open` was given (the
+ * whole blob without one), and every range is checked against the size before any byte is
+ * asked of the storage, so a storage only ever sees exact ranges inside its object.
+ */
+function handle(content: ScopedContent, opened: ByteRange | undefined): ContentHandle {
   let released = false;
   const { size, sha256 } = content.upload.descriptor;
   return {
     descriptor: { size, sha256 },
-    async *read(range?: ByteRange) {
+    async *read(given?: ByteRange) {
       if (released) throw new ModuleServiceError('unavailable', 'Content handle released');
+      const range = given ?? opened;
+      if (range !== undefined && !inside(range, size))
+        throw new ModuleServiceError('invalid_input', 'Range outside the content');
       try {
         content.pin.check();
         for await (const chunk of content.read(range)) {
@@ -90,15 +107,31 @@ function handle(content: ScopedContent): ContentHandle {
   };
 }
 
-function validRange(range: ByteRange | undefined, size: number): boolean {
-  return (
-    range === undefined ||
-    (Number.isSafeInteger(range.start) &&
-      Number.isSafeInteger(range.end) &&
-      range.start >= 0 &&
-      range.start <= range.end &&
-      range.end < size)
-  );
+/**
+ * A range as a module may pass it: an object with ordered non-negative safe integers. It is
+ * checked before any rights, like every malformed input; `inside` checks it against a size.
+ */
+function rangeOf(range: unknown): ByteRange | undefined {
+  if (range === undefined) return undefined;
+  if (typeof range === 'object' && range !== null) {
+    const start: unknown = Reflect.get(range, 'start');
+    const end: unknown = Reflect.get(range, 'end');
+    if (
+      typeof start === 'number' &&
+      typeof end === 'number' &&
+      Number.isSafeInteger(start) &&
+      Number.isSafeInteger(end) &&
+      start >= 0 &&
+      start <= end
+    )
+      return { start, end };
+  }
+  throw new ModuleServiceError('invalid_input', 'Invalid range');
+}
+
+function inside(range: ByteRange, size: number): boolean {
+  const checked = rangeOf(range);
+  return checked !== undefined && checked.end < size;
 }
 
 /**
@@ -166,13 +199,15 @@ export function moduleCatalog(
   const content: ContentRead = {
     open: (scope, ref, range) =>
       serviceCall(async () => {
+        const requested = rangeOf(range);
         const opened = await scoped.content(of(scope), ref.repository, ref.id);
         if (opened === null) return null;
-        if (!validRange(range, opened.upload.descriptor.size)) {
+        // The pin is held from here: nothing may throw before the handle owns it.
+        if (requested !== undefined && requested.end >= opened.upload.descriptor.size) {
           await opened.pin.release();
           throw new ModuleServiceError('invalid_input', 'Range outside the content');
         }
-        return handle(opened);
+        return handle(opened, requested);
       }),
   };
   return { catalog, content };

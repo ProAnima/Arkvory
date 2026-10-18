@@ -246,6 +246,10 @@ export interface ContentRef {
  */
 export interface ContentHandle {
   readonly descriptor: BlobDescriptor;
+  /**
+   * Exactly the bytes of `range`, or of the range given to `open` when it is omitted (the whole
+   * blob without either); a range that is not inside the blob is `invalid_input`.
+   */
   read(range?: ByteRange): AsyncIterable<Uint8Array>;
   /** Idempotent. */
   release(): Promise<void>;
@@ -253,6 +257,8 @@ export interface ContentHandle {
 /**
  * Reading content with the rights of a scope (service `content-read`): `content.read` is checked
  * and the content is pinned against cleanup before the handle is given. Null as in `CatalogRead`.
+ * A malformed `range` is `invalid_input` whatever the rights; one past the end of a blob the
+ * scope may read is `invalid_input` too, and nothing stays pinned.
  */
 export interface ContentRead {
   open(scope: AccessScope, ref: ContentRef, range?: ByteRange): Promise<ContentHandle | null>;

@@ -19,8 +19,8 @@ test('every host service the core provides has a contract suite in extension-tes
   }
 });
 
-function planned(uses, roles = ['api']) {
-  return { manifest: { id: 'op-index', uses, roles }, source: 'operator', enabled: true };
+function planned(uses, roles = ['api'], id = 'op-index') {
+  return { manifest: { id, uses, roles }, source: 'operator', enabled: true };
 }
 
 test('a module receives only the services its manifest declares', async (t) => {
@@ -33,7 +33,7 @@ test('a module receives only the services its manifest declares', async (t) => {
     readOnly: false,
     catalog: () => {
       built++;
-      return { catalog: { name: 'catalog' }, content: { name: 'content' } };
+      return {};
     },
   });
   t.after(() => host.close());
@@ -46,7 +46,7 @@ test('a module receives only the services its manifest declares', async (t) => {
     dataFiles: 2,
   });
   assert.deepEqual(Object.keys(both).sort(), ['catalog-read', 'content-read', 'data-directory']);
-  assert.equal(built, 1, 'one catalog service for the process');
+  assert.equal(built, 1, 'one set of catalog use cases for the process');
   const files = both['data-directory'].data;
   assert.deepEqual(files.usage(), { bytes: 0, files: 0, quotaBytes: 1024 * 1024, quotaFiles: 2 });
   const sink = await files.create('a', { durable: false, exclusive: true });
@@ -58,4 +58,37 @@ test('a module receives only the services its manifest declares', async (t) => {
   await assert.rejects(none.create('b', { durable: false, exclusive: false }), {
     code: 'module_quota_exceeded',
   });
+});
+
+test('a scope reads only through the services of the module it was made for', async (t) => {
+  const seen = [];
+  const host = new ModuleHostServices({
+    dataDirectory: tmpdir(),
+    reserve: { bytes: 0, inodes: 0 },
+    readOnly: false,
+    catalog: () => ({
+      artifact: async (principals) => {
+        seen.push(principals.map((principal) => principal.id));
+        return null;
+      },
+    }),
+  });
+  t.after(() => host.close());
+  const principal = {
+    credential: 'file-key',
+    id: 'reader',
+    repositories: ['releases'],
+    permissions: ['read'],
+  };
+  const scope = host.scopes('op-index').of([principal]);
+  // The caller's object changes later: the scope keeps the principal it was made with.
+  principal.permissions.push('write');
+  const own = host.for(planned(['catalog-read']), null)['catalog-read'];
+  const other = host.for(planned(['catalog-read'], ['api'], 'op-other'), null)['catalog-read'];
+  const id = '00000000-0000-4000-8000-000000000001';
+  await own.artifact(scope, 'releases', id);
+  await other.artifact(scope, 'releases', id);
+  assert.deepEqual(seen, [['reader'], []]);
+  assert.ok(Object.isFrozen(host.scopes('op-index').principalsOf(scope)[0].permissions));
+  assert.deepEqual(host.scopes('op-index').principalsOf(scope)[0].permissions, ['read']);
 });
