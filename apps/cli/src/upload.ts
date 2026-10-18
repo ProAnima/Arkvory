@@ -17,6 +17,8 @@ export interface UploadInput {
   signal: AbortSignal;
   progress: (bytes: number, total: number) => void;
   requestTimeoutMs?: number;
+  /** The artifact's name; the file's own name when absent (`tree push` names its archive). */
+  name?: string;
   /** Already computed by the caller (put): the file is not read twice. */
   sha256?: string;
   /** The source already open (`mcp`): read through it instead of opening `path` again. */
@@ -56,7 +58,7 @@ export async function upload(input: UploadInput) {
       ...(input.values ?? (input.annotations ? record(await readJson(input.annotations)) : {})),
     });
     const descriptor = {
-      name: basename(path),
+      name: input.name ?? basename(path),
       size: String(blob.size),
       sha256,
       labels: annotations.labels,
