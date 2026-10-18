@@ -23,6 +23,9 @@ export const COMPUTED_IMPORTS = {
   'apps/deploy/src/manage.ts': 'core release',
   // Scripts sent to `node -e` on a remote host import its installed core release, as above.
   'apps/deploy/src/remote-workflow.ts': 'core release, in scripts run on the remote host',
+  // Registers the resolution hook of every shipped entry; it loads nothing and refuses whatever
+  // resolves outside the release (ADR 0031, addendum 2026-10-18).
+  'packages/resolution/src/index.ts': 'resolution confined to the release',
 };
 
 const NODE_MODULE = new Set(['module', 'node:module']);
