@@ -110,6 +110,11 @@ test('only client packages signed by a ProAnimaStudio module key are accepted', 
   for (const [overrides, pointer] of [
     [{ roles: ['api'] }, '/roles'],
     [{ routePrefixes: ['/x/'] }, '/routePrefixes'],
+    [{ uses: ['routes'] }, '/uses'],
+    // Capability values and a data directory exist only in server processes (ADR 0083, N6, N13).
+    [{ optional: ['cache@^0.3.0'] }, '/optional'],
+    [{ exposeTo: ['signed'] }, '/exposeTo'],
+    [{ resources: { dataMiB: 1, dataFiles: 1 } }, '/resources'],
     [{ dataClass: 'auxiliary' }, '/dataClass'],
     [{ entry: { api: 'files/main.mjs' } }, '/entry/api'],
   ]) {

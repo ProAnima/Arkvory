@@ -156,8 +156,8 @@ function moduleManifest(rest: Row): ModuleManifest {
  * The module fields of a client package (ADR 0079, 5.11): read by the same rules as a server
  * module except `roles`, which a client package has none of — `parseModuleManifest` requires at
  * least one, so it reads the fields with a placeholder role that is dropped again. A client
- * module runs in no server process: it has no routes, metrics, tables, host services or plan
- * dependencies, and stores nothing on the server.
+ * module runs in no server process: it has no routes, metrics, tables, host services, plan
+ * dependencies or capability values, and stores nothing on the server.
  */
 function clientManifest(rest: Row): ModuleManifest {
   if (Object.hasOwn(rest, 'roles')) throw invalid('/roles');
@@ -168,7 +168,10 @@ function clientManifest(rest: Row): ModuleManifest {
     [module.tablePrefix !== null, '/tablePrefix'],
     [module.uses.length > 0, '/uses'],
     [module.requires.length > 0, '/requires'],
+    [module.optional.length > 0, '/optional'],
     [module.provides.length > 0, '/provides'],
+    [module.exposeTo.length > 0, '/exposeTo'],
+    [module.resources !== null, '/resources'],
     [module.core, '/core'],
   ];
   const field = refused.find(([bad]) => bad);
