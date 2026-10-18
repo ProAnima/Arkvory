@@ -10,6 +10,8 @@ test('only the listed loaders may import code by a computed specifier (ADR 0078,
   // The launchers of the core release, the confinement of every entry's resolution and the one
   // loader of signed modules (stage X4).
   assert.deepEqual(Object.keys(COMPUTED_IMPORTS).sort(), [
+    // The loader of client modules of arkvoryctl (stage X5).
+    'apps/cli/src/modules/module-import.ts',
     'apps/deploy/src/manage.ts',
     'apps/deploy/src/remote-workflow.ts',
     'apps/deploy/src/runtime.ts',
@@ -51,13 +53,14 @@ test('packages/signing keeps its allowlist; the host tool and the loader depend 
   const { units } = JSON.parse(await readFile('config/architecture.json', 'utf8'));
   const unit = (path) => units.find((candidate) => candidate.path === path);
   assert.deepEqual(unit('packages/signing').allowed, ['packages/extension-api']);
-  // The loader in infrastructure came with X4; a new consumer (arkvoryctl, X5) needs review.
+  // The loader in infrastructure came with X4, the client modules of arkvoryctl with X5; a new
+  // consumer needs review.
   assert.deepEqual(
     units
       .filter((candidate) => candidate.allowed.includes('packages/signing'))
       .map((u) => u.path)
       .sort(),
-    ['apps/deploy', 'packages/infrastructure'],
+    ['apps/cli', 'apps/deploy', 'packages/infrastructure'],
   );
   assert.ok(
     units.findIndex((u) => u.path === 'packages/signing') >

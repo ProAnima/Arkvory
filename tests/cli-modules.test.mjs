@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rename, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { inspectModulePackage } from '../packages/signing/dist/index.js';
 import { parseArguments } from '../apps/cli/dist/arguments.js';
@@ -218,16 +218,20 @@ test('client module code resolves only its own package', async (t) => {
   assert.equal(globalThis.outsideRan, undefined);
 });
 
-test(
-  'module files writable by others are refused before any code runs',
-  { skip: process.platform === 'win32' && 'POSIX modes' },
-  async (t) => {
-    const { keys, home, run, load, revocations } = await setup(t);
-    await run('revocations', revocations);
-    await run('install', await writePackage(home, clientPackage(keys.module)), '--yes');
-    await run('enable', 'sample');
-    const entry = join(home, 'modules', 'sample', '1.0.0', 'files', 'main.mjs');
-    await chmod(entry, 0o666);
+test('module files others may change, or a linked package directory, are refused before any code runs', async (t) => {
+  const { keys, home, run, load, revocations } = await setup(t);
+  await run('revocations', revocations);
+  await run('install', await writePackage(home, clientPackage(keys.module)), '--yes');
+  await run('enable', 'sample');
+  const directory = join(home, 'modules', 'sample', '1.0.0');
+  if (process.platform !== 'win32') {
+    await chmod(join(directory, 'files', 'main.mjs'), 0o666);
     assert.equal((await load()).refused[0].code, 'module_access');
-  },
-);
+    await chmod(join(directory, 'files', 'main.mjs'), 0o644);
+  }
+  // The package directory replaced by a link (a junction on Windows) to the same files.
+  const moved = join(home, 'elsewhere');
+  await rename(directory, moved);
+  await symlink(moved, directory, process.platform === 'win32' ? 'junction' : 'dir');
+  assert.equal((await load()).refused[0].code, 'module_access');
+});
