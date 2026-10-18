@@ -146,6 +146,7 @@ test('before a root is allowed only built-ins resolve; roots are real absolute d
     `confinement.confineResolution();
 const outcome = { builtin: typeof (await import('node:fs')).readFileSync };
 try { await import(${JSON.stringify(pathToFileURL(join(release, 'probe.mjs')).href)}); } catch (error) { outcome.release = error.code; }
+try { await import('data:text/javascript,export default 1'); } catch (error) { outcome.data = error.code; }
 for (const [name, directory] of [['relative', 'releases'], ['filesystem', ${JSON.stringify(resolve('/'))}], ['missing', ${JSON.stringify(join(root, 'missing'))}]])
   try { confinement.allowResolutionUnder(directory); } catch (error) { outcome[name] = error.code ?? error.message; }
 confinement.allowResolutionUnder(${JSON.stringify(join(root, 'missing'))}, { optional: true });
@@ -157,6 +158,7 @@ console.log(JSON.stringify(outcome));`,
   assert.deepEqual(JSON.parse(result.stdout), {
     builtin: 'function',
     release: 'ERR_MODULE_NOT_FOUND',
+    data: 'ERR_MODULE_NOT_FOUND',
     relative: 'A confinement root must be an absolute path',
     filesystem: 'A filesystem root cannot be a confinement root',
     missing: 'ENOENT',

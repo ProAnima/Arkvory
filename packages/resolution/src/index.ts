@@ -99,7 +99,12 @@ export function confineResolution(): void {
       const code = context.conditions.includes('require')
         ? 'MODULE_NOT_FOUND'
         : 'ERR_MODULE_NOT_FOUND';
-      throw new ResolutionRefusedError(code, specifier, realFile(resolved.url));
+      const url = resolved.url;
+      throw new ResolutionRefusedError(
+        code,
+        specifier,
+        url.startsWith('file:') ? realFile(url) : url,
+      );
     },
   });
 }
