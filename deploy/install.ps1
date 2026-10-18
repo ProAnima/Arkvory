@@ -140,21 +140,30 @@ if (-not (Test-NodeRuntime $current)) {
     if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne '158F7685B44DE51F6C0DF1D153526CBCD3E1BC739A8DFC607721CEF75DE9E541') { throw 'Node.js checksum mismatch' }
     # A fresh directory inside the protected runtime directory; the runtime is switched to it only
     # after verification. Antivirus scanning can briefly hold a freshly extracted node.exe.
+    # fresh-* directories that an interrupted run left were never run and are removed first;
+    # Directory.Delete removes links without following them.
+    foreach ($stale in [IO.Directory]::GetDirectories($runtime, 'fresh-*')) { [IO.Directory]::Delete($stale, $true) }
     $fresh = Join-Path $runtime ('fresh-' + [guid]::NewGuid().ToString('N'))
-    foreach ($attempt in 1..3) {
-        Expand-Archive -LiteralPath $archive -DestinationPath $fresh -Force
-        if (Test-NodeRuntime (Join-Path $fresh $nodeName)) { break }
-        Start-Sleep -Seconds (2 * $attempt)
+    try {
+        foreach ($attempt in 1..3) {
+            Expand-Archive -LiteralPath $archive -DestinationPath $fresh -Force
+            if (Test-NodeRuntime (Join-Path $fresh $nodeName)) { break }
+            Start-Sleep -Seconds (2 * $attempt)
+        }
+        if (-not (Test-NodeRuntime (Join-Path $fresh $nodeName))) { throw 'Node.js runtime is incomplete after extraction (node.exe missing or altered); check antivirus quarantine' }
+        if ($null -ne (Get-EntryAttributes $current)) {
+            # Kept for inspection and never run.
+            $aside = Join-Path $runtime ('unverified-' + [guid]::NewGuid().ToString('N'))
+            Move-Item -LiteralPath $current -Destination $aside
+            Write-Warning "The Node.js runtime in $current did not pass verification; it was moved to $aside and replaced"
+        }
+        Move-Item -LiteralPath (Join-Path $fresh $nodeName) -Destination $current
+    } finally {
+        # Empty after the switch; after a failure it holds the rejected extraction. A file that
+        # antivirus still holds must not hide the error above; the next run removes the rest.
+        try { if ($null -ne (Get-EntryAttributes $fresh)) { [IO.Directory]::Delete($fresh, $true) } }
+        catch { Write-Warning "Cannot remove $fresh yet: $($_.Exception.Message)" }
     }
-    if (-not (Test-NodeRuntime (Join-Path $fresh $nodeName))) { throw 'Node.js runtime is incomplete after extraction (node.exe missing or altered); check antivirus quarantine' }
-    if ($null -ne (Get-EntryAttributes $current)) {
-        # Kept for inspection and never run.
-        $aside = Join-Path $runtime ('unverified-' + [guid]::NewGuid().ToString('N'))
-        Move-Item -LiteralPath $current -Destination $aside
-        Write-Warning "The Node.js runtime in $current did not pass verification; it was moved to $aside and replaced"
-    }
-    Move-Item -LiteralPath (Join-Path $fresh $nodeName) -Destination $current
-    [IO.Directory]::Delete($fresh, $false)
     if (-not (Test-NodeRuntime $current)) { throw 'Node.js runtime verification failed' }
 }
 if ($Version -and $Version -notmatch '^(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$') { throw 'Invalid stable version' }

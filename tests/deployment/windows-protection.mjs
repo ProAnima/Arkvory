@@ -151,6 +151,8 @@ export async function verifiedRuntime(base) {
   const current = join(root, 'runtime', 'node-v24.21.0-win-x64');
   await mkdir(current, { recursive: true });
   await writeFile(join(current, 'node.exe'), 'not the pinned runtime');
+  // An extraction that an interrupted run left behind.
+  await mkdir(join(root, 'runtime', 'fresh-interrupted', 'nested'), { recursive: true });
   const output = join(directory, 'observed.json');
   const env = { ...environment, ARKVORY_PROBE_OUTPUT: output };
   const args = ['-Root', root, '-Artifact', artifact, '-Config', config];
@@ -164,6 +166,10 @@ export async function verifiedRuntime(base) {
       name.startsWith('unverified-'),
     );
     assert.equal(aside.length, 1, 'The unverified runtime is kept aside once and never run');
+    const fresh = (await readdir(join(root, 'runtime'))).filter((name) =>
+      name.startsWith('fresh-'),
+    );
+    assert.deepEqual(fresh, [], 'No extraction directory remains');
   }
   assert.deepEqual(security(join(root, 'runtime')), protectedDirectory(['S-1-5-19']));
 }
