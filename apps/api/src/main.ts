@@ -1,3 +1,4 @@
+import './confine.js';
 import {
   DiagnosticLogger,
   databasePlaintextExposed,

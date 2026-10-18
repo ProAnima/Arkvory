@@ -1,3 +1,4 @@
+import './confine.js';
 import { randomUUID } from 'node:crypto';
 import { getCACertificates } from 'node:tls';
 import { setTimeout as delay } from 'node:timers/promises';

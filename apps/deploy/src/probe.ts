@@ -1,3 +1,4 @@
+import './confine.js';
 import { healthReady } from './health.js';
 import { localTarget } from './local-api.js';
 try {

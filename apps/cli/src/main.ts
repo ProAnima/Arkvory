@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import './confine.js';
 import { parseArguments } from './arguments.js';
 import { execute } from './commands.js';
 import { failure, failureText } from './errors.js';

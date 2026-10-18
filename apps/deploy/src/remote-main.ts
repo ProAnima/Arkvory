@@ -1,3 +1,4 @@
+import './confine.js';
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 import { createRemoteWizard } from './remote-server.js';
