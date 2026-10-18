@@ -45,12 +45,20 @@ export async function packageTree(root: string): Promise<string[]> {
  * compromised service cannot plant code that it and the other processes load at their next
  * start; the host administrator installs packages (ADR 0078, 3.3).
  */
-async function unsafePosix(paths: readonly string[], installation: string): Promise<Set<string>> {
-  const trusted = new Set([0, (await lstat(installation)).uid]);
-  const unsafe = new Set<string>();
+async function unsafePosix(
+  paths: readonly string[],
+  installation: string,
+): Promise<Map<string, string>> {
+  const owner = (await lstat(installation)).uid;
+  const trusted = new Set([0, owner]);
+  const unsafe = new Map<string, string>();
   for (const path of paths) {
     const info = await lstat(path);
-    if ((info.mode & 0o022) !== 0 || !trusted.has(info.uid)) unsafe.add(path);
+    if ((info.mode & 0o022) !== 0 || !trusted.has(info.uid))
+      unsafe.set(
+        path,
+        `mode ${(info.mode & 0o7777).toString(8)} uid ${info.uid}; root uid ${owner}`,
+      );
   }
   return unsafe;
 }
@@ -193,32 +201,45 @@ function readAcls(paths: readonly string[]): Promise<AclEntry[]> {
  * the entry. Another account is untrusted even when it is an administrator: a SID says nothing
  * about group membership, so a rule for one administrator's own SID makes the entry unsafe.
  */
-export function unsafeAcl(root: AclEntry, entry: AclEntry): boolean {
+export function aclProblem(root: AclEntry, entry: AclEntry): string | null {
   const trusted = new Set([...ADMINISTRATORS, root.owner]);
-  const writers = entry.rules.filter(
+  if (!trusted.has(entry.owner)) return `owner ${entry.owner}; root owner ${root.owner}`;
+  const writer = entry.rules.find(
     (rule) =>
       rule.allow &&
       !rule.inheritOnly &&
       (rule.rights & WRITE_RIGHTS) !== 0 &&
-      !INHERITANCE_ONLY.includes(rule.sid),
+      !INHERITANCE_ONLY.includes(rule.sid) &&
+      !trusted.has(rule.sid),
   );
-  return !trusted.has(entry.owner) || writers.some((w) => !trusted.has(w.sid));
+  if (writer === undefined) return null;
+  const rights = (writer.rights >>> 0).toString(16);
+  return `rule ${writer.sid} rights 0x${rights}; owner ${entry.owner}; root owner ${root.owner}`;
 }
 
-async function unsafeWindows(paths: readonly string[], installation: string): Promise<Set<string>> {
+/** Whether `aclProblem` finds a reason. */
+export const unsafeAcl = (root: AclEntry, entry: AclEntry) => aclProblem(root, entry) !== null;
+
+async function unsafeWindows(
+  paths: readonly string[],
+  installation: string,
+): Promise<Map<string, string>> {
   const [root, ...entries] = await readAcls([installation, ...paths]);
   if (root === undefined) throw new Error('Unexpected ACL answer');
-  const unsafe = new Set<string>();
+  const unsafe = new Map<string, string>();
   entries.forEach((entry, index) => {
     const path = paths[index];
-    if (path !== undefined && unsafeAcl(root, entry)) unsafe.add(path);
+    const problem = aclProblem(root, entry);
+    if (path !== undefined && problem !== null) unsafe.set(path, problem);
   });
   return unsafe;
 }
 
 /**
- * The paths among `paths` that someone other than the host administrator may change. The check
- * runs before any byte of a package is read: once it passes, nothing between the verification of
+ * The paths among `paths` that someone other than the host administrator may change, each with
+ * the reason (mode and owner, or the SID, rights and owners of the rule) for the diagnostic
+ * detail of a refusal; it names accounts and stays out of logs and metrics. The check runs
+ * before any byte of a package is read: once it passes, nothing between the verification of
  * the files and their import can be changed by anyone the core does not trust. A check that
  * cannot run (no PowerShell, a timeout) is `access_unverified`: no module is loaded then.
  */
@@ -227,8 +248,8 @@ export async function unsafeEntries(
   /** The installation root, whose owner is trusted beside root or the administrators. */
   installation: string,
   platform: NodeJS.Platform = process.platform,
-): Promise<ReadonlySet<string>> {
-  if (paths.length === 0) return new Set();
+): Promise<ReadonlyMap<string, string>> {
+  if (paths.length === 0) return new Map();
   if (platform !== 'win32') return unsafePosix(paths, installation);
   try {
     return await unsafeWindows(paths, installation);

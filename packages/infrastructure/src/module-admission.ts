@@ -28,6 +28,11 @@ export interface RefusedModule {
   readonly status: RefusalStatus;
   /** Machine code: a signing, access, plan or loader code, or the revocation reason. */
   readonly code: string;
+  /**
+   * Why an access check refused, for tests and debugging: the path and its owner, mode or access
+   * rule. It names paths and accounts, so `system/modules`, metrics and the log never show it.
+   */
+  readonly detail?: string;
 }
 
 /** A package that passed every check before code: the access check, the signature and files. */

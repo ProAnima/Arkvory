@@ -182,7 +182,13 @@ export {
 export type { PreparedModule } from './module-plan.js';
 export { HOSTED_ROLES, admitPackage, signedRefusals } from './module-admission.js';
 export type { RefusalStatus, RefusedModule, VerifiedModule } from './module-admission.js';
-export { ModuleAccessError, packageTree, unsafeAcl, unsafeEntries } from './module-access.js';
+export {
+  ModuleAccessError,
+  aclProblem,
+  packageTree,
+  unsafeAcl,
+  unsafeEntries,
+} from './module-access.js';
 export type { AclEntry, ModuleAccessProblem } from './module-access.js';
 export { ModuleLoadError } from './module-import.js';
 export type { ModuleLoadProblem } from './module-import.js';

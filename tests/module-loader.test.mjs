@@ -292,6 +292,8 @@ async function outcome(host, id, { keys, config } = {}) {
     now: Date.now(),
   });
   const refused = loaded.refused.find((m) => m.id === id);
+  // Which path and which rule refused it, in the test output when an assertion fails.
+  if (refused?.detail) console.log(`# ${id} ${refused.code}: ${refused.detail}`);
   if (refused) return `${refused.status}:${refused.code}`;
   try {
     loaded.prepared.get(id).create({});

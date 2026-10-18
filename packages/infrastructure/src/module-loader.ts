@@ -101,10 +101,19 @@ async function readSet(directory: string): Promise<ModuleSet> {
   }
 }
 
-const refuseAll = (set: ModuleSet, code: string): InstalledModules => ({
+const refuseAll = (set: ModuleSet, code: string, detail?: string): InstalledModules => ({
   verified: [],
-  refused: set.modules.map((m) => refusal(m, 'failed', code)),
+  refused: set.modules.map((m) => ({
+    ...refusal(m, 'failed', code),
+    ...(detail === undefined ? {} : { detail }),
+  })),
 });
+
+/** The first unsafe path among `paths` with its reason, as a refusal detail. */
+function unsafeDetail(paths: readonly string[], unsafe: ReadonlyMap<string, string>) {
+  const path = paths.find((candidate) => unsafe.has(candidate));
+  return path === undefined ? undefined : `${path}: ${unsafe.get(path) ?? ''}`;
+}
 
 /** Whether a path exists, without following a link; other errors are the host's. */
 async function present(path: string): Promise<boolean> {
@@ -205,12 +214,13 @@ function refusal(
 function accessRefusal(
   entry: InstalledModule,
   tree: string[] | ModuleAccessError | 'missing' | undefined,
-  unsafe: ReadonlySet<string>,
+  unsafe: ReadonlyMap<string, string>,
 ): RefusedModule | null {
   if (tree === 'missing') return refusal(entry, 'unavailable', 'module_unavailable');
   if (tree === undefined) return refusal(entry, 'failed', 'access_unverified');
   if (tree instanceof ModuleAccessError) return refusal(entry, 'failed', tree.code);
-  return tree.some((path) => unsafe.has(path)) ? refusal(entry, 'failed', 'access_unsafe') : null;
+  const detail = unsafeDetail(tree, unsafe);
+  return detail === undefined ? null : { ...refusal(entry, 'failed', 'access_unsafe'), detail };
 }
 
 /**
@@ -235,14 +245,15 @@ export async function checkInstalledModules(
   const { installation, guarded } = await guardedDirectories(source);
   const common = [...guarded, ...shared];
   const all = [...common, ...[...trees.values()].flatMap((t) => (Array.isArray(t) ? t : []))];
-  let unsafe: ReadonlySet<string>;
+  let unsafe: ReadonlyMap<string, string>;
   try {
     unsafe = await unsafeEntries(all, installation);
   } catch (error) {
     if (error instanceof ModuleAccessError) return refuseAll(set, error.code);
     throw error;
   }
-  if (common.some((path) => unsafe.has(path))) return refuseAll(set, 'access_unsafe');
+  const sharedDetail = unsafeDetail(common, unsafe);
+  if (sharedDetail !== undefined) return refuseAll(set, 'access_unsafe', sharedDetail);
   const list = await revocations(source.revocationsFile, keys);
   if (list === 'revocations_invalid') return refuseAll(set, list);
   const verified: VerifiedModule[] = [];

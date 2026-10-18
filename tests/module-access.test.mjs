@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import {
   loadInstallation,
   parseModuleSelections,
+  aclProblem,
   unsafeAcl,
   unsafeEntries,
 } from '../packages/infrastructure/dist/index.js';
@@ -32,6 +33,8 @@ async function outcome(host, id) {
     now: Date.now(),
   });
   const refused = loaded.refused.find((m) => m.id === id);
+  // Which path and which rule refused it, in the test output when an assertion fails.
+  if (refused?.detail) console.log(`# ${id} ${refused.code}: ${refused.detail}`);
   return refused ? `${refused.status}:${refused.code}` : 'loaded';
 }
 
@@ -130,7 +133,7 @@ test('the ACL check reads access with the system PowerShell modules only', async
     { env, windowsHide: true },
   ).toString();
   assert.match(found, /profile/);
-  assert.deepEqual([...(await unsafeEntries([file], directory))], [file]);
+  assert.deepEqual([...(await unsafeEntries([file], directory)).keys()], [file]);
 });
 
 const SYSTEM = 'S-1-5-18';
@@ -177,4 +180,9 @@ test('which ACL entries make a path unsafe on Windows, rule by rule', () => {
   assert.equal(verdict(ADMINS, ADMINS, [rule(USERS, 0x10000000)]), true);
   assert.equal(verdict(ADMINS, ADMINS, [rule(OTHER_USER, 0x40000)]), true);
   assert.equal(verdict(ADMINS, OTHER_USER, []), true);
+  // The reason names the rule, so a refusal can be traced to one access entry.
+  assert.equal(
+    aclProblem({ owner: ADMINS, rules: [] }, { owner: ADMINS, rules: [rule(USERS, 0x116)] }),
+    'rule S-1-5-32-545 rights 0x116; owner S-1-5-32-544; root owner S-1-5-32-544',
+  );
 });
