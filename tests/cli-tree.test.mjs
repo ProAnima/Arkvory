@@ -299,15 +299,16 @@ function rawZip(entries) {
   const locals = [];
   const centrals = [];
   let offset = 0;
-  for (const { name, data, mode = 0o100644 } of entries) {
+  for (const { name, data, mode = 0o100644, method = 0, size = data.length, at } of entries) {
     const nameBytes = Buffer.from(name);
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
     local.writeUInt16LE(20, 4);
     local.writeUInt16LE(0x800, 6);
+    local.writeUInt16LE(method, 8);
     local.writeUInt32LE(crc32(data), 14);
     local.writeUInt32LE(data.length, 18);
-    local.writeUInt32LE(data.length, 22);
+    local.writeUInt32LE(size, 22);
     local.writeUInt16LE(nameBytes.length, 26);
     locals.push(local, nameBytes, data);
     const central = Buffer.alloc(46);
@@ -315,12 +316,14 @@ function rawZip(entries) {
     central.writeUInt16LE((3 << 8) | 20, 4);
     central.writeUInt16LE(20, 6);
     central.writeUInt16LE(0x800, 8);
+    central.writeUInt16LE(method, 10);
     central.writeUInt32LE(crc32(data), 16);
     central.writeUInt32LE(data.length, 20);
-    central.writeUInt32LE(data.length, 24);
+    central.writeUInt32LE(size, 24);
     central.writeUInt16LE(nameBytes.length, 28);
     central.writeUInt32LE((mode << 16) >>> 0, 38);
-    central.writeUInt32LE(offset, 42);
+    // `at` points the entry at another entry's local header: overlapping data.
+    central.writeUInt32LE(at ?? offset, 42);
     centrals.push(central, nameBytes);
     offset += 30 + nameBytes.length + data.length;
   }
@@ -349,6 +352,24 @@ test('hostile archives and tables of contents never write outside the target', a
         { name: 'a.txt', data: Buffer.from('2') },
       ],
       'case_collision',
+    ],
+    // Entries sharing one data range: a few bytes would expand into many files.
+    [
+      [
+        { name: 'one.txt', data: Buffer.from('shared') },
+        { name: 'two.txt', data: Buffer.from('other!'), at: 0 },
+      ],
+      'invalid_archive',
+    ],
+    // Declared sizes past the limit of a tree (100 GiB), refused before anything is written.
+    [
+      Array.from({ length: 26 }, (_, index) => ({
+        name: `big-${String(index)}.bin`,
+        data: Buffer.from([3, 0]),
+        method: 8,
+        size: 0xfffffffe,
+      })),
+      'too_large',
     ],
   ];
   for (const [entries, code] of cases) {

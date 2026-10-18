@@ -44,10 +44,11 @@ const directoryTypes = new Set([0, 0x4000]);
 
 /**
  * The table of contents of a published ZIP (ADR 0083, N8): read only through
- * `BlobStore.read(range)` under a shared content pin, entry by entry, with the limits of UPack
- * parsing. Every file entry is read once to hash its content and check its CRC-32 and size;
- * memory is one read window, one entry's stream buffers and the table itself (at most
- * TREE_MAX_ENTRIES paths of at most 1024 characters).
+ * `BlobStore.read(range)` under a shared content pin, with the limits of UPack parsing: the
+ * central directory first, then entry by entry. Entries that share data are refused before
+ * any content is read. Every file entry is read once to hash its content and check its CRC-32
+ * and size; memory is one read window, one entry's stream buffers, the directory's entries and
+ * the table itself (at most TREE_MAX_ENTRIES paths of at most 1024 characters).
  *
  * Deviation from ADR 0083, N10: the core compute pool does not exist yet, so deflate entries are
  * inflated by zlib's asynchronous streams, which run on the libuv thread pool; hashing runs on
@@ -137,20 +138,51 @@ async function readTree(
   const zip = await openZip(reader, size);
   try {
     if (zip.entryCount > TREE_MAX_ENTRIES) throw new Refusal('too_many_entries');
-    const entries: ArchiveTreeEntry[] = [];
+    // The whole directory first (headers only): overlapping entries are refused before any
+    // content is hashed, so a small archive cannot make the worker read one range many times.
+    const listed: { entry: Entry; file: ReturnType<typeof admit> }[] = [];
     const seen = new Set<string>();
     let total = 0;
     for await (const entry of entriesOf(zip)) {
       cancellation.throwIfAborted();
       total += entry.uncompressedSize;
       if (total > TREE_MAX_TOTAL_BYTES) throw new Refusal('too_large');
-      const file = admit(entry, seen);
-      if (file) entries.push(await readFile(zip, entry, file, entries.length));
+      listed.push({ entry, file: admit(entry, seen) });
+    }
+    const limits = dataLimits(
+      listed.map(({ entry }) => entry),
+      size,
+    );
+    const entries: ArchiveTreeEntry[] = [];
+    for (const { entry, file } of listed) {
+      cancellation.throwIfAborted();
+      if (file)
+        entries.push(await readFile(zip, entry, file, entries.length, limits.get(entry) ?? size));
     }
     return entries;
   } finally {
     zip.close();
   }
+}
+
+/**
+ * Where each entry's data must end: at the next local header in the archive (by offset, not
+ * by directory order), or at its end. Two entries at one offset, or one whose least possible
+ * end (a 30-byte local header and its data) passes the next header, share bytes:
+ * `invalid_archive`.
+ */
+function dataLimits(entries: readonly Entry[], size: number): Map<Entry, number> {
+  const order = [...entries].sort(
+    (a, b) => a.relativeOffsetOfLocalHeader - b.relativeOffsetOfLocalHeader,
+  );
+  const limits = new Map<Entry, number>();
+  order.forEach((entry, index) => {
+    const limit = order[index + 1]?.relativeOffsetOfLocalHeader ?? size;
+    if (entry.relativeOffsetOfLocalHeader + 30 + entry.compressedSize > limit)
+      throw new Refusal('invalid_archive');
+    limits.set(entry, limit);
+  });
+  return limits;
 }
 
 /** The path and method of a file entry, undefined for a directory; refuses unsafe entries. */
@@ -218,8 +250,10 @@ async function readFile(
   entry: Entry,
   file: { readonly path: string; readonly method: TreeEntryMethod },
   ordinal: number,
+  limit: number,
 ): Promise<ArchiveTreeEntry> {
   const start = await dataStart(zip, entry);
+  if (start + entry.compressedSize > limit) throw new Refusal('invalid_archive');
   const stream = await dataStream(zip, entry, start, file.method);
   const hash = createHash('sha256');
   let crc = 0;

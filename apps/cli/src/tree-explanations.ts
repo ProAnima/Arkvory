@@ -28,6 +28,10 @@ export const treeExplanations: Readonly<Record<string, readonly [string, string]
   not_archive: ['The artifact is not a ZIP archive.', 'Артефакт — не ZIP-архив.'],
   invalid_archive: ['The ZIP archive is damaged.', 'ZIP-архив повреждён.'],
   too_many_entries: ['The archive has more than 100,000 files.', 'В архиве больше 100 000 файлов.'],
+  too_large: [
+    'The files of the archive add up to more than 100 GiB.',
+    'Файлы архива вместе больше 100 ГиБ.',
+  ],
   path_conflict: [
     'A directory, or something other than a folder, stands where the tree needs a file or a folder.',
     'На месте файла или каталога дерева находится каталог или не каталог.',

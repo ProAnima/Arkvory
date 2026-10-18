@@ -14,11 +14,18 @@ export interface ArchiveEntry {
   readonly size: number;
   readonly compressedSize: number;
   readonly localHeaderOffset: number;
+  /**
+   * Where the next local header or the central directory starts: the entry's data must end
+   * there, so no two entries share bytes of the archive.
+   */
+  readonly dataLimit: number;
   /** 0o755 when the archive marks the file executable for its owner (UNIX), else 0o644. */
   readonly mode: number;
 }
 
 const MAX32 = 0xffffffff;
+/** The content limit of one tree, as the server's table of contents (ADR 0083, N8). */
+const MAX_TOTAL_BYTES = 100 * 1024 ** 3;
 /** The central directory of 100 000 entries with long names fits easily. */
 const MAX_DIRECTORY_BYTES = 256 * 1024 ** 2;
 const invalid = () => new CliError('invalid_archive', 5);
@@ -106,7 +113,9 @@ function nameOf(bytes: Buffer, utf8: boolean): string {
 }
 
 /** One central directory record at `at`; null for a directory entry. */
-function parseRecord(directory: Buffer, at: number): { entry: ArchiveEntry | null; next: number } {
+type ListedEntry = Omit<ArchiveEntry, 'dataLimit'>;
+
+function parseRecord(directory: Buffer, at: number): { entry: ListedEntry | null; next: number } {
   if (at + 46 > directory.length || directory.readUInt32LE(at) !== 0x02014b50) throw invalid();
   const flags = directory.readUInt16LE(at + 8);
   const method = directory.readUInt16LE(at + 10);
@@ -153,8 +162,9 @@ function parseRecord(directory: Buffer, at: number): { entry: ArchiveEntry | nul
  * The file entries of the archive behind `handle`, in archive order, read as untrusted input:
  * paths by the tree rules (`path_outside_root`, `unsafe_name`, `duplicate_entry`,
  * `case_collision`), only stored and deflate (`unsupported_method`), no encryption, links or
- * special files (`unsupported_entry`), at most 100 000 files (`too_many_entries`). Directory
- * entries are checked and skipped.
+ * special files (`unsupported_entry`), at most 100 000 files (`too_many_entries`) and 100 GiB of
+ * content (`too_large`). Entries whose data overlap — a few bytes of the archive expanding into
+ * many files — are `invalid_archive`. Directory entries are checked and skipped.
  */
 export async function archiveEntries(
   handle: FileHandle,
@@ -163,7 +173,8 @@ export async function archiveEntries(
   const { count, length, offset } = await directoryOf(handle, size);
   const directory = await readAt(handle, offset, length);
   const names = new TreeNames();
-  const entries: ArchiveEntry[] = [];
+  const listed: ListedEntry[] = [];
+  let total = 0;
   let at = 0;
   for (let index = 0; index < count; index++) {
     const { entry, next } = parseRecord(directory, at);
@@ -171,16 +182,36 @@ export async function archiveEntries(
     if (entry === null) continue;
     if (entry.localHeaderOffset + 30 + entry.compressedSize > offset) throw invalid();
     names.add(entry.path);
-    entries.push(entry);
+    total += entry.size;
+    if (total > MAX_TOTAL_BYTES) throw new CliError('too_large', 5);
+    listed.push(entry);
   }
-  return entries;
+  return withLimits(listed, offset);
+}
+
+/**
+ * Each entry's data limit: the local header that follows it in the archive, or the central
+ * directory. Two entries at one offset, or one whose least possible end passes the next
+ * header, overlap.
+ */
+function withLimits(listed: readonly ListedEntry[], directoryOffset: number): ArchiveEntry[] {
+  const order = [...listed].sort((a, b) => a.localHeaderOffset - b.localHeaderOffset);
+  const limits = new Map<ListedEntry, number>();
+  order.forEach((entry, index) => {
+    const limit = order[index + 1]?.localHeaderOffset ?? directoryOffset;
+    if (entry.localHeaderOffset + 30 + entry.compressedSize > limit) throw invalid();
+    limits.set(entry, limit);
+  });
+  return listed.map((entry) => ({ ...entry, dataLimit: limits.get(entry) ?? directoryOffset }));
 }
 
 /** Where the entry's data starts, after its local header. */
 export async function dataOffset(handle: FileHandle, entry: ArchiveEntry): Promise<number> {
   const header = await readAt(handle, entry.localHeaderOffset, 30);
   if (header.readUInt32LE(0) !== 0x04034b50) throw invalid();
-  return entry.localHeaderOffset + 30 + header.readUInt16LE(26) + header.readUInt16LE(28);
+  const start = entry.localHeaderOffset + 30 + header.readUInt16LE(26) + header.readUInt16LE(28);
+  if (start + entry.compressedSize > entry.dataLimit) throw invalid();
+  return start;
 }
 
 /**

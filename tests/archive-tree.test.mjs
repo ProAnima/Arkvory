@@ -211,6 +211,33 @@ test('a CRC-32 mismatch and an unsupported method are refused', async () => {
   assert.equal(await reasonOf(bzip2), 'unsupported_method');
 });
 
+test('entries that share data are refused, whatever order the directory lists them in', async () => {
+  // Every central header points at the first local header: one range hashed many times, the
+  // amplification of an overlapping ZIP bomb.
+  const archive = await zipOf([
+    ['a.txt', text('same')],
+    ['b.txt', text('same')],
+    ['c.txt', text('same')],
+  ]);
+  const shared = Buffer.from(archive);
+  for (const header of centralHeaders(shared).slice(1)) shared.writeUInt32LE(0, header + 42);
+  assert.equal(await reasonOf(shared), 'invalid_archive');
+  // The directory listing the entries in another order than their data is still an archive.
+  const headers = centralHeaders(archive);
+  const end = archive.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  const records = headers.map((at, index) => archive.subarray(at, headers[index + 1] ?? end));
+  const reversed = Buffer.concat([
+    archive.subarray(0, headers[0]),
+    ...records.reverse(),
+    archive.subarray(end),
+  ]);
+  const { tree } = await build(reversed);
+  assert.deepEqual(
+    tree.entries.map((entry) => entry.path),
+    ['c.txt', 'b.txt', 'a.txt'],
+  );
+});
+
 test('more entries or more content than the limits are refused before reading content', async () => {
   // The ZIP64 end record declares the entry count; the parse stops at the count.
   const archive = await zipOf([['a.txt', text('a')]], { forceZip64Format: true });
