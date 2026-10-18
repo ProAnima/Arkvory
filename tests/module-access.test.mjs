@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import {
   loadInstallation,
   parseModuleSelections,
+  unsafeAcl,
   unsafeEntries,
 } from '../packages/infrastructure/dist/index.js';
 import {
@@ -130,4 +131,50 @@ test('the ACL check reads access with the system PowerShell modules only', async
   ).toString();
   assert.match(found, /profile/);
   assert.deepEqual([...(await unsafeEntries([file], directory))], [file]);
+});
+
+const SYSTEM = 'S-1-5-18';
+const ADMINS = 'S-1-5-32-544';
+const USERS = 'S-1-5-32-545';
+const LOCAL_SERVICE = 'S-1-5-19';
+const CREATOR_OWNER = 'S-1-3-0';
+const ADMIN_USER = 'S-1-5-21-1-2-3-500';
+const OTHER_USER = 'S-1-5-21-1-2-3-1001';
+const FULL = 0x1f01ff;
+const READ = 0x1200a9;
+const rule = (sid, rights, { allow = true, inheritOnly = false } = {}) => ({
+  sid,
+  rights,
+  allow,
+  inheritOnly,
+});
+const installerRules = [rule(SYSTEM, FULL), rule(ADMINS, FULL), rule(LOCAL_SERVICE, READ)];
+
+test('which ACL entries make a path unsafe on Windows, rule by rule', () => {
+  const verdict = (rootOwner, owner, rules) =>
+    unsafeAcl({ owner: rootOwner, rules: [] }, { owner, rules: [...installerRules, ...rules] });
+  // What the installers write: administrators, LocalService reading.
+  assert.equal(verdict(ADMINS, ADMINS, []), false);
+  // Rules that grant nothing on the entry itself: inherit-only, CREATOR OWNER, deny, reading.
+  assert.equal(verdict(ADMINS, ADMINS, [rule(USERS, FULL, { inheritOnly: true })]), false);
+  assert.equal(
+    verdict(ADMINS, ADMINS, [rule(CREATOR_OWNER, 0x10000000, { inheritOnly: true })]),
+    false,
+  );
+  assert.equal(verdict(ADMINS, ADMINS, [rule(CREATOR_OWNER, FULL)]), false);
+  assert.equal(verdict(ADMINS, ADMINS, [rule('S-1-1-0', FULL, { allow: false })]), false);
+  assert.equal(verdict(ADMINS, ADMINS, [rule(USERS, READ)]), false);
+  // GENERIC_READ arrives as a negative 32-bit value: no write right in it.
+  assert.equal(verdict(ADMINS, ADMINS, [rule(USERS, -1610612736)]), false);
+  // The owner of the installation root is trusted, as its rules and as an owner.
+  assert.equal(verdict(ADMIN_USER, ADMIN_USER, [rule(ADMIN_USER, FULL)]), false);
+  assert.equal(verdict(ADMIN_USER, ADMINS, [rule(ADMIN_USER, FULL)]), false);
+  // Anyone else who may write, create, delete or change permissions makes it unsafe, an
+  // administrator's own SID included when the root belongs to the Administrators group.
+  assert.equal(verdict(ADMINS, ADMINS, [rule(ADMIN_USER, FULL)]), true);
+  assert.equal(verdict(ADMINS, ADMINS, [rule(USERS, 0x116)]), true);
+  assert.equal(verdict(ADMINS, ADMINS, [rule(LOCAL_SERVICE, 0x1301bf)]), true);
+  assert.equal(verdict(ADMINS, ADMINS, [rule(USERS, 0x10000000)]), true);
+  assert.equal(verdict(ADMINS, ADMINS, [rule(OTHER_USER, 0x40000)]), true);
+  assert.equal(verdict(ADMINS, OTHER_USER, []), true);
 });

@@ -109,7 +109,8 @@ $result = foreach ($path in $paths) {
 ConvertTo-Json -InputObject @($result) -Depth 4 -Compress
 `;
 
-interface AclEntry {
+/** Owner and access rules of one path, as SIDs (Windows). */
+export interface AclEntry {
   readonly owner: string;
   readonly rules: readonly {
     readonly sid: string;
@@ -187,27 +188,30 @@ function readAcls(paths: readonly string[]): Promise<AclEntry[]> {
  * Windows: an entry is safe when its owner and every principal an access rule lets write,
  * delete or change its permissions are the host administrators (SYSTEM, Administrators,
  * TrustedInstaller) or the owner of the installation root. The service account (LocalService)
- * reads the modules but never writes them. Deny rules only take rights away and are ignored.
+ * reads the modules but never writes them. Deny rules only take rights away and are ignored; an
+ * inherit-only rule and CREATOR OWNER or CREATOR GROUP only shape children and grant nothing on
+ * the entry. Another account is untrusted even when it is an administrator: a SID says nothing
+ * about group membership, so a rule for one administrator's own SID makes the entry unsafe.
  */
+export function unsafeAcl(root: AclEntry, entry: AclEntry): boolean {
+  const trusted = new Set([...ADMINISTRATORS, root.owner]);
+  const writers = entry.rules.filter(
+    (rule) =>
+      rule.allow &&
+      !rule.inheritOnly &&
+      (rule.rights & WRITE_RIGHTS) !== 0 &&
+      !INHERITANCE_ONLY.includes(rule.sid),
+  );
+  return !trusted.has(entry.owner) || writers.some((w) => !trusted.has(w.sid));
+}
+
 async function unsafeWindows(paths: readonly string[], installation: string): Promise<Set<string>> {
   const [root, ...entries] = await readAcls([installation, ...paths]);
   if (root === undefined) throw new Error('Unexpected ACL answer');
-  const trusted = new Set([...ADMINISTRATORS, root.owner]);
   const unsafe = new Set<string>();
   entries.forEach((entry, index) => {
-    const writers = entry.rules.filter(
-      (rule) =>
-        rule.allow &&
-        !rule.inheritOnly &&
-        (rule.rights & WRITE_RIGHTS) !== 0 &&
-        !INHERITANCE_ONLY.includes(rule.sid),
-    );
     const path = paths[index];
-    if (
-      path !== undefined &&
-      (!trusted.has(entry.owner) || writers.some((w) => !trusted.has(w.sid)))
-    )
-      unsafe.add(path);
+    if (path !== undefined && unsafeAcl(root, entry)) unsafe.add(path);
   });
   return unsafe;
 }

@@ -223,15 +223,20 @@ export function modulePackage(signer, manifest = {}, options = {}) {
 }
 
 /**
- * Takes the inherited access away from a test installation root, as the installers do: on
- * Windows only SYSTEM, Administrators and the current user, on POSIX mode 0700. The loader
- * refuses packages that others may change, and a temporary directory of a Windows profile can
- * grant other local accounts write access.
+ * Takes the inherited access away from a test installation root exactly as the installers do:
+ * on Windows SYSTEM and Administrators with full control, LocalService reading, and the owner of
+ * the root, which the loader trusts too (the current user, or the Administrators group for an
+ * elevated process such as a CI runner); on POSIX mode 0700. A grant to the current user's own
+ * SID would be another writer under an elevated process, whose root belongs to Administrators,
+ * and a temporary directory of a Windows profile can grant other local accounts write access.
  */
 export async function protectRoot(root) {
   if (process.platform !== 'win32') return chmod(root, 0o700);
-  const script =
-    "& icacls.exe $env:ARKVORY_TEST_ROOT /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' ('*' + [Security.Principal.WindowsIdentity]::GetCurrent().User.Value + ':(OI)(CI)F') | Out-Null; exit $LASTEXITCODE";
+  const script = [
+    '$owner = (Get-Acl -LiteralPath $env:ARKVORY_TEST_ROOT).GetOwner([Security.Principal.SecurityIdentifier]).Value',
+    "& icacls.exe $env:ARKVORY_TEST_ROOT /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' ('*' + $owner + ':(OI)(CI)F') | Out-Null",
+    'exit $LASTEXITCODE',
+  ].join('; ');
   execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
     env: { ...process.env, ARKVORY_TEST_ROOT: root },
     windowsHide: true,
