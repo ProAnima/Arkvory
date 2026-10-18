@@ -76,7 +76,7 @@ async function tableOf(archive) {
  * A server with one archive artifact `a1`: metadata, content ranges (`served` may differ from
  * the published bytes) and its table of contents (`table` null: still pending).
  */
-async function serve(t, bytes, { table, served = bytes } = {}) {
+async function serve(t, bytes, { table, served = bytes, pages } = {}) {
   const ranges = [];
   const meta = {
     id: 'a1',
@@ -95,6 +95,7 @@ async function serve(t, bytes, { table, served = bytes } = {}) {
   const server = createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     if (url.pathname.endsWith('/tree')) {
+      if (pages) return res.end(JSON.stringify(pages(url, meta.descriptor.sha256)));
       if (table === null)
         return res.end(
           JSON.stringify({
@@ -401,4 +402,38 @@ test('hostile archives and tables of contents never write outside the target', a
   await writeFile(join(target, 'file.txt'), 'local');
   await assert.rejects(run(connected, 'repair', 'a1', target), { code: 'path_outside_root' });
   await assert.rejects(stat(join(work, 'escape.txt')));
+});
+
+test('a table of contents must page through its entries once, in order', async (t) => {
+  const { bytes, archive } = await pack(t);
+  const table = await tableOf(archive);
+  const page = (sha, items, next, entries = table.length) => ({
+    status: 'ready',
+    reason: null,
+    archiveSha256: sha,
+    entries,
+    items,
+    next,
+  });
+  let asked = 0;
+  const lies = [
+    // Empty pages that always promise more: the client would ask forever.
+    (url, sha) => (++asked > 50 ? page(sha, table, null) : page(sha, [], '0')),
+    // The same page again: ordinals must follow each other.
+    (url, sha) =>
+      url.searchParams.get('after') === '0'
+        ? page(sha, table.slice(0, 2), null)
+        : page(sha, table.slice(0, 1), '0'),
+    // Fewer entries than the table says it has.
+    (url, sha) => page(sha, table.slice(0, 2), null),
+    (url, sha) => page(sha, table, null, table.length + 1),
+  ];
+  const work = await temporary(t);
+  for (const [index, pages] of lies.entries()) {
+    const { connected } = await serve(t, bytes, { pages });
+    const target = join(work, `t${String(index)}`);
+    await mkdir(target);
+    await writeFile(join(target, 'keep.txt'), 'local');
+    await assert.rejects(run(connected, 'verify', 'a1', target), { code: 'invalid_response' });
+  }
 });

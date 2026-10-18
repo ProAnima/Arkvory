@@ -51,7 +51,8 @@ const number = (value: string) => {
  * The server's table of contents of the artifact, every page, checked again by the tree rules;
  * null when there is none to use: not built yet, refused by the server, an unknown method, or a
  * server without the route (404 `route_not_found`). Trust comes from the server, which computed
- * every SHA-256 from the archive it verified at publication.
+ * every SHA-256 from the archive it verified at publication; the pages themselves must list
+ * ordinals 0, 1, … once each and add up to the count they declare (`invalid_response`).
  */
 export async function serverEntries(
   client: Pick<ArkvoryClient, 'artifactTree'>,
@@ -63,13 +64,22 @@ export async function serverEntries(
   const names = new TreeNames();
   let after: string | undefined;
   let archive = '';
+  let declared: number | null = null;
   try {
     do {
       const page = await client.artifactTree(repository, id, after ? { after } : {}, signal);
       if (page.status !== 'ready') return null;
       if (archive !== '' && page.archiveSha256 !== archive) throw new CliError('tree_changed', 6);
       archive = page.archiveSha256;
+      // Every page moves on and agrees on the count: a server cannot keep the client paging.
+      if (
+        (page.next !== null && page.items.length === 0) ||
+        (declared !== null && page.entries !== declared)
+      )
+        throw new CliError('invalid_response', 7);
+      declared = page.entries;
       for (const item of page.items) {
+        if (item.ordinal !== entries.length) throw new CliError('invalid_response', 7);
         if (item.method !== 'stored' && item.method !== 'deflate') return null;
         const path = treePath(item.path);
         names.add(path);
@@ -87,6 +97,7 @@ export async function serverEntries(
       if (entries.length > TREE_LIMITS.entries) throw new CliError('too_many_entries', 5);
       after = page.next ?? undefined;
     } while (after !== undefined);
+    if (declared !== entries.length) throw new CliError('invalid_response', 7);
   } catch (error) {
     if (
       error instanceof ArkvoryHttpError &&
