@@ -1,7 +1,14 @@
 import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { ArkvoryClient } from '@proanima/arkvory-sdk';
-import type { DownloadClass, RequestEvent, WaitEvent } from '@proanima/arkvory-sdk';
+import type {
+  DownloadClass,
+  RequestEvent,
+  TransferEvent,
+  TransferMode,
+  WaitEvent,
+} from '@proanima/arkvory-sdk';
+import type { TransferExtension } from '@proanima/arkvory-extension-api';
 import { record, text } from '@proanima/arkvory-contracts';
 import { CliError, sanitize } from './errors.js';
 import {
@@ -163,6 +170,24 @@ export interface ConnectionExtras {
   readonly onCredential?: (token: string) => void;
   /** Receives the absolute path of the key file when the key came from one. */
   readonly onCredentialFile?: (path: string) => void;
+  /** Transfer extensions of the enabled client modules (ADR 0079, 5.11) and how to use them. */
+  readonly transferExtensions?: readonly TransferExtension[];
+  readonly transferMode?: TransferMode;
+}
+
+/** The profile a command uses: `--profile`, else the active one; '' when there is none. */
+export async function activeProfile(args: Arguments): Promise<string> {
+  const config = await configuration();
+  const name = args.options.get('profile') ?? config.active;
+  return Object.hasOwn(config.profiles, name) ? name : '';
+}
+
+/** --verbose: which way a transfer's bytes travelled. */
+function transferLine(event: TransferEvent): void {
+  const way = event.extension
+    ? `${event.extension.name} v${String(event.extension.version)}`
+    : `core${event.fallback ? ` (extension ${event.fallback})` : ''}`;
+  process.stderr.write(`arkvoryctl: ${event.operation} via ${way}\n`);
 }
 export async function connection(
   args: Arguments,
@@ -199,7 +224,9 @@ export async function connection(
         ? { waitLimitMs: numericOption(args, 'wait-limit', 0, 0, Number.MAX_SAFE_INTEGER) }
         : {}),
       onWait: waitLine(args.language),
-      ...(args.options.has('verbose') ? { onRequest: verboseLine } : {}),
+      ...(args.options.has('verbose') ? { onRequest: verboseLine, onTransfer: transferLine } : {}),
+      ...(extras.transferExtensions ? { transferExtensions: extras.transferExtensions } : {}),
+      ...(extras.transferMode ? { transferMode: extras.transferMode } : {}),
       ...(extras.clientName === undefined ? {} : { clientName: extras.clientName }),
     }),
     server,

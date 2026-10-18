@@ -5,6 +5,7 @@ import {
   ArkvoryNetworkError,
 } from '@proanima/arkvory-sdk';
 import type { ClientErrorCode } from '@proanima/arkvory-sdk';
+import { SigningError } from '@proanima/arkvory-signing';
 import { explain } from './explanations.js';
 
 export class CliError extends Error {
@@ -114,6 +115,8 @@ export function failure(error: unknown, cancelled: boolean): Failure {
   if (cancelled) return { code: 'interrupted', exitCode: 130 };
   if (error instanceof CliError) return { code: error.code, exitCode: error.exitCode };
   if (error instanceof ArkvoryIntegrityError) return { code: 'integrity_failed', exitCode: 5 };
+  // A refused module package or revocation list: its machine code, never a path.
+  if (error instanceof SigningError) return { code: error.code, exitCode: 5 };
   if (error instanceof ArkvoryNetworkError) return { code: 'network_failed', exitCode: 4 };
   if (error instanceof Error && error.name === 'TimeoutError')
     return { code: 'request_timeout', exitCode: 4 };
