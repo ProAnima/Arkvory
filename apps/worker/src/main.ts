@@ -37,6 +37,7 @@ import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 import { acquireWithPlan, watchModulePlan } from './module-plan.js';
 import { watchWorkerStorage } from './storage-watch.js';
+import { rehomeBytesPerSecond, runRehome } from './rehome-loop.js';
 
 let levelError: Error | undefined;
 /** Stopped before taking work, as standby or waiting for the module plan: a clean stop. */
@@ -110,6 +111,8 @@ try {
   );
   // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
   const eventRetention = readEventRetention(process.env);
+  // ADR 0083, N2: the copy budget of moves between storages.
+  const rehomeBudget = rehomeBytesPerSecond(process.env['ARKVORY_REHOME_BYTES_PER_SECOND']);
   // ADR 0079: the installation's module plan, refused before the worker takes its lock. The
   // installed signed modules are verified and planned like the writer's; none runs here (X4).
   const { compatibilityFingerprint } = (
@@ -221,6 +224,21 @@ try {
     stop: stop.signal,
     diagnostics,
   });
+  const rehoming = runRehome({
+    catalog,
+    blobs,
+    stop: stop.signal,
+    diagnostics,
+    bytesPerSecond: rehomeBudget,
+  }).catch((error: unknown) => {
+    // Awaited only at shutdown, like the mirrors.
+    diagnostics.write({
+      level: 'error',
+      component: 'worker',
+      code: 'storage.move_loop_failed',
+      ...failureCause(error),
+    });
+  });
   const sequencing = runEventSequencer({
     catalog,
     retention: eventRetention,
@@ -247,6 +265,7 @@ try {
     await mirroring;
     await delivering;
     await sequencing;
+    await rehoming;
     clearInterval(recovery);
     unwatchPlan();
     unwatchStorage();

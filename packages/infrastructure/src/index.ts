@@ -208,3 +208,12 @@ export type { VolumeProbe, VolumeReserve } from './volume-space.js';
 export { AccessScopes, moduleCatalog } from './module-catalog.js';
 export { ModuleHostServices, RECONCILE_INTERVAL_MS } from './module-host-services.js';
 export type { HostServiceSources } from './module-host-services.js';
+export { MOVE_LEASE_SECONDS, PostgresBlobMoves } from './blob-moves-store.js';
+export {
+  PostgresCopyRemoval,
+  PostgresUploadSwitch,
+  REHOME_LOCK,
+  pacedCopy,
+  takeRehomeSingleton,
+} from './blob-moves-steps.js';
+export type { RehomeSingleton } from './blob-moves-steps.js';
