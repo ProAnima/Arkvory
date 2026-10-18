@@ -71,7 +71,13 @@ function object(value: ModuleJson | undefined, path: string, fields?: readonly s
   return value;
 }
 
-/** Every `$ref` names a schema of this fragment or one the core shares. */
+/**
+ * JSON Schema keywords that resolve against another document (`$id` changes the base of every
+ * `$ref` below it); with them a reference would leave the fragment despite the `$ref` check.
+ */
+const FOREIGN_KEYWORDS = ['$id', '$schema', '$dynamicRef', '$recursiveRef'];
+
+/** Every `$ref` names a schema of this fragment or one the core shares; nothing else resolves. */
 function checkReferences(value: ModuleJson, schemas: ReadonlySet<string>, path: string): void {
   if (isList(value)) {
     value.forEach((item, index) => {
@@ -81,6 +87,7 @@ function checkReferences(value: ModuleJson, schemas: ReadonlySet<string>, path: 
   }
   if (!isObject(value)) return;
   for (const [key, item] of Object.entries(value)) {
+    if (FOREIGN_KEYWORDS.includes(key)) throw invalid(child(path, key));
     if (key === '$ref') {
       const name = typeof item === 'string' ? /^#\/components\/schemas\/(.+)$/.exec(item)?.[1] : '';
       if (name === undefined || name === '' || !schemas.has(name)) throw invalid(`${path}/$ref`);

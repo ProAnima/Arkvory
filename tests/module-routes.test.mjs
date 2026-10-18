@@ -226,6 +226,11 @@ test('an OpenAPI fragment is read as untrusted input and matched with the routes
       `/paths/${`${prefix}repositories/{repository}/files`.replaceAll('/', '~1')}/post/requestBody/content`,
     ],
     [(c) => (get(c).description = 'x'.repeat(300 * 1024)), ''],
+    // Keywords that move resolution elsewhere would bypass the check of `$ref`.
+    ...['$id', '$schema', '$dynamicRef', '$recursiveRef'].map((keyword) => [
+      (c) => (c.components.schemas.ext_echo_Item[keyword] = 'https://example.com/s.json'),
+      `/components/schemas/ext_echo_Item/${keyword}`,
+    ]),
   ])
     assert.throws(
       () => checkFragment(broken(change), manifest(), routes),
@@ -713,17 +718,37 @@ test('the combined document shows a caller only what it may call', () => {
     manifest(),
     64,
   );
+  const declared = fragment(routes);
+  const schema = (name) => ({ $ref: `#/components/schemas/${name}` });
+  declared.paths[`${prefix}items/{id}`].get.responses[200].content['application/json'].schema =
+    schema('ext_echo_Item');
+  declared.paths[`${prefix}notes`].post.responses[200].content['application/json'].schema =
+    schema('ext_echo_Note');
+  declared.components.schemas = {
+    ext_echo_Item: { type: 'object' },
+    ext_echo_Note: { type: 'object', properties: { part: schema('ext_echo_Part') } },
+    ext_echo_Part: { type: 'object' },
+    ext_echo_Spare: { type: 'object' },
+  };
   const set = {
     module: 'echo',
     routes,
-    fragment: checkFragment(fragment(routes), manifest(), routes),
+    fragment: checkFragment(declared, manifest(), routes),
     offers: [],
   };
   const all = extensionDocument([set], 'c'.repeat(64), () => true);
   assert.deepEqual(Object.keys(all.paths).sort(), [`${prefix}items/{id}`, `${prefix}notes`]);
   assert.equal(all.info.version, 'c'.repeat(64));
   assert.deepEqual(all.paths[`${prefix}notes`].post.security, [{ serviceKey: [] }]);
+  // Schemas follow the operations shown: a referenced one, and what it refers to in turn.
+  assert.deepEqual(Object.keys(all.components.schemas).sort(), [
+    'NativeError',
+    'ext_echo_Item',
+    'ext_echo_Note',
+    'ext_echo_Part',
+  ]);
   const reads = extensionDocument([set], 'c'.repeat(64), (r) => r.effect === 'read');
   assert.deepEqual(Object.keys(reads.paths), [`${prefix}items/{id}`]);
-  assert.ok(reads.components.schemas.ext_echo_Item);
+  // The shapes of operations a caller may not call are not disclosed either.
+  assert.deepEqual(Object.keys(reads.components.schemas).sort(), ['NativeError', 'ext_echo_Item']);
 });
