@@ -6,15 +6,24 @@ if (-not $admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 # Install and repair rewrite the inheritable ACLs below, and Windows propagates them through the
 # whole data tree; that walk over terabytes does not belong in an update's downtime window.
 if (-not $ServicesOnly) {
-    # SIDs are independent of the Windows display language. Application identity cannot modify releases or updater credentials.
-    & icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'Cannot secure installation directory' }
     # %ProgramData%\ProAnima above the default root inherits from ProgramData, where every user
     # may create folders and owns what they create. Administrators take it over and only they
     # write it (ADR 0031, addendum 2026-10-18). Protected children such as the root keep their
     # own ACLs. Another parent is the operator's choice and stays as it is.
     $vendor = Split-Path -Parent $Root
-    if ($env:ProgramData -and $vendor -ieq (Join-Path $env:ProgramData 'ProAnima')) {
+    $defaultVendor = $env:ProgramData -and $vendor -ieq (Join-Path $env:ProgramData 'ProAnima')
+    # A link that a user put there would keep its target, which they own, open to them; checked
+    # before anything below changes.
+    if ($defaultVendor -and ((Get-Item -LiteralPath $vendor -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'The ProAnima directory must not be a link' }
+    # The owner of a directory may always rewrite its DACL: a root that another account created
+    # before Setup would stay theirs whatever the grants say. Administrators take the root itself;
+    # the data tree below is not walked (ADR 0031, addendum 2026-10-18).
+    & takeown.exe /F $Root /A | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot take ownership of the installation directory' }
+    # SIDs are independent of the Windows display language. Application identity cannot modify releases or updater credentials.
+    & icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-19:(OI)(CI)RX' | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot secure installation directory' }
+    if ($defaultVendor) {
         & takeown.exe /F $vendor /A | Out-Null
         if ($LASTEXITCODE -ne 0) { throw 'Cannot take ownership of the ProAnima directory' }
         $acl = [Security.AccessControl.DirectorySecurity]::new()
