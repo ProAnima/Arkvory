@@ -112,7 +112,15 @@ for (const name of ['register-linux.sh', 'backup-vault-linux.sh', 'database-linu
 const powershellEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([key]) => key.toLowerCase() !== 'psmodulepath'),
 );
-for (const name of ['register-windows.ps1', 'backup-vault-windows.ps1', 'native/remove.ps1'])
+for (const name of [
+  'register-windows.ps1',
+  'protect-windows.ps1',
+  'database-windows.ps1',
+  'backup-vault-windows.ps1',
+  'native/prepare.ps1',
+  'native/apply.ps1',
+  'native/remove.ps1',
+])
   execFileSync(
     process.platform === 'win32' ? 'powershell.exe' : 'pwsh',
     [
