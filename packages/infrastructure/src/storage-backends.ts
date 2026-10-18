@@ -1,6 +1,14 @@
 import { ArkvoryError, DEFAULT_STORAGE_BACKEND } from '@proanima/arkvory-domain';
 import type { ArtifactDescriptor, BackendWriteState, UploadPart } from '@proanima/arkvory-domain';
-import type { BlobStore, Cancellation, StorageBackendStates } from '@proanima/arkvory-application';
+import type { StagedCompletion } from '@proanima/arkvory-extension-api';
+import type {
+  BlobStore,
+  Cancellation,
+  PartComposer,
+  StagedParts,
+  StorageBackendStates,
+} from '@proanima/arkvory-application';
+import { stagedComposer } from './staged-composer.js';
 import type { StorageLifecycle } from './storage-lifecycle.js';
 
 /** A storage that can also remove what cleanup admitted: every storage instance can. */
@@ -19,6 +27,11 @@ export interface StorageInstance {
   readonly acceptsWrites: boolean;
   /** Switched off in the configuration: never opened, its uploads unreadable until enabled. */
   readonly enabled: boolean;
+  /**
+   * Completion of uploads from parts this storage accepted, when it can assemble an object on
+   * its side (ADR 0083, N1). The core's local storage cannot: it reads the parts and writes.
+   */
+  readonly staged?: StagedCompletion;
 }
 
 /**
@@ -54,7 +67,7 @@ type Use = 'read' | 'write' | 'collect';
  * Whether a storage takes new uploads is decided by placement and `StorageService`, not here:
  * an upload whose storage stopped taking data still finishes what it holds.
  */
-export class StorageBackends implements BlobStore, StorageBackendStates {
+export class StorageBackends implements BlobStore, StorageBackendStates, StagedParts {
   private readonly instances = new Map<string, StorageInstance>();
   private readonly faults = new Map<string, StorageFault>();
   /** The identity each usable storage proved when it was last opened or rechecked. */
@@ -181,6 +194,17 @@ export class StorageBackends implements BlobStore, StorageBackendStates {
     await this.confirm(instance, use);
     await work(instance.blobs);
     await this.confirm(instance, use);
+  }
+
+  /**
+   * The composer of a storage that completes from its accepted parts, while it takes writes; a
+   * read-only or unusable storage has none and completion follows the ordinary path.
+   */
+  composer(backendId: string): PartComposer | null {
+    const staged = this.instances.get(backendId)?.staged;
+    const state = this.state(backendId);
+    if (!staged || (state !== 'accepting' && state !== 'not_accepting')) return null;
+    return stagedComposer(staged, (work) => this.change(backendId, 'write', () => work()));
   }
 
   async putPart(

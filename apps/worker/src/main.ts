@@ -176,7 +176,8 @@ try {
       catalog,
       blobs,
       { next: randomUUID, now: () => new Date().toISOString() },
-      { placement },
+      // Large uploads complete here; a storage may assemble them from its parts (ADR 0083, N1).
+      { placement, staged: blobs },
     ),
     keyFile,
     ownerActive: () => catalog.active,

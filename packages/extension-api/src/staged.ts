@@ -30,6 +30,9 @@ export interface StagedObject {
    * the storage declares. Repeating it after success succeeds.
    */
   commit(expected: BlobDescriptor, signal: ModuleSignal): Promise<void>;
-  /** Drops the assembled object, never the parts; idempotent and safe after a failed commit. */
+  /**
+   * Drops an assembled object that was not committed, never the parts; idempotent, safe after a
+   * failed commit, and nothing at all after a successful one (a committed object is immutable).
+   */
   discard(): Promise<void>;
 }

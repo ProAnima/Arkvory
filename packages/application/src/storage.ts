@@ -11,23 +11,31 @@ import {
 } from '@proanima/arkvory-domain';
 import type { Principal, Upload } from '@proanima/arkvory-domain';
 import { DEFAULT_STORAGE_BACKEND } from '@proanima/arkvory-domain';
-import type { BlobStore, Cancellation, Catalog, IdentitySource } from './ports.js';
+import type {
+  BlobStore,
+  Cancellation,
+  Catalog,
+  IdentitySource,
+  StagedParts,
+  UploadMutation,
+} from './ports.js';
 import type { UploadPlacement } from './storage-placement.js';
+import { completeFromParts, partsBackendOf } from './staged-completion.js';
+
+export { partsBackendOf };
 
 export interface StorageOptions {
   /** Storage of new uploads (ADR 0083, N11); without it everything stays in `default`. */
   readonly placement?: UploadPlacement;
   /** Operator ceiling; the multipart layout limit applies when omitted. */
   readonly maxObjectBytes?: number;
-}
-
-/** The storage that holds an upload's parts: where they were written, even after a switch. */
-export function partsBackendOf(upload: Upload): string {
-  return upload.partsBackend ?? upload.storageBackend ?? DEFAULT_STORAGE_BACKEND;
+  /** Storages that assemble objects from their accepted parts (ADR 0083, N1). */
+  readonly staged?: StagedParts;
 }
 
 export class StorageService {
   private readonly placement: UploadPlacement | undefined;
+  private readonly staged: StagedParts | undefined;
   readonly maxObjectBytes: number;
   constructor(
     private readonly catalog: Catalog,
@@ -36,6 +44,7 @@ export class StorageService {
     options: StorageOptions = {},
   ) {
     this.placement = options.placement;
+    this.staged = options.staged;
     this.maxObjectBytes = Math.min(options.maxObjectBytes ?? MAX_OBJECT_BYTES, MAX_OBJECT_BYTES);
   }
 
@@ -147,18 +156,18 @@ export class StorageService {
           // crash writes to the same storage and leaves no object behind in the other one.
           if (this.refuses(upload.storageBackend))
             upload = await mutation.relocate(DEFAULT_STORAGE_BACKEND, partsBackendOf(upload));
-          await this.blobs.put(
-            id,
-            upload.descriptor,
-            this.blobs.readParts(id, parts, partsBackendOf(upload)),
-            {
-              throwIfAborted() {
-                cancellation.throwIfAborted();
-                mutation.throwIfAborted();
-              },
-            },
-            upload.storageBackend,
-          );
+          const check = guarded(cancellation, mutation);
+          const composed = await completeFromParts(this.staged, upload, parts, check);
+          if (composed === 'refused')
+            upload = await mutation.relocate(DEFAULT_STORAGE_BACKEND, partsBackendOf(upload));
+          if (composed !== 'committed')
+            await this.blobs.put(
+              id,
+              upload.descriptor,
+              this.blobs.readParts(id, parts, partsBackendOf(upload)),
+              check,
+              upload.storageBackend,
+            );
         }
         if (parts.length === 0 || held)
           await this.blobs.verify(
@@ -334,4 +343,14 @@ export class StorageService {
     if (upload.owner !== principal.id) throw new ArkvoryError('not_found', 'Upload not found');
     return upload;
   }
+}
+
+/** Cancellation of a request together with the loss of the upload's lock. */
+function guarded(cancellation: Cancellation, mutation: UploadMutation): Cancellation {
+  return {
+    throwIfAborted() {
+      cancellation.throwIfAborted();
+      mutation.throwIfAborted();
+    },
+  };
 }
