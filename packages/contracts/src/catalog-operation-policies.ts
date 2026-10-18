@@ -134,6 +134,17 @@ export const catalogOperations = [
     null,
   ],
   [
+    '/api/v1/repositories/{repository}/artifacts/{id}/tree',
+    'get',
+    'getArtifactTree',
+    // JSON about the content, not its bytes: 'Content' operations stream (ADR 0083, N8).
+    'Catalog',
+    ['content.read'],
+    ['read'],
+    'read',
+    null,
+  ],
+  [
     '/api/v1/repositories/{repository}/artifacts/{id}/annotations',
     'get',
     'getAnnotations',

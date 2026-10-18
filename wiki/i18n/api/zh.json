@@ -240,6 +240,14 @@
       "summary": "下载制品",
       "description": "以流式返回原始字节，附带 `Content-Length`、`Content-Disposition`（制品名称）和强 `ETag`（`\"sha256:<hex>\"`）。单个 `Range` 返回 206（无法满足时返回 416）；带 ETag 的 `If-Range` 可安全续传，`If-None-Match` 返回 304。HEAD 返回相同的响应头但没有响应体，并忽略 `Range`。请求也可以不带 `Authorization` 头，而是把 `createDownloadLink` 生成的下载链接作为 `token` 携带；下载会等待服务器下载准入的空闲槽位。"
     },
+    "getArtifactTree": {
+      "en": {
+        "summary": "Read the table of contents of an archive",
+        "description": "For a `.zip` or `.upack` artifact, lists its file entries in archive order: `ordinal`, `path`, `size`, the `sha256` of the content as computed by the server, `method` (`stored` or `deflate`) and the data range `dataOffset`/`dataLength` inside the archive; that byte range of `downloadArtifact` is the entry's data (for `stored`, the file itself). `status` is `ready`, `pending` while the server has not read the archive yet (ask again later) or `unavailable` with a `reason`: `not_archive`, `invalid_archive`, `unsafe_entry` (a path outside the root, a link or a special file), `encrypted_entry`, `too_many_entries` (over 100 000), `too_large` (over 100 GiB of content), `unsupported_method`, `crc_mismatch` or `duplicate_entry` (also paths that differ only in case). A page holds up to `limit` entries (1–1000, default 1000); pass `next` as `after` for the following page, null marks the end. `archiveSha256` is the artifact's SHA-256 and `entries` the number of file entries. Needs `content.read`; a missing or forbidden artifact answers as `downloadArtifact` does."
+      },
+      "summary": "读取归档的目录",
+      "description": "对于 `.zip` 或 `.upack` 制品，按归档中的顺序列出其文件条目：`ordinal`、`path`、`size`、由服务器计算的内容 `sha256`、`method`（`stored` 或 `deflate`）以及归档内的数据范围 `dataOffset`/`dataLength`；`downloadArtifact` 的这一字节范围就是该条目的数据（对于 `stored`，就是文件本身）。`status` 为 `ready`；服务器尚未读取归档时为 `pending`（请稍后再查询）；或为带 `reason` 的 `unavailable`：`not_archive`、`invalid_archive`、`unsafe_entry`（根目录之外的路径、链接或特殊文件）、`encrypted_entry`、`too_many_entries`（超过 100 000 个）、`too_large`（内容超过 100 GiB）、`unsupported_method`、`crc_mismatch` 或 `duplicate_entry`（包括仅大小写不同的路径）。每页最多 `limit` 个条目（1–1000，默认 1000）；把 `next` 作为 `after` 传入以获取下一页，null 表示结束。`archiveSha256` 是制品的 SHA-256，`entries` 是文件条目数。需要 `content.read`；对不存在或被禁止的制品，响应与 `downloadArtifact` 相同。"
+    },
     "listCatalogChanges": {
       "en": {
         "summary": "Follow the change feed of a repository",

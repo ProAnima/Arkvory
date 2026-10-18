@@ -66,6 +66,8 @@ export function registerServiceRoutes(
         maxPageSize: 100,
       },
       modules: modules.map(({ id, kind }) => ({ id, kind })),
+      // ADR 0083, N8: the archive table of contents route of the core (`zip-tree` version 1).
+      tree: [{ name: 'zip-tree', versions: [1], module: 'core', prefix: '/api/v1/' }],
     }),
   );
   app.get('/api/v1/auth/permissions', (request) => {

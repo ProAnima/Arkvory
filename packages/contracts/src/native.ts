@@ -1,6 +1,7 @@
 import { storagePolicyPaths } from './storage-policy.js';
 import { cleanupPaths } from './cleanup.js';
 import { storagePlacementPaths } from './storage-placement.js';
+import { artifactTreePaths } from './tree-api.js';
 import { updatePaths } from './updates-api.js';
 import { fleetPaths } from './fleet-api.js';
 import { downloadSettingsPaths } from './download-settings-api.js';
@@ -269,6 +270,7 @@ const composed = composeApiPaths({
   ...storagePolicyPaths,
   ...cleanupPaths,
   ...storagePlacementPaths,
+  ...artifactTreePaths,
   ...updatePaths,
   ...fleetPaths,
   ...downloadSettingsPaths,

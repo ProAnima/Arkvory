@@ -14,6 +14,7 @@ import { registerServiceRoutes } from './service-routes.js';
 import { registerRepositoryRoutes } from './repository-routes.js';
 import { registerStoragePolicyRoutes } from './storage-policy-routes.js';
 import { registerPlacementRoutes } from './placement-routes.js';
+import { registerTreeRoutes } from './tree-routes.js';
 import { registerCleanupRoutes } from './cleanup-routes.js';
 import { registerRetentionRoutes } from './retention-routes.js';
 import { registerAttachmentRoutes } from './attachment-routes.js';
@@ -68,6 +69,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
   });
   registerRepositoryRoutes(app, principal);
   registerArtifactRoutes(app, s.service, principal);
+  registerTreeRoutes(app, s.trees, principal);
   registerLinkRoutes(app, s.links, principal);
   const sendContent = createContentSender({
     service: s.service,
