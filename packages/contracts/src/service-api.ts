@@ -1,5 +1,6 @@
 import { record, text, integer, items } from './wire-values.js';
 import { nativeErrorResponse } from './errors.js';
+import { treeCapabilitySchema } from './tree-api.js';
 
 export const servicePermissionNames = [
   'repository.read',
@@ -404,6 +405,8 @@ export const servicePaths = {
               },
             },
           },
+          // Ways of moving directory trees (ADR 0083, N8): the core's `zip-tree`, then modules.
+          tree: { type: 'array', maxItems: 64, items: treeCapabilitySchema },
         },
       },
       undefined,
