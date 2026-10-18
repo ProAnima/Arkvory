@@ -8,6 +8,7 @@ import {
   ArkvoryIntegrityError,
   chooseTransfer,
 } from '@proanima/arkvory-sdk';
+import { readTransferCapabilities, readTreeCapabilities } from '@proanima/arkvory-contracts';
 
 const policy = { baseDelayMs: 1, maxDelayMs: 5, maxAttempts: 3, attemptTimeoutMs: 2000 };
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -132,6 +133,49 @@ test('the highest common version of the first offered extension is chosen', () =
   assert.equal(chooseTransfer([a], offers), null);
   // A prefix outside /api/ext/<id>/v<major>/ is never used.
   assert.equal(chooseTransfer([b], [{ ...offers[0], prefix: '/admin/' }]), null);
+  // A transfer channel reaches only the routes of the offering module, never the core API.
+  assert.equal(chooseTransfer([b], [{ ...offers[0], prefix: '/api/v1/' }]), null);
+  assert.equal(chooseTransfer([b], [{ ...offers[0], prefix: '/api/ext/aa/v1/' }]), null);
+});
+
+test('a malformed capabilities.transfer is the core transfer, or invalid_response when strict', async (t) => {
+  const bytes = Buffer.from('bytes behind a malformed offer list');
+  const malformed = [{ name: 'test-delta', versions: [], module: 'test-delta', prefix: PREFIX }];
+  const extension = testExtension();
+  const { client, events, requests } = await server(t, bytes, {
+    offers: malformed,
+    extensions: [extension],
+  });
+  assert.deepEqual(await read(await client.downloadVerified('releases', 'a1')), bytes);
+  assert.equal(extension.plans.length, 0);
+  assert.deepEqual(events, [{ operation: 'download', extension: null }]);
+  // The failed read is not remembered: the next operation asks the server again.
+  await read(await client.downloadVerified('releases', 'a1'));
+  assert.equal(requests.filter((r) => r.includes('capabilities')).length, 2);
+  await assert.rejects(client.capabilities(), { code: 'invalid_response' });
+  const strict = await server(t, bytes, {
+    offers: malformed,
+    extensions: [testExtension()],
+    mode: 'strict',
+  });
+  await assert.rejects(strict.client.downloadVerified('releases', 'a1'), {
+    code: 'invalid_response',
+  });
+});
+
+test('one strict reader serves capabilities.transfer and capabilities.tree', () => {
+  const core = { name: 'zip-tree', versions: ['1.0.0'], module: 'core', prefix: '/api/v1/' };
+  const module = { name: 'test-delta', versions: ['2.0.0'], module: 'test-delta', prefix: PREFIX };
+  assert.deepEqual(readTreeCapabilities([{ ...core, later: true }, module]), [core, module]);
+  assert.deepEqual(readTransferCapabilities([module]), [module]);
+  // The core API is a tree offer, never a transfer channel; a malformed entry fails the list.
+  assert.throws(() => readTransferCapabilities([core]), /transfer capability/);
+  for (const bad of [
+    { ...core, versions: [] },
+    { ...core, prefix: '/admin/' },
+    { ...core, name: 1 },
+  ])
+    assert.throws(() => readTreeCapabilities([core, bad]));
 });
 
 test('an agreed extension carries the download and the SDK verifies it', async (t) => {
