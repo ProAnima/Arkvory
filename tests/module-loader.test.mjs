@@ -211,8 +211,8 @@ test('signed modules are planned beside the built-in ones, disabled until the op
 test('a refused provider refuses its consumers in turn; a signed id of a built-in module is refused', () => {
   const installed = {
     verified: [
-      verified('consumer', { requires: ['feed'], provides: ['digest'] }),
-      verified('reader-of-digest', { requires: ['digest'] }),
+      verified('consumer', { requires: ['feed@^1.0.0'], provides: ['digest@1.0.0'] }),
+      verified('reader-of-digest', { requires: ['digest@^1.0.0'] }),
       verified('upack'),
       verified('alone'),
     ],

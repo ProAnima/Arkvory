@@ -15,6 +15,7 @@ import {
 import type {
   DiagnosticRecord,
   InstallationPlan,
+  ModuleHostServices,
   StagingArea,
   StorageBackends,
   StorageFault,
@@ -29,6 +30,7 @@ import type { ModuleRuntime } from './module-host.js';
 import { ModuleRouteRegistry, type ModuleRouteSet } from './extension-registry.js';
 import type { PlannedModule } from '@proanima/arkvory-extension-api';
 import { ModuleTelemetry } from './module-telemetry.js';
+import { apiHostServices } from './module-services.js';
 
 export function gatewayRole(config: ServerConfig): 'api' | 'reader' {
   const role: unknown = config.role ?? 'api';
@@ -71,6 +73,8 @@ export class ApiRuntime {
   readonly telemetry: ModuleTelemetry;
   /** The plan the writer records and read gateways compare with theirs. */
   private readonly modulePlan: PostgresModulePlan;
+  /** What the core gives modules (ADR 0083); built after the pools, used at module create. */
+  readonly hostServices: ModuleHostServices;
 
   constructor(
     config: ServerConfig,
@@ -85,7 +89,9 @@ export class ApiRuntime {
     this.telemetry = new ModuleTelemetry(log, () => performance.now());
     // Module settings and the plan are checked before any pool, storage or timer exists.
     this.modules = installation
-      ? apiModules(this.role, installation, this.telemetry, this.routes)
+      ? apiModules(this.role, installation, this.telemetry, this.routes, (module, resources) =>
+          this.hostServices.for(module, resources),
+        )
       : planApiModules(this.role, coreVersion, config.modules, this.telemetry, this.routes);
     // Validate local limits before allocating pools or claiming ownership.
     this.transfers = createTransferControls(config, this.available);
@@ -93,6 +99,9 @@ export class ApiRuntime {
       config.dataDirectory,
       config.storageReserveBytes ?? defaultStorageReserveBytes,
       config.storageBackends ?? [],
+      config.storageReserveInodes === undefined
+        ? {}
+        : { reserveInodes: config.storageReserveInodes },
     );
     this.core = this.blobs.core.lifecycle;
     this.staging = dataVolumeStaging(config.dataDirectory, (bytes) => this.core.checkSpace(bytes));
@@ -103,6 +112,7 @@ export class ApiRuntime {
       config.databasePoolSize ?? 20,
     );
     this.pins = new PostgresContentPins(this.catalog.sessions);
+    this.hostServices = apiHostServices(config, this.role, this);
     this.modulePlan = new PostgresModulePlan(this.catalog.pool);
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.sessions, config.sharedDownloads)
@@ -242,6 +252,7 @@ export class ApiRuntime {
       // module start still running is cancelled and settles first.
       await this.modules.shutdown(MODULE_DRAIN_BUDGET_MS);
     } finally {
+      this.hostServices.close();
       await this.pins.close();
       await this.catalog.close();
     }

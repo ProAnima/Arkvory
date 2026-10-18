@@ -117,6 +117,7 @@ export function decodeSearchCursor(value: string): GlobalSearchPosition {
 export function listableRepositories(
   principal: Principal,
   only?: readonly string[],
+  cap: number = GLOBAL_SEARCH_REPOSITORIES,
 ): readonly string[] {
   const names = new Set<string>();
   for (const binding of effectivePermissions(principal))
@@ -127,7 +128,7 @@ export function listableRepositories(
       names.add(binding.resource.id);
   const allowed: string[] = [];
   for (const name of [...names].sort()) {
-    if (allowed.length === GLOBAL_SEARCH_REPOSITORIES) break;
+    if (allowed.length >= cap) break;
     try {
       authorizeAction(principal, name, 'artifact.list', ['read']);
       allowed.push(name);
@@ -142,6 +143,34 @@ export function listableRepositories(
 export class GlobalSearch {
   constructor(private readonly store: GlobalSearchStore) {}
   async search(principal: Principal, input: GlobalSearchInput): Promise<GlobalSearchPage> {
+    return this.searchIn(input, (requested) => listableRepositories(principal, requested));
+  }
+
+  /**
+   * One search with the rights of several principals at once (ADR 0083, N4): only repositories
+   * every one of them may list. An empty list of principals sees nothing.
+   */
+  async searchAll(
+    principals: readonly Principal[],
+    input: GlobalSearchInput,
+  ): Promise<GlobalSearchPage> {
+    return this.searchIn(input, (requested) => {
+      const [first, ...others] = principals;
+      if (first === undefined) return [];
+      // Intersected before the cap: a repository all may list is never cut by the order of
+      // the principals or by the first one's other repositories.
+      const all = (p: Principal) => listableRepositories(p, requested, Number.POSITIVE_INFINITY);
+      const each = others.map((p) => new Set(all(p)));
+      return all(first)
+        .filter((name) => each.every((names) => names.has(name)))
+        .slice(0, GLOBAL_SEARCH_REPOSITORIES);
+    });
+  }
+
+  private async searchIn(
+    input: GlobalSearchInput,
+    listable: (requested: readonly string[] | undefined) => readonly string[],
+  ): Promise<GlobalSearchPage> {
     const query = optionalText(input.q, 'q') ?? '';
     if (query.length > MAX_QUERY) throw fieldError('q', 'length', 'Search text too long');
     // PostgreSQL text cannot hold NUL; the statement would fail as a server error.
@@ -155,7 +184,7 @@ export class GlobalSearch {
     const limit = pageSize(input.limit);
     // An unreadable repository in the filter is dropped like an absent one: the answer is the
     // same either way, so the filter cannot be used to learn which repositories exist.
-    const repositories = listableRepositories(principal, requested.length ? requested : undefined);
+    const repositories = listable(requested.length ? requested : undefined);
     if (repositories.length === 0) return { items: [], next: null };
     const rows = await this.store.searchRepositories(
       { repositories, query, labels, stage, after },

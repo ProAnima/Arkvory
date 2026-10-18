@@ -54,11 +54,13 @@ A coluna "Lida por" usa estes nomes: **API** é o servidor HTTP (também um gate
 
 ## Armazenamento e limites {#storage-and-limits}
 
-| Variável                        | Lida por            | Padrão          | Significado                                                                                                                                                                                                 |
-| ------------------------------- | ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_CAPACITY_BYTES`        | API, worker         | 10 TiB          | Limite superior, em bytes, de todo o conteúdo reservado: publicado, uploads não concluídos e conteúdo que aguarda a limpeza. Não é uma verificação de disco. O worker o lê somente para cópias de espelhos. |
-| `ARKVORY_STORAGE_RESERVE_BYTES` | API, worker, agente | `1073741824`    | Espaço livre, em bytes, que os uploads nunca usam. Ele é reservado para o banco de dados, os logs e o sistema. `0` desativa a reserva.                                                                      |
-| `ARKVORY_MAX_OBJECT_BYTES`      | API                 | cerca de 10 TiB | Maior objeto, em bytes. O maior valor permitido é 10.000 partes de 1 GiB. Defina um valor menor para limitar o tamanho dos arquivos.                                                                        |
+| Variável                          | Lida por            | Padrão           | Significado                                                                                                                                                                                                 |
+| --------------------------------- | ------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_CAPACITY_BYTES`          | API, worker         | 10 TiB           | Limite superior, em bytes, de todo o conteúdo reservado: publicado, uploads não concluídos e conteúdo que aguarda a limpeza. Não é uma verificação de disco. O worker o lê somente para cópias de espelhos. |
+| `ARKVORY_STORAGE_RESERVE_BYTES`   | API, worker, agente | `1073741824`     | Espaço livre, em bytes, que os uploads nunca usam. Ele é reservado para o banco de dados, os logs e o sistema. `0` desativa a reserva.                                                                      |
+| `ARKVORY_STORAGE_RESERVE_INODES`  | API, worker         | `100000`         | Inodes livres que as gravações nunca usam em cada volume. Sistemas de arquivos sem contagem de inodes, como o NTFS, ignoram esta verificação. `0` a desativa.                                               |
+| `ARKVORY_REHOME_BYTES_PER_SECOND` | worker              | `0` (sem limite) | Velocidade de cópia, em bytes por segundo, das [movimentações entre volumes](../operate/storage#rehome).                                                                                                    |
+| `ARKVORY_MAX_OBJECT_BYTES`        | API                 | cerca de 10 TiB  | Maior objeto, em bytes. O maior valor permitido é 10.000 partes de 1 GiB. Defina um valor menor para limitar o tamanho dos arquivos.                                                                        |
 
 ## Transferências e largura de banda {#transfers-and-bandwidth}
 

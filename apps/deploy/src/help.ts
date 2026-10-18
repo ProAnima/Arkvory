@@ -1,3 +1,5 @@
+import { storageHelp } from './storage-commands.js';
+
 /** The HA cluster commands (ADR 0072). */
 const clusterHelp = `cluster-status       HA cluster (ADR 0072), on the active node: role, complete copies, copies a
                      write needs / HA-кластер на активном узле: роль, копии, сколько нужно
@@ -69,7 +71,7 @@ update         Update; a schema change first captures and verifies a backup in t
 upgrade        Schema change without the built-in vault; --backup-record required / Вручную
 recover        Finish an interrupted update: back before a migration, forward after it
                / Завершить прерванное обновление
-${clusterHelp}${moduleHelp}volume-init    --directory <absolute dir> [--expect-mount | --no-expect-mount]
+${clusterHelp}${moduleHelp}${storageHelp}volume-init    --directory <absolute dir> [--expect-mount | --no-expect-mount]
                Mark an empty directory as a new storage volume (file storage-id); the services
                never do it. --expect-mount (default on Linux): the directory must be a mount
                point / Подготовить пустой каталог как новый том хранилища

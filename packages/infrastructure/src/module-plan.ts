@@ -12,6 +12,7 @@ import type {
   ModuleLifecycle,
   ModulePlan,
   ModulePlanProblem,
+  ModuleResources,
 } from '@proanima/arkvory-extension-api';
 import type { DataClass } from '@proanima/arkvory-signing';
 import { CORE_ROUTE_PREFIXES } from './builtin-modules.js';
@@ -22,6 +23,11 @@ export interface PreparedModule<Context> {
   readonly candidate: ModuleCandidate;
   /** What a signed package stores (ADR 0078, I1); null for built-in modules. */
   readonly dataClass: DataClass | null;
+  /**
+   * The data directory the module may fill (ADR 0083, N6): the operator's approval in
+   * `ARKVORY_MODULES_FILE`, else the manifest's request; null for none.
+   */
+  readonly resources?: ModuleResources | null;
   /**
    * Builds the instance. For a signed module whose code could not be loaded in this process it
    * throws `ModuleLoadError`; the host then reports the module failed instead of running it.
@@ -46,8 +52,17 @@ export function prepareModule<Context, Config>(
       config: descriptor.describeConfig(config),
     },
     dataClass: null,
+    resources: approvedResources(descriptor.manifest.resources, selection),
     create: (context) => descriptor.create(context, config),
   };
+}
+
+/** The operator's approval replaces the manifest's request of a data directory. */
+export function approvedResources(
+  requested: ModuleResources | null,
+  selection: ModuleSelection | undefined,
+): ModuleResources | null {
+  return selection?.resources ?? requested;
 }
 
 /** A refused plan; the message lists machine codes and module ids only. */
@@ -73,11 +88,19 @@ export function planOrThrow<Context>(
 }
 
 /**
- * Services of ADR 0083 this core implements for modules; each arrives with its stage and contract
- * suite, and a module that uses another one is refused (`service_unavailable`). `routes`: module
- * HTTP routes under `/api/ext/` (ADR 0083, N7), served by the API and read gateways.
+ * Services of ADR 0083 this core implements for modules; a module that uses another one is
+ * refused (`service_unavailable`). `routes`: module HTTP routes under `/api/ext/` (N7), served
+ * by the API and read gateways, its suite in `tests/module-routes.test.mjs` (the route host
+ * lives in the API process); the others each with a contract suite in `extension-testkit`.
+ * Completion from stored parts is a capability of a storage instance the core builds, not yet a
+ * service a module can offer (`staged-completion` waits for storage instances of modules).
  */
-export const PROVIDED_HOST_SERVICES: readonly HostService[] = ['routes'];
+export const PROVIDED_HOST_SERVICES: readonly HostService[] = [
+  'routes',
+  'catalog-read',
+  'content-read',
+  'data-directory',
+];
 
 export const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 

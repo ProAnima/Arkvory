@@ -143,6 +143,12 @@ export const excludedTables: readonly ExcludedTable[] = [
     name: 'arkvory_event_state',
     reason: 'epoch and positions of the source; migrating the target starts a new epoch',
   },
+  // ADR 0083, N2: a move is a property of the source's storages; a restore writes every blob
+  // to the storage its upload row names.
+  {
+    name: 'arkvory_blob_moves',
+    reason: 'moves between storages of the source; a restore writes each blob to its storage',
+  },
   {
     name: 'arkvory_module_plan',
     reason: 'module plan of the source writer; the writer of the target records its own',

@@ -61,6 +61,29 @@ import type {
   StorageBackends,
 } from '@proanima/arkvory-infrastructure';
 
+/** Uploads go where placement decides; a storage may assemble them from parts (ADR 0083). */
+function storageService(
+  catalog: PostgresCatalog,
+  blobs: StorageBackends,
+  placements: PostgresPlacementPolicies,
+  metrics: StorageMetrics,
+  maxObjectBytes: number | undefined,
+): StorageService {
+  return new StorageService(
+    catalog,
+    blobs,
+    { next: randomUUID, now: () => new Date().toISOString() },
+    {
+      placement: new PolicyPlacement(placements, blobs, (decision) => {
+        metrics.fellBack(decision);
+      }),
+      // Storages that assemble objects from their accepted parts (N1).
+      staged: blobs,
+      ...(maxObjectBytes === undefined ? {} : { maxObjectBytes }),
+    },
+  );
+}
+
 /** Composition only: each registrar receives just the services it consumes. */
 export function createApiServices(
   catalog: PostgresCatalog,
@@ -78,17 +101,7 @@ export function createApiServices(
   const now = () => new Date().toISOString();
   const placements = new PostgresPlacementPolicies(catalog.pool);
   const storageMetrics = new StorageMetrics(blobs);
-  const service = new StorageService(
-    catalog,
-    blobs,
-    { next: randomUUID, now },
-    {
-      placement: new PolicyPlacement(placements, blobs, (decision) => {
-        storageMetrics.fellBack(decision);
-      }),
-      ...(maxObjectBytes === undefined ? {} : { maxObjectBytes }),
-    },
-  );
+  const service = storageService(catalog, blobs, placements, storageMetrics, maxObjectBytes);
   const serviceAccounts = new PostgresServices(catalog.pool);
   const storagePolicies = new PostgresStoragePolicy(catalog.pool);
   const securityAudit = new PostgresSecurityAudit(catalog.pool);

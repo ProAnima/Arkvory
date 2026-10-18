@@ -64,7 +64,13 @@ const refused = (input, code, path) =>
   );
 
 test('a manifest is read from untrusted input field by field, naming the field, never the value', () => {
-  assert.deepEqual(parseModuleManifest(manifest('npm')), { ...manifest('npm'), uses: [] });
+  assert.deepEqual(parseModuleManifest(manifest('npm')), {
+    ...manifest('npm'),
+    uses: [],
+    optional: [],
+    exposeTo: [],
+    resources: null,
+  });
   refused(null, 'type', '');
   refused([], 'type', '');
   refused({ ...manifest('npm'), entry: 'x.js' }, 'unknown_field', '/entry');

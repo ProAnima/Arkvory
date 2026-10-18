@@ -52,8 +52,9 @@ Um módulo instalado fica desativado até você ativá-lo. Os serviços carregam
    { "format": 1, "modules": { "sample": { "enabled": true } } }
    ```
 
-2. Reinicie os serviços, como em [Aplicar uma alteração](../install/configuration#apply-change).
-3. Verifique o módulo como administrador global: `GET /api/v1/system/modules` o mostra com `running: true` e `health.status` `ok` na API e em cada gateway de leitura.
+2. Se o módulo guarda arquivos, aprove o tamanho do diretório de dados dele com `resources`, por exemplo `"resources": { "dataMiB": 512, "dataFiles": 10000 }` ao lado de `enabled`. Ele substitui o tamanho que o pacote pede. Veja [Diretório de dados de um módulo](#data).
+3. Reinicie os serviços, como em [Aplicar uma alteração](../install/configuration#apply-change).
+4. Verifique o módulo como administrador global: `GET /api/v1/system/modules` o mostra com `running: true` e `health.status` `ok` na API e em cada gateway de leitura.
 
 A API e os gateways de leitura executam os módulos. O worker verifica os mesmos módulos e não executa nenhum. Esta versão recusa módulos que rodam no worker ou no agente de backup (`role_unsupported`) e módulos que declaram prefixos de rotas sem atender rotas pelo Arkvory (`routes_unsupported`). Instalações com Docker Compose ainda não carregam módulos.
 
@@ -74,6 +75,12 @@ Um módulo que falha numa verificação não é carregado; os outros módulos e 
 Um módulo com falha tira o Arkvory da prontidão (`/health/ready` responde 503 com `module_failed`) somente quando outro módulo ativado precisa dele. Um módulo que guarda os bytes dos arquivos publicados (dados `layout`) nunca faz isso: o Arkvory continua servindo os dados dele e grava os novos uploads no próprio armazenamento em vez do armazenamento do módulo. O log registra `module.refused` e `module.failed` com o código em `errorCode`.
 
 Para reparar um pacote alterado ou ausente, instale-o de novo. Todos os serviços da instalação devem ver os mesmos módulos, ativados ou não: um gateway de leitura ou worker com outros módulos não fica pronto (`module_plan_mismatch`). Instale os mesmos pacotes no host de cada gateway de leitura.
+
+### Diretório de dados de um módulo {#data}
+
+Um módulo que guarda índices, caches ou estado próprios recebe um diretório no volume de dados: `module-data/<id>/` no diretório de armazenamento de `default`. A parte `data` dele é destinada a backups; a parte `cache`, não. O Arkvory desconta cada gravação do tamanho aprovado, em MiB e em arquivos, para as duas partes juntas. Uma gravação além dele é recusada (`module_quota_exceeded`), e o módulo continua rodando. Sem um tamanho aprovado, o módulo só pode ler. A [reserva do volume](./storage#disk) também vale. Em um gateway de leitura, o módulo lê os mesmos arquivos e não pode alterá-los.
+
+Remover um módulo mantém o diretório dele. Exclua `module-data/<id>/` você mesmo quando não precisar mais dos dados. Os backups ainda não incluem os diretórios de módulos.
 
 ## Rotas de módulos {#routes}
 

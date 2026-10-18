@@ -52,8 +52,9 @@ Arkvory는 다음 경우 패키지를 거부합니다.
    { "format": 1, "modules": { "sample": { "enabled": true } } }
    ```
 
-2. [변경 사항 적용](../install/configuration#apply-change)과 같이 서비스를 다시 시작합니다.
-3. 전역 관리자로 모듈을 확인합니다. `GET /api/v1/system/modules`는 API와 각 읽기 게이트웨이에서 모듈을 `running: true`, `health.status` `ok`로 보여 줍니다.
+2. 모듈이 파일을 보관한다면 `resources`로 데이터 디렉터리의 크기를 승인합니다. 예를 들어 `enabled` 옆에 `"resources": { "dataMiB": 512, "dataFiles": 10000 }`을 둡니다. 이 값은 패키지가 요청하는 크기를 대체합니다. [모듈의 데이터 디렉터리](#data)를 참고하세요.
+3. [변경 사항 적용](../install/configuration#apply-change)과 같이 서비스를 다시 시작합니다.
+4. 전역 관리자로 모듈을 확인합니다. `GET /api/v1/system/modules`는 API와 각 읽기 게이트웨이에서 모듈을 `running: true`, `health.status` `ok`로 보여 줍니다.
 
 모듈은 API와 읽기 게이트웨이가 실행합니다. 워커는 같은 모듈을 확인하지만 아무것도 실행하지 않습니다. 이 릴리스는 워커나 백업 에이전트에서 실행되는 모듈(`role_unsupported`)과 Arkvory를 통해 라우트를 제공하지 않으면서 라우트 접두사를 선언하는 모듈(`routes_unsupported`)을 거부합니다. Docker Compose 설치는 아직 모듈을 로드하지 않습니다.
 
@@ -74,6 +75,12 @@ Arkvory는 다음 경우 패키지를 거부합니다.
 실패한 모듈은 다른 활성 모듈이 그 모듈을 필요로 할 때만 Arkvory를 준비되지 않은 상태로 만듭니다(`/health/ready`가 `module_failed`와 함께 503으로 응답). 게시된 파일의 바이트를 저장하는 모듈(데이터 `layout`)은 절대 그렇게 하지 않습니다. Arkvory는 그 데이터를 계속 제공하고 새 업로드를 모듈의 저장소 대신 자체 저장소에 기록합니다. 로그에는 `module.refused`와 `module.failed`가 `errorCode`의 코드와 함께 기록됩니다.
 
 변경되었거나 없어진 패키지를 복구하려면 다시 설치하세요. 설치의 모든 서비스는 활성화 여부와 관계없이 같은 모듈을 보아야 합니다. 다른 모듈을 가진 읽기 게이트웨이나 워커는 준비되지 않습니다(`module_plan_mismatch`). 각 읽기 게이트웨이의 호스트에 같은 패키지를 설치하세요.
+
+### 모듈의 데이터 디렉터리 {#data}
+
+자체 인덱스, 캐시 또는 상태를 보관하는 모듈은 데이터 볼륨에 디렉터리를 받습니다. `default`의 스토리지 디렉터리 안의 `module-data/<id>/`입니다. 그중 `data` 부분은 백업 대상이고 `cache` 부분은 그렇지 않습니다. Arkvory는 모든 쓰기를 두 부분을 합쳐 MiB와 파일 수로 승인된 크기에 대해 계산합니다. 이를 넘는 쓰기는 거부되며(`module_quota_exceeded`) 모듈은 계속 실행됩니다. 승인된 크기가 없으면 모듈은 읽기만 할 수 있습니다. [볼륨의 예비 영역](./storage#disk)도 적용됩니다. 읽기 게이트웨이에서 모듈은 같은 파일을 읽지만 변경할 수는 없습니다.
+
+모듈을 제거해도 디렉터리는 남습니다. 데이터가 더 이상 필요 없으면 `module-data/<id>/`를 직접 삭제하세요. 백업은 아직 모듈 디렉터리를 포함하지 않습니다.
 
 ## 모듈의 라우트 {#routes}
 

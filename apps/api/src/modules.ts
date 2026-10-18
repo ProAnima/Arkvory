@@ -1,6 +1,8 @@
 import type {
+  HostServices,
+  ModuleCapabilities,
   ModuleContext,
-  ModuleRoutes,
+  ModuleResources,
   ModuleSignal,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
@@ -11,13 +13,17 @@ import { ModuleRuntime } from './module-host.js';
 import { ModuleTelemetry } from './module-telemetry.js';
 
 /**
- * Services the API process gives modules (`HOST_SERVICES`, ADR 0083): `routes` for modules that
- * declare it in `uses` (N7); every other service is refused by the plan, so a module receives
- * only what it declared.
+ * Services the API process gives modules (`HOST_SERVICES`, ADR 0083): `routes` (N7), reading
+ * the catalog and content (N4) and the data directory (N6); each module receives only those its
+ * manifest declares, every other service is refused by the plan.
  */
-export interface ApiServices {
-  readonly routes?: ModuleRoutes;
-}
+export type ApiServices = HostServices;
+
+/** The host services of one module other than `routes`, built right before its `create`. */
+export type ModuleServicesOf = (
+  module: PlannedModule,
+  resources: ModuleResources | null,
+) => Omit<ApiServices, 'routes'>;
 
 /** What a module of the API process receives from the core (ADR 0083, section 2.4). */
 export type ApiModuleContext = ModuleContext<ApiServices> & { readonly role: 'api' | 'reader' };
@@ -36,8 +42,13 @@ export function apiModules(
   installation: InstallationPlan<ApiModuleContext>,
   telemetry: ModuleTelemetry,
   registry = new ModuleRouteRegistry(),
+  services: ModuleServicesOf = () => ({}),
 ): ModuleRuntime<ApiModuleContext> {
-  const context = (module: PlannedModule, signal: ModuleSignal): ApiModuleContext => ({
+  const context = (
+    module: PlannedModule,
+    signal: ModuleSignal,
+    capabilities: ModuleCapabilities,
+  ): ApiModuleContext => ({
     role,
     source: module.source,
     // A read gateway serves reads only (ADR 0009); its modules refuse writes with read_only.
@@ -45,7 +56,11 @@ export function apiModules(
     signal,
     log: telemetry.log(module.manifest),
     metrics: telemetry.metrics(module.manifest),
-    services: usesRoutes(module) ? { routes: registry.service(module.manifest) } : {},
+    services: {
+      ...services(module, installation.prepared.get(module.manifest.id)?.resources ?? null),
+      ...(usesRoutes(module) ? { routes: registry.service(module.manifest) } : {}),
+    },
+    capabilities,
   });
   const created = (module: PlannedModule) => {
     if (usesRoutes(module)) registry.seal(module.manifest);

@@ -1,4 +1,6 @@
+import { capabilityName } from '@proanima/arkvory-extension-api';
 import type {
+  ModuleCapabilities,
   ModuleHealth,
   ModuleLifecycle,
   ModulePlan,
@@ -6,7 +8,7 @@ import type {
   ModuleSignal,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
-import { ModuleLoadError } from '@proanima/arkvory-infrastructure';
+import { CapabilityRegistry, ModuleLoadError } from '@proanima/arkvory-infrastructure';
 import type { PreparedModule, RefusedModule } from '@proanima/arkvory-infrastructure';
 
 export interface ModuleState {
@@ -18,6 +20,15 @@ export interface ModuleState {
    * here but could not be loaded or started; null when it does not belong to this process.
    */
   readonly health: ModuleHealth | null;
+}
+
+/** How a module's data directory enters a copy: held by `freeze`, or as it was (`fuzzy`). */
+export type DataConsistency = 'consistent' | 'fuzzy';
+
+export interface DataFreeze {
+  readonly consistency: ReadonlyMap<string, DataConsistency>;
+  /** Idempotent; resolves when every asked module was told to resume. */
+  thaw(): Promise<void>;
 }
 
 /** How long one signed module may take to start before it is stopped and reported failed. */
@@ -98,11 +109,18 @@ async function bounded(work: Promise<void>, budgetMs: number): Promise<void> {
   }
 }
 
-/** Stops in the given order; every module is stopped even when an earlier one fails. */
-async function stopAll(running: readonly Running[]): Promise<unknown[]> {
+/**
+ * Stops in the given order; every module is stopped even when an earlier one fails. Its
+ * capability values are withdrawn before its stop begins.
+ */
+async function stopAll(
+  running: readonly Running[],
+  withdraw: (id: string) => void,
+): Promise<unknown[]> {
   const failures: unknown[] = [];
-  for (const { instance } of running)
+  for (const { id, instance } of running)
     try {
+      withdraw(id);
       await instance.stop();
     } catch (error) {
       failures.push(error);
@@ -113,8 +131,11 @@ async function stopAll(running: readonly Running[]): Promise<unknown[]> {
 /** The process this runtime runs in and what its modules receive. */
 export interface ModuleProcess<Context> {
   readonly role: ModuleRole;
-  /** The context of one module, built right before its `create`; `signal` is the process stop. */
-  context(module: PlannedModule, signal: ModuleSignal): Context;
+  /**
+   * The context of one module, built right before its `create`; `signal` is the process stop,
+   * `capabilities` the values of its `requires` and `optional` (ADR 0083, N13).
+   */
+  context(module: PlannedModule, signal: ModuleSignal, capabilities: ModuleCapabilities): Context;
   /**
    * Checks what the module declared during `create`, before it starts; throws `ModuleSetupError`.
    * A signed module then fails alone with its code; a built-in module stops the process start.
@@ -133,6 +154,7 @@ export class ModuleRuntime<Context = unknown> {
   /** Signed modules of this process that could not be loaded, created or started: their code. */
   private readonly failed = new Map<string, string>();
   private readonly cancel = new AbortController();
+  private readonly capabilities: CapabilityRegistry;
   private starting: Promise<void> | undefined;
   private closing: Promise<void> | undefined;
 
@@ -143,7 +165,17 @@ export class ModuleRuntime<Context = unknown> {
     /** Installed signed modules the loader refused before planning (ADR 0079, X4). */
     readonly refused: readonly RefusedModule[] = [],
     private readonly startBudgetMs = SIGNED_START_BUDGET_MS,
-  ) {}
+  ) {
+    this.capabilities = new CapabilityRegistry(plan, process.role);
+  }
+
+  private readonly withdraw = (id: string) => {
+    this.capabilities.withdraw(id);
+  };
+
+  private contextOf(planned: PlannedModule, signal: AbortSignal): Context {
+    return this.process.context(planned, signal, this.capabilities.forConsumer(planned));
+  }
 
   /**
    * Creates and starts every enabled module of the process role in plan order, once. When a
@@ -171,7 +203,7 @@ export class ModuleRuntime<Context = unknown> {
       // A module that ignored the cancellation must not leave a stopping process running it.
       signal.throwIfAborted();
     } catch (error) {
-      const failures = await stopAll(this.running.splice(0).reverse());
+      const failures = await stopAll(this.running.splice(0).reverse(), this.withdraw);
       if (failures.length === 0) throw error;
       throw new AggregateError([error, ...failures], 'Module start failed', { cause: error });
     }
@@ -184,11 +216,12 @@ export class ModuleRuntime<Context = unknown> {
     module: PreparedModule<Context>,
     signal: AbortSignal,
   ): Promise<void> {
-    const instance = module.create(this.process.context(planned, signal));
+    const instance = module.create(this.contextOf(planned, signal));
     // Recorded before start: stop() also runs after a failed or cancelled start.
     this.running.push({ id, instance });
     this.process.created?.(planned);
     await instance.start(signal);
+    this.capabilities.offer(planned, instance);
   }
 
   /**
@@ -206,15 +239,15 @@ export class ModuleRuntime<Context = unknown> {
     const unavailable = new Set(
       this.plan.modules
         .filter((m) => this.failed.has(m.manifest.id))
-        .flatMap((m) => m.manifest.provides),
+        .flatMap((m) => m.manifest.provides.map(capabilityName)),
     );
-    if (planned.manifest.requires.some((capability) => unavailable.has(capability))) {
+    if (planned.manifest.requires.some((entry) => unavailable.has(capabilityName(entry)))) {
       this.failed.set(id, 'requirement_failed');
       return;
     }
     let instance: ModuleLifecycle;
     try {
-      instance = module.create(this.process.context(planned, signal));
+      instance = module.create(this.contextOf(planned, signal));
     } catch (error) {
       this.failed.set(id, error instanceof ModuleLoadError ? error.code : 'create_failed');
       return;
@@ -235,6 +268,7 @@ export class ModuleRuntime<Context = unknown> {
       await within(start, this.startBudgetMs, () => {
         own.abort();
       });
+      this.capabilities.offer(planned, instance);
     } catch (error) {
       if (signal.aborted) throw error;
       const index = this.running.indexOf(started);
@@ -242,6 +276,41 @@ export class ModuleRuntime<Context = unknown> {
       await this.stopBounded(instance);
       this.failed.set(id, error instanceof StartTimeout ? 'start_timeout' : 'start_failed');
     }
+  }
+
+  /**
+   * Asks every running module with a data directory to hold its `data` area consistent for a
+   * copy (ADR 0083, N6). A module without `freeze`, or whose `freeze` fails or misses the
+   * deadline, is `fuzzy`: its files are copied as they are. `thaw` is then called once on every
+   * module that was asked, whatever its answer, and never throws.
+   */
+  async freezeData(deadlineMs: number): Promise<DataFreeze> {
+    const consistency = new Map<string, DataConsistency>();
+    const asked: ModuleLifecycle[] = [];
+    for (const { id, instance } of this.running) {
+      const planned = this.plan.modules.find((m) => m.manifest.id === id);
+      if (!planned?.manifest.uses.includes('data-directory')) continue;
+      if (!instance.freeze) {
+        consistency.set(id, 'fuzzy');
+        continue;
+      }
+      asked.push(instance);
+      const frozen = Promise.resolve().then(() => instance.freeze?.(deadlineMs));
+      const held = await within(frozen, deadlineMs, () => undefined).then(
+        () => true,
+        () => false,
+      );
+      consistency.set(id, held ? 'consistent' : 'fuzzy');
+    }
+    let thawed: Promise<void> | undefined;
+    const thaw = () =>
+      (thawed ??= (async () => {
+        for (const instance of asked.reverse())
+          await Promise.resolve()
+            .then(() => instance.thaw?.())
+            .catch(() => undefined);
+      })());
+    return { consistency, thaw };
   }
 
   /** Bounded like the start: a stop that hangs must not hold the process start either. */
@@ -273,13 +342,16 @@ export class ModuleRuntime<Context = unknown> {
    */
   blockingFailure(): string | null {
     const required = new Set(
-      this.plan.modules.filter((m) => m.enabled).flatMap((m) => m.manifest.requires),
+      this.plan.modules
+        .filter((m) => m.enabled)
+        .flatMap((m) => m.manifest.requires.map(capabilityName)),
     );
     const failed = this.states().find(
       ({ module, health }) =>
         health?.status === 'failed' &&
         this.prepared.get(module.manifest.id)?.dataClass !== 'layout' &&
-        (module.manifest.core || module.manifest.provides.some((c) => required.has(c))),
+        (module.manifest.core ||
+          module.manifest.provides.some((c) => required.has(capabilityName(c)))),
     );
     const consumer = this.refused.find((m) => m.enabled && m.code === 'missing_requirement');
     return failed?.module.manifest.id ?? consumer?.id ?? null;
@@ -325,7 +397,7 @@ export class ModuleRuntime<Context = unknown> {
         });
       await bounded(drain, left);
     }
-    failures.push(...(await stopAll(reverse)));
+    failures.push(...(await stopAll(reverse, this.withdraw)));
     if (failures.length > 0) throw new AggregateError(failures, 'Module shutdown failed');
   }
 }

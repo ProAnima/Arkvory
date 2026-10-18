@@ -94,6 +94,39 @@ export interface BlobStore {
   ): Promise<void>;
 }
 
+/**
+ * Completion from parts a storage already accepted (ADR 0083, N1). A storage that cannot
+ * assemble an object on its side has no composer; completion then reads the parts and writes the
+ * object through `BlobStore.put`, as before.
+ */
+export interface StagedParts {
+  composer(backendId: string): PartComposer | null;
+}
+
+export interface PartComposer {
+  /**
+   * Assembles the object of `id` from its accepted parts in the storage, not visible yet. A
+   * repeat after a commit returns the committed object. `read_only` when the storage refuses.
+   */
+  compose(
+    id: string,
+    parts: readonly UploadPart[],
+    cancellation: Cancellation,
+  ): Promise<ComposedObject>;
+}
+
+export interface ComposedObject {
+  /**
+   * Reads every byte of the assembled object and checks its size and SHA-256 against
+   * `expected`: the core measures, never the storage. `integrity_mismatch` otherwise.
+   */
+  verify(expected: ArtifactDescriptor, cancellation: Cancellation): Promise<void>;
+  /** The storage's durability point: the object is published and immutable after it. */
+  commit(expected: ArtifactDescriptor, cancellation: Cancellation): Promise<void>;
+  /** Drops an object that was not committed; the parts stay. Idempotent. */
+  discard(): Promise<void>;
+}
+
 export interface IdentitySource {
   next(): string;
   now(): string;

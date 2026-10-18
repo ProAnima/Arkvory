@@ -16,11 +16,54 @@ export {
   type ModuleKind,
   type ModuleManifest,
   type ModuleManifestProblem,
+  type ModuleResources,
   type ModuleRole,
 } from './manifest.js';
 export {
+  CAPABILITY_NAME,
+  capabilityName,
+  defineCapability,
+  parseProvidedCapability,
+  parseRequiredCapability,
+  type CapabilityEntry,
+  type CapabilityToken,
+  type ModuleCapabilities,
+} from './capabilities.js';
+export {
+  ModuleServiceError,
+  SERVICE_ERROR_CODES,
+  type BlobDescriptor,
+  type ByteRange,
+  type Page,
+  type PageRequest,
+  type PartRef,
+  type ServiceErrorCode,
+} from './portable.js';
+export type { HostServices, HostServiceTypes } from './services.js';
+export type { StagedCompletion, StagedObject } from './staged.js';
+export type {
+  AccessScope,
+  ArtifactView,
+  AssetView,
+  BatchView,
+  CatalogRead,
+  ContentHandle,
+  ContentRead,
+  ContentRef,
+  PackageQuery,
+  PackageView,
+  SearchHit,
+  SearchQuery,
+} from './catalog-read.js';
+export type {
+  FileSink,
+  ModuleDataDirectory,
+  ModuleDataUsage,
+  ModuleFiles,
+} from './module-files.js';
+export { MODULE_SOURCES, type ModuleSource } from './sources.js';
+export {
   HOST_SERVICES,
-  MODULE_SOURCES,
   type HostService,
   type ModuleContext,
   type ModuleCounter,
@@ -30,7 +73,6 @@ export {
   type ModuleLogRecord,
   type ModuleMetrics,
   type ModuleMode,
-  type ModuleSource,
 } from './context.js';
 export {
   ModuleConfigError,

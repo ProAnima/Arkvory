@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import {
+  link,
   mkdir,
   open,
   readFile,
@@ -25,6 +26,10 @@ const mismatch = () => new ArkvoryError('integrity_mismatch', 'Size or SHA-256 d
  * small record (`ids/<id>`) naming its object, so two ids with equal bytes share one object.
  * Writes go to `tmp/` and become visible by rename; a record is written last, so an id is
  * visible only with its whole object. Not for production: no directory sync.
+ *
+ * It also completes uploads from its own parts (ADR 0083, N1, `staged()`): `compose` reads the
+ * part files in order, `commit` hard-links them under `composed/<id>/` (a durable link to the
+ * accepted bytes, no second copy) and then writes the record naming that folder.
  */
 export class DirectoryBackend {
   #root;
@@ -36,7 +41,7 @@ export class DirectoryBackend {
   }
 
   async initialize() {
-    for (const folder of ['objects', 'ids', 'parts', 'tmp'])
+    for (const folder of ['objects', 'ids', 'parts', 'tmp', 'composed'])
       await mkdir(this.#at(folder), { recursive: true });
   }
   async ready() {
@@ -104,8 +109,9 @@ export class DirectoryBackend {
       if (existing.sha256 !== expected.sha256 || existing.size !== expected.size) throw mismatch();
       return;
     }
+    const { sha256, size, composed, segments } = expected;
     const temporary = this.#at('tmp', randomUUID());
-    await writeFile(temporary, JSON.stringify({ sha256: expected.sha256, size: expected.size }));
+    await writeFile(temporary, JSON.stringify({ sha256, size, composed, segments }));
     await rename(temporary, this.#at('ids', id));
   }
 
@@ -142,7 +148,24 @@ export class DirectoryBackend {
     if (size === 0) return;
     const start = range?.start ?? 0;
     const end = range?.end ?? size - 1;
-    yield* createReadStream(this.#at('objects', record.sha256), { start, end });
+    if (record.composed === undefined)
+      yield* createReadStream(this.#at('objects', record.sha256), { start, end });
+    else yield* this.#segments(this.#at('composed', record.composed), record.segments, start, end);
+  }
+
+  /** The bytes `start..end` of files `0..count-1` of a folder, read in order. */
+  async *#segments(folder, count, start, end) {
+    let offset = 0;
+    for (let index = 0; index < count && offset <= end; index++) {
+      const path = join(folder, String(index));
+      const { size } = await stat(path).catch((error) => {
+        throw hasCode(error, 'ENOENT') ? unavailable() : error;
+      });
+      const from = Math.max(start, offset);
+      const to = Math.min(end, offset + size - 1);
+      if (from <= to) yield* createReadStream(path, { start: from - offset, end: to - offset });
+      offset += size;
+    }
   }
 
   async verify(id, expected, cancellation) {
@@ -157,8 +180,7 @@ export class DirectoryBackend {
 
   async duplicate(sourceId, targetId, expected) {
     await this.exists(sourceId, expected.size);
-    const record = await this.#record(sourceId);
-    await this.#publish(targetId, { size: record.size, sha256: record.sha256 });
+    await this.#publish(targetId, await this.#record(sourceId));
   }
 
   #part(id, part) {
@@ -180,7 +202,7 @@ export class DirectoryBackend {
     }
   }
 
-  /** Removes the parts and, when asked, the id; an object no other id names goes with it. */
+  /** Removes the parts and, when asked, the id; bytes no other id names go with it. */
   async collect(id, removeContent, cancellation) {
     cancellation.throwIfAborted();
     await rm(this.#at('parts', id), { recursive: true, force: true });
@@ -188,8 +210,84 @@ export class DirectoryBackend {
     const record = await this.#record(id);
     if (!record) return;
     await rm(this.#at('ids', id), { force: true });
-    for (const other of await readdir(this.#at('ids')))
-      if ((await this.#record(other))?.sha256 === record.sha256) return;
-    await rm(this.#at('objects', record.sha256), { force: true });
+    const key = (r) => (r.composed === undefined ? `object:${r.sha256}` : `composed:${r.composed}`);
+    for (const other of await readdir(this.#at('ids'))) {
+      const named = await this.#record(other);
+      if (named && key(named) === key(record)) return;
+    }
+    if (record.composed === undefined)
+      await rm(this.#at('objects', record.sha256), { force: true });
+    else await rm(this.#at('composed', record.composed), { recursive: true, force: true });
+  }
+
+  /** Completion from accepted parts (ADR 0083, N1); `readOnly` refuses like a read-only mode. */
+  staged(readOnly = false) {
+    return { compose: (id, parts, signal) => this.#compose(id, parts, signal, readOnly) };
+  }
+
+  async #compose(id, parts, signal, readOnly) {
+    signal.throwIfAborted();
+    if (readOnly) throw new ArkvoryError('read_only', 'Storage backend is read-only');
+    const committed = await this.#record(id);
+    // After a commit the object is returned again: a crash before publication is retried.
+    if (committed?.composed !== undefined) return this.#committed(id, committed);
+    let size = 0;
+    for (const part of parts) {
+      const info = await stat(this.#part(id, part)).catch((error) => {
+        throw hasCode(error, 'ENOENT') ? unavailable() : error;
+      });
+      size += info.size;
+    }
+    return {
+      size,
+      read: (range) => this.#ordered(id, parts, range?.start ?? 0, range?.end ?? size - 1),
+      commit: (expected, commitSignal) => this.#commit(id, parts, expected, commitSignal),
+      discard: async () => {
+        // Nothing was linked before commit; a folder of an interrupted commit has no record.
+        if (!(await this.#record(id)))
+          await rm(this.#at('composed', id), { recursive: true, force: true });
+      },
+    };
+  }
+
+  #committed(id, record) {
+    return {
+      size: record.size,
+      read: (range) => this.read(id, record.size, range),
+      commit: async (expected) => {
+        if (expected.sha256 !== record.sha256 || expected.size !== record.size) throw mismatch();
+      },
+      discard: async () => undefined,
+    };
+  }
+
+  async *#ordered(id, parts, start, end) {
+    let offset = 0;
+    for (const part of parts) {
+      const from = Math.max(start, offset);
+      const to = Math.min(end, offset + part.size - 1);
+      if (from <= to)
+        yield* createReadStream(this.#part(id, part), { start: from - offset, end: to - offset });
+      offset += part.size;
+    }
+  }
+
+  async #commit(id, parts, expected, signal) {
+    signal.throwIfAborted();
+    const existing = await this.#record(id);
+    if (existing) {
+      if (existing.sha256 !== expected.sha256 || existing.size !== expected.size) throw mismatch();
+      return;
+    }
+    const folder = this.#at('composed', id);
+    // A folder without a record is an interrupted commit: rebuilt, nothing reads it yet.
+    await rm(folder, { recursive: true, force: true });
+    const temporary = this.#at('tmp', randomUUID());
+    await mkdir(temporary);
+    for (const [index, part] of parts.entries())
+      await link(this.#part(id, part), join(temporary, String(index)));
+    await rename(temporary, folder);
+    signal.throwIfAborted();
+    await this.#publish(id, { ...expected, composed: id, segments: parts.length });
   }
 }
