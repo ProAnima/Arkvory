@@ -44,7 +44,7 @@ export function foldTreePath(path: string): string {
   let folded = '';
   for (const char of path.normalize('NFC')) {
     const upper = char.toUpperCase();
-    folded += [...upper].length === 1 ? upper.toLowerCase() : char.toLowerCase();
+    folded += /^.$/su.test(upper) ? upper.toLowerCase() : char.toLowerCase();
   }
   return folded.normalize('NFC');
 }
