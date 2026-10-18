@@ -52,3 +52,10 @@ export {
   type PlannedModule,
 } from './plan.js';
 export type { ModulePlanRuleCode } from './plan-rules.js';
+export {
+  LICENSE_STATES,
+  type LicenseEvidence,
+  type LicenseService,
+  type LicenseState,
+  type LicenseView,
+} from './license.js';
