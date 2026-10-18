@@ -90,6 +90,8 @@ export * from './metrics.js';
 export { PostgresCleanupSettings } from './cleanup-settings.js';
 export { PostgresOnlineCleanup } from './online-cleanup.js';
 export { PostgresContentPins } from './content-pins.js';
+export { ZipTreeBuilder } from './archive-tree.js';
+export { PostgresTreeIndexes, migrateTreeIndexes } from './tree-index-store.js';
 
 export { admitUnlink, finishUnlink } from './unlink-admission.js';
 export { FileVault, defaultFileVaultOptions } from './file-vault.js';

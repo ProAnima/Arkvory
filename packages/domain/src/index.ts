@@ -56,3 +56,4 @@ export type {
 export { acknowledges } from './replica.js';
 export type { ReplicaCopies, ReplicaPeer } from './replica.js';
 export * from './storage-placement.js';
+export * from './archive-tree.js';

@@ -84,8 +84,11 @@ export class PostgresCleanup implements CleanupCatalog {
     );
   }
   async reclaimed(id: string) {
+    // The table of contents of reclaimed content goes in the same statement (ADR 0083, N8).
     const result = await this.pool.query(
-      `UPDATE arkvory_uploads SET reclaimed=true WHERE id=$1 AND status='cancelled'`,
+      `WITH changed AS (UPDATE arkvory_uploads SET reclaimed=true WHERE id=$1 AND status='cancelled' RETURNING id),
+      dropped AS (DELETE FROM arkvory_tree_indexes WHERE upload_id IN (SELECT id FROM changed))
+      SELECT id FROM changed`,
       [id],
     );
     if (result.rowCount !== 1)
