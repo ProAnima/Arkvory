@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import {
+  access,
   chmod,
+  copyFile,
   mkdir,
   mkdtemp,
   readdir,
@@ -12,6 +14,7 @@ import {
   rm,
   symlink,
   unlink,
+  utimes,
   writeFile,
 } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -121,4 +124,67 @@ test('reuse never accepts an archive whose checksum differs from the release', a
   const changed = { ...f.source, release: { ...f.source.release, archiveSha256: 'b'.repeat(64) } };
   await writeFile(join(f.release, 'release.json'), JSON.stringify(changed.release));
   await assert.rejects(stage(f.root, changed), /Release checksum mismatch/);
+});
+
+const downloads = async (root) =>
+  (await readdir(root)).filter((name) => name.startsWith('download-'));
+/** A source that downloads its archive into the root, as the GitHub and hub sources do. */
+function downloading(f, release = f.source.release) {
+  return {
+    release,
+    archive: async () => {
+      const path = join(f.root, `download-${randomUUID()}.zip`);
+      await copyFile(await f.source.archive(), path);
+      return path;
+    },
+  };
+}
+
+test('an archive downloaded into the root is removed after stage, also after a failure', async (t) => {
+  const f = await fixture(t);
+  const artifact = await f.source.archive();
+  await stage(f.root, downloading(f));
+  assert.deepEqual(await downloads(f.root), [], 'removed after a new release directory');
+  await stage(f.root, downloading(f));
+  assert.deepEqual(await downloads(f.root), [], 'removed after verified reuse');
+  await writeFile(join(f.release, 'apps/api/dist/main.js'), 'other');
+  await assert.rejects(stage(f.root, downloading(f)), differs);
+  assert.deepEqual(await downloads(f.root), [], 'removed after refused reuse');
+  const wrong = { ...f.source.release, version: '1.2.4', archiveSha256: 'b'.repeat(64) };
+  await assert.rejects(stage(f.root, downloading(f, wrong)), /Release checksum mismatch/);
+  assert.deepEqual(await downloads(f.root), [], 'removed after a checksum mismatch');
+  // A local artifact belongs to the operator and stays.
+  await stage(join(f.root, '..', 'other-root'), f.source);
+  await access(artifact);
+});
+
+test('downloads that an interrupted operation left are removed, and nothing else', async (t) => {
+  const f = await fixture(t);
+  const name = () => `download-${randomUUID()}.zip`;
+  const past = new Date(Date.now() - 3600_000);
+  const future = new Date(Date.now() + 3600_000);
+  const [stale, current, foreign, folder, link] = [
+    name(),
+    name(),
+    'download-other.zip',
+    name(),
+    name(),
+  ];
+  for (const [entry, time] of [
+    [stale, past],
+    [current, future],
+    [foreign, past],
+  ]) {
+    await writeFile(join(f.root, entry), 'zip');
+    await utimes(join(f.root, entry), time, time);
+  }
+  await mkdir(join(f.root, folder));
+  const target = join(f.root, '..', 'link-target');
+  await mkdir(target);
+  await writeFile(join(target, 'kept'), 'kept');
+  await symlink(target, join(f.root, link), 'junction');
+  t.after(() => unlink(join(f.root, link)).catch(() => undefined));
+  await stage(f.root, f.source);
+  assert.deepEqual((await downloads(f.root)).sort(), [current, foreign, folder, link].sort());
+  assert.equal(await readFile(join(target, 'kept'), 'utf8'), 'kept', 'links are not followed');
 });

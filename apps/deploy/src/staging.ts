@@ -16,6 +16,7 @@ import { releaseKeys } from './release-keys.js';
 import { verifyReleaseSignature } from './release-signature.js';
 import { extractArchive } from './archive.js';
 import { sameTree } from './release-tree.js';
+import { discardDownload, downloadPath, removeStaleDownloads } from './release-downloads.js';
 
 export interface Source {
   release: Release;
@@ -101,19 +102,33 @@ export async function source(
   return {
     release: selected.release,
     archive: async () => {
-      const destination = inside(root, `download-${randomUUID()}.zip`);
+      const destination = downloadPath(root);
       await from.download(selected.archiveUrl, destination, selected.release.archiveSha256);
       return destination;
     },
   };
 }
+/**
+ * Makes releases/<version> of the source available: a new directory from the verified archive,
+ * or an existing one after it matched that archive. An archive downloaded into the root is
+ * removed afterwards on every path; downloads that an interrupted operation left are removed
+ * first (the caller holds the operation lock).
+ */
 export async function stage(root: string, source: Source): Promise<void> {
+  await removeStaleDownloads(root, Date.now());
   const destination = inside(root, 'releases', source.release.version);
   if (await present(destination)) {
     await reuse(root, source, destination);
     return;
   }
-  const archive = await verifiedArchive(source);
+  await withVerifiedArchive(root, source, (archive) => extract(root, source, destination, archive));
+}
+async function extract(
+  root: string,
+  source: Source,
+  destination: string,
+  archive: string,
+): Promise<void> {
   await mkdir(join(root, 'releases'), { recursive: true });
   await chmod(join(root, 'releases'), 0o755);
   const temporary = inside(root, 'releases', `.stage-${randomUUID()}`);
@@ -141,9 +156,25 @@ async function present(path: string): Promise<boolean> {
     throw error;
   }
 }
-/** The archive of the selected release after its SHA-256 matched the release metadata. */
-async function verifiedArchive(source: Source): Promise<string> {
-  const archive = await source.archive();
+/**
+ * Runs `use` with the archive of the selected release after its SHA-256 matched the release
+ * metadata, then removes the archive when it was downloaded into the root, also after a failure.
+ */
+async function withVerifiedArchive(
+  root: string,
+  source: Source,
+  use: (archive: string) => Promise<void>,
+): Promise<void> {
+  let archive: string | null = null;
+  try {
+    archive = await source.archive();
+    await verifyArchive(archive, source.release.archiveSha256);
+    await use(archive);
+  } finally {
+    if (archive !== null) await discardDownload(root, archive);
+  }
+}
+async function verifyArchive(archive: string, sha256: string): Promise<void> {
   const hash = createHash('sha256');
   let bytes = 0;
   for await (const raw of createReadStream(archive)) {
@@ -153,9 +184,7 @@ async function verifiedArchive(source: Source): Promise<string> {
     if (bytes > 512 * 1024 ** 2) throw new Error('Archive too large');
     hash.update(chunk);
   }
-  if (hash.digest('hex') !== source.release.archiveSha256)
-    throw new Error('Release checksum mismatch');
-  return archive;
+  if (hash.digest('hex') !== sha256) throw new Error('Release checksum mismatch');
 }
 /**
  * An existing releases/<version> is used only when it matches the verified archive of that
@@ -171,15 +200,16 @@ async function reuse(root: string, source: Source, destination: string): Promise
     .then(parseRelease)
     .catch(() => null);
   if (installed?.archiveSha256 !== source.release.archiveSha256) throw differs();
-  const archive = await verifiedArchive(source);
-  const reference = inside(root, 'releases', `.verify-${randomUUID()}`);
-  try {
-    await extractArchive(archive, reference);
-    if (!(await sameTree(destination, reference, new Set(['release.json'])))) throw differs();
-  } finally {
-    // Only the fresh directory extracted above; rm does not follow links.
-    await rm(reference, { recursive: true, force: true });
-  }
+  await withVerifiedArchive(root, source, async (archive) => {
+    const reference = inside(root, 'releases', `.verify-${randomUUID()}`);
+    try {
+      await extractArchive(archive, reference);
+      if (!(await sameTree(destination, reference, new Set(['release.json'])))) throw differs();
+    } finally {
+      // Only the fresh directory extracted above; rm does not follow links.
+      await rm(reference, { recursive: true, force: true });
+    }
+  });
 }
 async function readableTree(directory: string): Promise<void> {
   await chmod(directory, 0o755);
