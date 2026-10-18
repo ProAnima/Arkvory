@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, rename, chmod, access, readdir, readFile } from 'node:fs/promises';
+import { mkdir, rename, chmod, access, readdir, readFile, lstat, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { atomicJson, jsonFile, inside, syncDirectory } from './files.js';
 import { parseRelease } from './model.js';
@@ -15,6 +15,7 @@ import { ReleaseHttpError } from './release-http.js';
 import { releaseKeys } from './release-keys.js';
 import { verifyReleaseSignature } from './release-signature.js';
 import { extractArchive } from './archive.js';
+import { sameTree } from './release-tree.js';
 
 export interface Source {
   release: Release;
@@ -108,26 +109,11 @@ export async function source(
 }
 export async function stage(root: string, source: Source): Promise<void> {
   const destination = inside(root, 'releases', source.release.version);
-  try {
-    const installed = parseRelease(await jsonFile(join(destination, 'release.json')));
-    if (installed.archiveSha256 !== source.release.archiveSha256)
-      throw new Error('Existing release differs');
+  if (await present(destination)) {
+    await reuse(root, source, destination);
     return;
-  } catch (error) {
-    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
   }
-  const archive = await source.archive();
-  const hash = createHash('sha256');
-  let bytes = 0;
-  for await (const raw of createReadStream(archive)) {
-    const chunk: unknown = raw;
-    if (!Buffer.isBuffer(chunk)) throw new Error('Invalid archive bytes');
-    bytes += chunk.length;
-    if (bytes > 512 * 1024 ** 2) throw new Error('Archive too large');
-    hash.update(chunk);
-  }
-  if (hash.digest('hex') !== source.release.archiveSha256)
-    throw new Error('Release checksum mismatch');
+  const archive = await verifiedArchive(source);
   await mkdir(join(root, 'releases'), { recursive: true });
   await chmod(join(root, 'releases'), 0o755);
   const temporary = inside(root, 'releases', `.stage-${randomUUID()}`);
@@ -145,6 +131,55 @@ export async function stage(root: string, source: Source): Promise<void> {
   await readableTree(temporary);
   await rename(temporary, destination);
   await syncDirectory(join(root, 'releases'));
+}
+async function present(path: string): Promise<boolean> {
+  try {
+    await lstat(path);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return false;
+    throw error;
+  }
+}
+/** The archive of the selected release after its SHA-256 matched the release metadata. */
+async function verifiedArchive(source: Source): Promise<string> {
+  const archive = await source.archive();
+  const hash = createHash('sha256');
+  let bytes = 0;
+  for await (const raw of createReadStream(archive)) {
+    const chunk: unknown = raw;
+    if (!Buffer.isBuffer(chunk)) throw new Error('Invalid archive bytes');
+    bytes += chunk.length;
+    if (bytes > 512 * 1024 ** 2) throw new Error('Archive too large');
+    hash.update(chunk);
+  }
+  if (hash.digest('hex') !== source.release.archiveSha256)
+    throw new Error('Release checksum mismatch');
+  return archive;
+}
+/**
+ * An existing releases/<version> is used only when it matches the verified archive of that
+ * release entry for entry and byte for byte (ADR 0031): never by its name or its release.json.
+ * A directory that differs stays untouched for inspection.
+ */
+async function reuse(root: string, source: Source, destination: string): Promise<void> {
+  const differs = () =>
+    new Error(
+      `Existing release differs from its verified archive; move releases/${source.release.version} aside and run again`,
+    );
+  const installed = await jsonFile(join(destination, 'release.json'))
+    .then(parseRelease)
+    .catch(() => null);
+  if (installed?.archiveSha256 !== source.release.archiveSha256) throw differs();
+  const archive = await verifiedArchive(source);
+  const reference = inside(root, 'releases', `.verify-${randomUUID()}`);
+  try {
+    await extractArchive(archive, reference);
+    if (!(await sameTree(destination, reference, new Set(['release.json'])))) throw differs();
+  } finally {
+    // Only the fresh directory extracted above; rm does not follow links.
+    await rm(reference, { recursive: true, force: true });
+  }
 }
 async function readableTree(directory: string): Promise<void> {
   await chmod(directory, 0o755);
