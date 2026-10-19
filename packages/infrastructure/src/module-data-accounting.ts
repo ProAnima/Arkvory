@@ -19,6 +19,9 @@ export interface ModuleDataOptions {
   readonly requireRemoval?: () => void;
   /** Required for every writable directory; the host closes it after all directories. */
   readonly coordinator?: ModuleDataCoordinator;
+  /** Called under the same module lock as generation admission; physical cache bytes
+   * live outside this ledger and are represented by their persisted reservations. */
+  readonly reservedUsage?: () => Promise<{ readonly bytes: number; readonly files: number }>;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -112,10 +115,20 @@ export class ModuleDataAccounting {
    */
   async quota(target: string, bytes: number, files: number): Promise<void> {
     const current = this.ledger.counts;
+    const reserved = await this.options.reservedUsage?.();
     const before = await entryAt(target);
     const chargeBytes =
-      current.bytes + current.temporaryBytes + bytes - (before?.isFile() ? before.size : 0);
-    const chargeFiles = current.files + current.temporaryFiles + files - (before?.isFile() ? 1 : 0);
+      current.bytes +
+      current.temporaryBytes +
+      (reserved?.bytes ?? 0) +
+      bytes -
+      (before?.isFile() ? before.size : 0);
+    const chargeFiles =
+      current.files +
+      current.temporaryFiles +
+      (reserved?.files ?? 0) +
+      files -
+      (before?.isFile() ? 1 : 0);
     if (
       !Number.isSafeInteger(chargeBytes) ||
       !Number.isSafeInteger(chargeFiles) ||

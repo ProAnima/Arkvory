@@ -25,8 +25,12 @@ test('every Arkvory table is either exported or excluded with a reason', async (
   assert.equal(new Set(registered).size, registered.length);
   for (const table of excludedTables) assert.ok(table.reason.length > 10, table.name);
   await pool.query('CREATE TABLE arkvory_future_feature(id integer)');
+  await pool.query('CREATE TABLE arkvory_derived_cache_future(id integer)');
   const after = (await pool.query(presentTablesQuery)).rows.map((row) => row.name);
-  assert.deepEqual(unregisteredTables(after), ['arkvory_future_feature']);
+  assert.deepEqual(unregisteredTables(after), [
+    'arkvory_derived_cache_future',
+    'arkvory_future_feature',
+  ]);
 });
 
 test('the export order is foreign-key safe and keys match the primary keys', async (t) => {

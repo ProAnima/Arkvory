@@ -465,3 +465,28 @@ test('the set file and the environment are read strictly', async (t) => {
   // The services always trust the module keys of the release, never keys from configuration.
   assert.ok(source.keys.length > 0 && source.keys.every((key) => /^[0-9a-f]{16}$/.test(key.id)));
 });
+
+test('the installation planner admits signed derived-cache consumers only in supported roles', () => {
+  for (const role of ['api', 'worker', 'reader', 'backup']) {
+    const result = planInstallation('1.6.0', selections({ sample: { enabled: true } }), {
+      verified: [verified('sample', { roles: [role], uses: ['derived-cache'] })],
+      refused: [],
+    });
+    const module = result.plan.modules.find((entry) => entry.manifest.id === 'sample');
+    if (role === 'backup') {
+      assert.equal(module, undefined);
+      assert.deepEqual(
+        result.refused.map(({ id, code, enabled }) => ({ id, code, enabled })),
+        [{ id: 'sample', code: 'service_unavailable', enabled: true }],
+      );
+    } else {
+      assert.deepEqual(result.refused, [], role);
+      assert.ok(module, role);
+      assert.equal(module.enabled, true);
+      assert.equal(module.source, 'signed');
+      assert.deepEqual(module.manifest.roles, [role]);
+      assert.deepEqual(module.manifest.uses, ['derived-cache']);
+      assert.ok(result.plan.startOrder.includes('sample'));
+    }
+  }
+});

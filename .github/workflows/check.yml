@@ -71,7 +71,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run gate -- quick deployment deployment-services
+      - run: npm run gate -- quick
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
@@ -82,6 +82,50 @@ jobs:
           path: test-results/
           retention-days: 7
           if-no-files-found: warn
+
+  deployment:
+    name: Deployment package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2022, windows-2025]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- deployment
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
+
+  deployment-services:
+    name: Deployment services (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, windows-2022, windows-2025]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run gate -- deployment-services
+      - name: Publish gate report
+        if: ${{ always() }}
+        run: node scripts/ci-report.mjs
 
   integration:
     name: PostgreSQL integration
@@ -521,6 +565,8 @@ jobs:
     needs:
       [
         check,
+        deployment,
+        deployment-services,
         integration,
         browser,
         security,

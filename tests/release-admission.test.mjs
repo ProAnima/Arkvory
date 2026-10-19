@@ -44,8 +44,8 @@ test('every local gap is executed by a check.yml job on its CI platform', () => 
   const find = (gate, platform) =>
     coverage.find((item) => item.gate === gate && item.platform === platform).jobs;
   assert.deepEqual(find('deployment-services', 'win32'), [
-    'Quality (windows-2022)',
-    'Quality (windows-2025)',
+    'Deployment services (windows-2022)',
+    'Deployment services (windows-2025)',
   ]);
   assert.deepEqual(find('native-install', 'win32'), ['Native installer (windows-2022)']);
   assert.deepEqual(find('deployment-containers', 'linux'), ['Container deployment and update']);
@@ -96,7 +96,7 @@ test('a failed merge gate, large transfer or gap job refuses the release', async
     [mergeGateJob, 'failure'],
     [largeJobs[1], 'skipped'],
     ['NAS stand (backup vault on SMB and NFS)', 'cancelled'],
-    ['Quality (windows-2025)', 'failure'],
+    ['Deployment services (windows-2025)', 'failure'],
   ]) {
     const result = await admitCommit(sha, {
       ...source([run()], failing(name, conclusion)),

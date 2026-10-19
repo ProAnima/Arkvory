@@ -198,3 +198,15 @@ Every change of the module set is recorded in the update journal. If a command s
 ## Module request lifetime {#request-scope}
 
 A module route uses the caller’s permissions until its response ends, including streaming. Cancellation or completion revokes these permissions and closes read resources. The `upload-read` service reads accepted parts of unfinished uploads after checking ownership, `upload.read`, range and cancellation. Modules can withdraw transfer offers while running. Subsequent capability queries omit them; routes and active transfers remain. Clients may cache old offers, so routes must check each operation.
+
+## Derived cache recovery {#derived-cache}
+
+Signed modules may declare `derived-cache` (extension API 0.9.0). API and worker processes build and read immutable generations; readers only read; backup processes do not receive this service. Source permissions must still be checked for each request. The approved module resources budget covers both legacy data/cache and retained derived generations. Cache misses require regeneration or fallback.
+
+A lost PostgreSQL session does not prove that file I/O stopped. Uncertain owner reservations and persisted reader references remain charged. First apply this core version’s database migrations. Before recovery, stop all participating hosts and verify that their processes and I/O ended, or prove that the exact owner process incarnation ended and cannot resume; fence unreachable hosts. Obtain the exact owner UUID from diagnostics and record the evidence. Never infer death from a PID, timeout or missing database lock.
+
+On the trusted host, with `ARKVORY_DATABASE_URL` configured, run the command below using built packages of this core version. The flag attests physical shutdown; recovery still refuses an active owner lock. No confirmation means no action. Resume reconciliation afterwards and verify reclamation; confirmation alone does not immediately free quota. This is host maintenance, not a module or remote CLI permission.
+
+```sh
+node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
+```

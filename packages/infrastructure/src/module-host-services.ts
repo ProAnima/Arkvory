@@ -1,3 +1,5 @@
+import { ModuleDerivedCache } from './module-derived-cache.js';
+import { derivedCacheUsage } from './derived-cache-catalog.js';
 import type { Pool } from 'pg';
 import { PostgresModuleDataCoordinator } from './module-data-coordinator.js';
 import type { ModuleCompute } from './module-compute.js';
@@ -90,6 +92,8 @@ function lazyFiles(
 export class ModuleHostServices {
   private readonly lifetime = new AbortController();
 
+  private readonly caches = new Map<string, ModuleDerivedCache>();
+  private readonly cacheClosings = new Set<Promise<void>>();
   private readonly computations = new Map<string, ModuleCompute>();
   private readonly moduleScopes = new Map<string, AccessScopes>();
   private scoped: ScopedCatalog | undefined;
@@ -115,6 +119,9 @@ export class ModuleHostServices {
     const compute = uses('compute') ? this.sources.compute?.(module.manifest.id) : undefined;
     if (compute) this.computations.set(module.manifest.id, compute);
     return {
+      ...(uses('derived-cache')
+        ? { 'derived-cache': this.derived(module.manifest.id, resources) }
+        : {}),
       ...(uses('upload-read') && this.sources.uploads
         ? { 'upload-read': moduleUploads(this.sources.uploads(), this.scopes(module.manifest.id)) }
         : {}),
@@ -145,6 +152,13 @@ export class ModuleHostServices {
     this.sources.feed?.activate(moduleId);
   }
   withdraw(moduleId: string): void {
+    const cache = this.caches.get(moduleId);
+    if (cache) {
+      const closing = cache.close();
+      this.cacheClosings.add(closing);
+      // Retain the outcome for closeOwned; never leak an unhandled rejection on withdrawal.
+      void closing.catch(() => undefined);
+    }
     this.sources.storage?.active(moduleId, false);
     this.sources.feed?.stop(moduleId);
     void this.computations
@@ -185,7 +199,34 @@ export class ModuleHostServices {
     return moduleCatalog(this.scoped, this.scopes(moduleId));
   }
 
+  private derived(moduleId: string, resources: ModuleResources | null): ModuleDerivedCache {
+    const known = this.caches.get(moduleId);
+    if (known) return known;
+    const pool = this.sources.dataPool;
+    if (!pool) throw new ModuleServiceError('unavailable', 'Derived cache requires database');
+    const cache = new ModuleDerivedCache({
+      pool,
+      ...(this.coordinator ? { coordinator: this.coordinator } : {}),
+      dataDirectory: this.sources.dataDirectory,
+      moduleId,
+      quota: { bytes: (resources?.dataMiB ?? 0) * MIB, files: resources?.dataFiles ?? 0 },
+      reserve: this.sources.reserve,
+      readOnly: this.sources.readOnly || this.sources.role === 'reader',
+    });
+    this.caches.set(moduleId, cache);
+    this.startReconciliation();
+    return cache;
+  }
+
+  private startReconciliation(): void {
+    this.timer ??= setInterval(() => {
+      void this.reconcile();
+    }, RECONCILE_INTERVAL_MS);
+    this.timer.unref();
+  }
+
   private directory(moduleId: string, resources: ModuleResources | null): ModuleDataDirectory {
+    const pool = this.sources.dataPool;
     // Without an approved size the module may read but every write exceeds its quota.
     const quota = { bytes: (resources?.dataMiB ?? 0) * MIB, files: resources?.dataFiles ?? 0 };
     const entry: { opening: Promise<ModuleData>; opened?: ModuleData } = {
@@ -194,6 +235,7 @@ export class ModuleHostServices {
         moduleId,
         ...(this.coordinator ? { coordinator: this.coordinator } : {}),
         quota,
+        ...(pool ? { reservedUsage: () => derivedCacheUsage(pool, moduleId) } : {}),
         reserve: this.sources.reserve,
         readOnly: this.sources.readOnly,
         ...(this.sources.storage
@@ -208,10 +250,7 @@ export class ModuleHostServices {
     entry.opening.catch(() => undefined);
     this.openings.add(entry.opening);
     this.data.set(moduleId, entry);
-    this.timer ??= setInterval(() => {
-      void this.reconcile();
-    }, RECONCILE_INTERVAL_MS);
-    this.timer.unref();
+    this.startReconciliation();
     const opened = () => entry.opened;
     return {
       data: lazyFiles(entry.opening, (d) => d.data, quota, opened),
@@ -221,6 +260,7 @@ export class ModuleHostServices {
 
   /** Counts every opened directory again; a failure keeps the previous counts. */
   async reconcile(): Promise<void> {
+    for (const cache of this.caches.values()) await cache.reconcile().catch(() => undefined);
     for (const { opened } of this.data.values()) await opened?.reconcile().catch(() => undefined);
   }
 
@@ -242,6 +282,8 @@ export class ModuleHostServices {
       [...this.computations.values()].map((compute) => compute.close()),
     );
     const results = await Promise.allSettled([
+      ...this.cacheClosings,
+      ...[...this.caches.values()].map((cache) => cache.close()),
       ...[...this.openings].map(async (opening) => {
         const data = await opening.catch(() => undefined);
         await data?.close();

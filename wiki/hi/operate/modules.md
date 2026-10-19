@@ -198,3 +198,15 @@ sudo arkvory module revocations /root/module-revocations.json --root /opt/proani
 ## मॉड्यूल अनुरोध की अवधि {#request-scope}
 
 रूट स्ट्रीमिंग सहित उत्तर समाप्त होने तक कॉल करने वाले की अनुमतियाँ उपयोग करता है। रद्द होने या पूरा होने पर अनुमतियाँ वापस ली जाती हैं और पठन संसाधन बंद होते हैं। `upload-read` अधूरे अपलोड के स्वीकार किए गए भाग पढ़ता है और स्वामित्व, `upload.read`, सीमा तथा रद्दीकरण जाँचता है। मॉड्यूल चलते समय स्थानांतरण प्रस्ताव वापस ले सकता है। अगली क्षमता क्वेरी में वह नहीं दिखता; मौजूदा रूट और स्थानांतरण बने रहते हैं। क्लाइंट पुराने प्रस्ताव कैश कर सकता है, इसलिए रूट को हर कार्रवाई जाँचनी चाहिए।
+
+## व्युत्पन्न कैश की रिकवरी {#derived-cache}
+
+हस्ताक्षरित मॉड्यूल `derived-cache` घोषित कर सकते हैं (extension API 0.9.0)। API और worker अपरिवर्तनीय generations बनाते और पढ़ते हैं; reader केवल पढ़ता है और backup को यह सेवा नहीं मिलती। हर अनुरोध में स्रोत की अनुमति जाँचना आवश्यक है। संसाधन बजट में पुराने data/cache और रोकी गई generations दोनों शामिल हैं। कैश न मिलने पर दोबारा बनाना या fallback आवश्यक है।
+
+PostgreSQL session खोना फ़ाइल I/O रुकने का प्रमाण नहीं है। अनिश्चित owner की reservations और स्थायी reader references गिनी जाती रहती हैं। पहले इस core संस्करण की database migrations लागू करें। रिकवरी से पहले सभी संबंधित hosts रोककर प्रक्रियाओं और I/O का अंत सत्यापित करें, या सटीक owner process incarnation के समाप्त होने और फिर शुरू न हो सकने का प्रमाण दें; पहुँच से बाहर hosts पर fencing करें। diagnostics से सटीक owner UUID लें और प्रमाण दर्ज करें। PID, timeout या DB lock का न होना पर्याप्त नहीं है।
+
+विश्वसनीय host पर `ARKVORY_DATABASE_URL` सेट करके इस core संस्करण के built packages से नीचे की command चलाएँ। flag भौतिक रूप से रुकने की पुष्टि है; सक्रिय owner lock होने पर रिकवरी फिर भी अस्वीकार होती है। पुष्टि के बिना कोई कार्रवाई नहीं होती। फिर reconciliation शुरू करके सफाई सत्यापित करें; पुष्टि मात्र से quota तुरंत मुक्त नहीं होता। यह host maintenance है, module या remote CLI का अधिकार नहीं।
+
+```sh
+node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
+```

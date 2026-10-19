@@ -15,7 +15,7 @@ export interface BackupTable {
 export const MINIMUM_RESTORE_SCHEMA = 25;
 
 /**
- * Every Arkvory table of schema 37 is either exported here, in foreign-key-safe load order, or
+ * Every Arkvory table of the current schema is either exported here, in foreign-key-safe load order, or
  * excluded below with a reason. A migration that adds a table must extend one of the lists;
  * capture refuses an unlisted table and tests compare both lists with a migrated database.
  */
@@ -95,6 +95,23 @@ export function tablesAt(schema: number): readonly BackupTable[] {
 }
 
 export const excludedTables: readonly ExcludedTable[] = [
+  // ADR 0084: disposable cache state belongs to the source incarnation, never the restore.
+  {
+    name: 'arkvory_derived_cache_owners',
+    reason: 'cache process incarnations of the source; never revived on restore',
+  },
+  {
+    name: 'arkvory_derived_cache_entries',
+    reason: 'non-authoritative cache pointers; regenerated on the target',
+  },
+  {
+    name: 'arkvory_derived_cache_generations',
+    reason: 'derived cache reservations and manifests; source cache files are not backed up',
+  },
+  {
+    name: 'arkvory_derived_cache_read_refs',
+    reason: 'runtime cache reader pins; restored targets have no source readers',
+  },
   { name: 'arkvory_migrations', reason: 'schema history; restore migrates the target itself' },
   { name: 'arkvory_storage_identity', reason: 'bound to the new target storage directory' },
   {

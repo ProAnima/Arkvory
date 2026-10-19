@@ -1,3 +1,4 @@
+import { migrateDerivedCache } from './derived-cache-schema.js';
 import { migrateModuleCursors } from './module-feed-store.js';
 import type { PoolClient } from 'pg';
 import { migrateStoragePolicy } from './storage-policy-schema.js';
@@ -29,7 +30,7 @@ import { migrateBlobMoves } from './blob-moves-store.js';
 import { migrateTreeIndexes } from './tree-index-store.js';
 import { migrateLicences } from './licence-store.js';
 
-/** Steps of versions 15-47 (36 is an index step) in their historical order; each records its own version. */
+/** Steps of versions 15-49 (36 is an index step) in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -64,6 +65,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [47, migrateLicences],
 
   [48, migrateModuleCursors],
+  [49, migrateDerivedCache],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */

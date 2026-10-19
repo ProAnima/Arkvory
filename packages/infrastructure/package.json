@@ -18,7 +18,7 @@
   "dependencies": {
     "@proanima/arkvory-application": "0.0.0",
     "@proanima/arkvory-domain": "0.0.0",
-    "@proanima/arkvory-extension-api": "0.8.0",
+    "@proanima/arkvory-extension-api": "0.9.0",
     "@proanima/arkvory-signing": "0.0.0",
     "pg": "8.23.0",
     "yauzl": "3.4.0",

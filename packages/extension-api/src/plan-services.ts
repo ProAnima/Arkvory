@@ -28,6 +28,7 @@ const AVAILABILITY: Readonly<Record<HostService, Availability>> = {
   'change-feed': { roles: ['worker'], plugins: true },
   // A read gateway gets its data directory read-only.
   'data-directory': { roles: servers, plugins: true },
+  'derived-cache': { roles: ['api', 'reader', 'worker'], plugins: false },
   routes: { roles: ['api', 'reader'], plugins: true },
   compute: { roles: ['api', 'worker', 'backup'], plugins: true },
   license: { roles: servers, plugins: false },
@@ -58,7 +59,8 @@ export function checkServices(
         found !== undefined &&
         provided.some((service) => service === name) &&
         m.manifest.roles.some((role) => found.roles.includes(role)) &&
-        (found.plugins || !plugin);
+        (found.plugins || !plugin) &&
+        (name !== 'derived-cache' || m.source === 'signed');
       if (!usable)
         problems.push({ code: 'service_unavailable', module: m.manifest.id, subject: name });
     }
@@ -73,6 +75,7 @@ export function hostServiceAvailable(
   source: ModuleSource,
 ): boolean {
   const found = availability(name);
+  if (name === 'derived-cache' && source !== 'signed') return false;
   return (
     found !== undefined &&
     found.roles.includes(role) &&

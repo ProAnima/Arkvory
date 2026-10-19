@@ -1,4 +1,10 @@
 export {
+  derivedCacheContract,
+  assertDerivedCacheGroup,
+  type DerivedCacheHarness,
+  type DerivedCacheQuota,
+} from './derived-cache.js';
+export {
   storageRegistrationContract,
   computeContract,
   changeFeedContract,
@@ -48,6 +54,7 @@ export const CONTRACT_SUITES = {
   'content-read': 'catalogReadContract',
   'upload-read': 'uploadReadContract',
   'data-directory': 'dataDirectoryContract',
+  'derived-cache': 'derivedCacheContract',
 } as const;
 
 export { uploadReadContract, type UploadReadHarness } from './upload-read.js';

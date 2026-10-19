@@ -198,3 +198,15 @@ Chaque changement de l'ensemble des modules est enregistré dans le journal des 
 ## Durée de la requête du module {#request-scope}
 
 La route utilise les droits de l’appelant jusqu’à la fin de la réponse, y compris en flux. L’annulation ou la fin révoque les droits et ferme les ressources de lecture. `upload-read` lit les parties acceptées des envois inachevés et vérifie le propriétaire, `upload.read`, la plage et l’annulation. Les modules peuvent retirer leurs offres de transfert en cours d’exécution. Les prochaines requêtes de capacités les omettent ; routes et transferts actifs restent disponibles. Le client peut garder des offres en cache : la route doit vérifier chaque opération.
+
+## Récupération du cache dérivé {#derived-cache}
+
+Les modules signés peuvent déclarer `derived-cache` (extension API 0.9.0). API et worker construisent et lisent des générations immuables ; reader lit seulement et backup ne reçoit pas le service. Les droits sur la source sont vérifiés à chaque requête. Le budget couvre les anciens fichiers/cache et les générations retenues. Une absence du cache nécessite une régénération ou un repli.
+
+La perte d’une session PostgreSQL ne prouve pas l’arrêt des E/S de fichiers. Les réservations des propriétaires incertains et les références persistantes des lecteurs restent comptabilisées. Appliquez d’abord les migrations de cette version du noyau. Avant récupération, arrêtez tous les hôtes participants et confirmez la fin de leurs processus et E/S, ou prouvez la fin de l’instance exacte du processus propriétaire et l’impossibilité de sa reprise ; isolez par fencing les hôtes injoignables. Relevez l’UUID exact dans les diagnostics et consignez les preuves. PID, délai expiré ou absence de verrou SQL ne suffisent pas.
+
+Sur l’hôte de confiance, avec `ARKVORY_DATABASE_URL` configuré, exécutez la commande ci-dessous avec les paquets compilés de cette version. Le drapeau atteste l’arrêt physique ; un verrou actif du propriétaire interdit toujours la récupération. Sans confirmation, aucune action. Reprenez ensuite la réconciliation et vérifiez la libération : la confirmation ne rend pas immédiatement le quota. Il s’agit de maintenance de l’hôte, pas d’un droit de module ou de CLI distant.
+
+```sh
+node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
+```

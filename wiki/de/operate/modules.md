@@ -198,3 +198,15 @@ Jede Änderung der Modulmenge wird im Aktualisierungsjournal festgehalten. Brich
 ## Lebensdauer der Modulanfrage {#request-scope}
 
 Die Route verwendet die Rechte des Aufrufers bis zum Ende der Antwort, auch beim Streaming. Abbruch oder Abschluss widerruft die Rechte und schließt Leseressourcen. `upload-read` liest bestätigte Teile unvollständiger Uploads und prüft Eigentümer, `upload.read`, Bereich und Abbruch. Module können Transferangebote im Betrieb zurückziehen. Spätere Fähigkeitsabfragen lassen sie weg; Routen und aktive Transfers bleiben erhalten. Clients können alte Angebote zwischenspeichern, deshalb muss die Route jede Operation prüfen.
+
+## Wiederherstellung des abgeleiteten Caches {#derived-cache}
+
+Signierte Module können `derived-cache` deklarieren (Extension API 0.9.0). API und Worker erstellen und lesen unveränderliche Generationen; Reader lesen nur, Backup erhält den Dienst nicht. Quellberechtigungen werden bei jeder Anfrage geprüft. Das Ressourcenbudget umfasst alte Daten/Caches und zurückgehaltene Generationen. Bei einem Cache-Miss sind Neuberechnung oder Fallback erforderlich.
+
+Eine verlorene PostgreSQL-Sitzung beweist keinen Stillstand der Datei-I/O. Reservierungen unklarer Besitzer und persistente Leserreferenzen bleiben angerechnet. Zuerst die Datenbankmigrationen dieser Kernversion anwenden. Vor Recovery alle beteiligten Hosts stoppen und das Ende ihrer Prozesse und I/O bestätigen oder das Ende der genauen Besitzer-Prozessinstanz und den Ausschluss ihrer Wiederaufnahme nachweisen; unerreichbare Hosts müssen durch Fencing isoliert werden. Exakte Besitzer-UUID aus der Diagnose beziehen und Nachweis dokumentieren. PID, Timeout oder fehlender DB-Lock reichen nicht.
+
+Auf dem vertrauenswürdigen Host mit konfiguriertem `ARKVORY_DATABASE_URL` folgenden Befehl mit den gebauten Paketen dieser Kernversion ausführen. Das Flag bestätigt den physischen Stillstand; ein aktiver Owner-Lock verhindert Recovery trotzdem. Ohne Bestätigung keine Aktion. Danach Reconciliation fortsetzen und Freigabe prüfen; Bestätigung allein gibt keine Quote sofort frei. Dies ist Host-Wartung, kein Modulrecht oder Remote-CLI-Recht.
+
+```sh
+node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
+```

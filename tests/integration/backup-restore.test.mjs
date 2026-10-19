@@ -36,6 +36,14 @@ import {
 } from './backup-fixture.mjs';
 
 const password = 'long-private-password';
+const derivedTables = ['owners', 'entries', 'generations', 'read_refs'].map(
+  (name) => `arkvory_derived_cache_${name}`,
+);
+
+async function assertEmptyDerivedCache(pool) {
+  for (const table of derivedTables)
+    assert.equal((await pool.query(`SELECT count(*)::int AS n FROM ${table}`)).rows[0].n, 0, table);
+}
 
 async function identities(f) {
   const user = await f.app.inject({
@@ -381,5 +389,93 @@ test('a point of an older schema restores; the migrations after it create the la
     "SELECT to_regclass('arkvory_mirror_adoptions') IS NOT NULL AS present, (SELECT max(version) FROM arkvory_migrations) AS version",
   );
   assert.deepEqual(created.rows[0], { present: true, version: SCHEMA_VERSION });
+  await assertEmptyDerivedCache(pool);
   await pool.end();
+});
+
+test('backup excludes populated derived cache metadata and restore creates empty cache tables', async (t) => {
+  const f = await setup(t);
+  const source = f.catalog.pool;
+  const owner = randomUUID();
+  const generation = randomUUID();
+  await source.query('INSERT INTO arkvory_derived_cache_owners(id) VALUES($1)', [owner]);
+  await source.query(
+    "INSERT INTO arkvory_derived_cache_entries(module_id,key) VALUES('cache-test','tree')",
+  );
+  await source.query(
+    `INSERT INTO arkvory_derived_cache_generations
+    (id,module_id,key,owner_id,fence,state,reserve_bytes,reserve_files,manifest_hash)
+    VALUES($1,'cache-test','tree',$2,1,'ready',1024,4,$3)`,
+    [generation, owner, 'a'.repeat(64)],
+  );
+  await source.query(
+    "UPDATE arkvory_derived_cache_entries SET current_id=$1,fence=1 WHERE module_id='cache-test'",
+    [generation],
+  );
+  await source.query(
+    'INSERT INTO arkvory_derived_cache_read_refs(id,generation_id,owner_id) VALUES($1,$2,$3)',
+    [randomUUID(), generation, owner],
+  );
+  const { path: vault } = await newVault(t);
+  const captured = await runBackup(
+    ['capture', '--vault', vault, '--idempotency-key', 'derived-cache'],
+    sourceEnv(f),
+  );
+  assert.equal(captured.code, 0, captured.stdout + captured.stderr);
+  const point = record(captured, 'backup.capture.completed').pointId;
+  const manifest = await (await FileVault.open(vault)).point(point);
+  assert.equal(manifest.schemaVersion, SCHEMA_VERSION);
+  for (const name of derivedTables) {
+    assert.equal(
+      manifest.tables.some((table) => table.name === name),
+      false,
+      name,
+    );
+    assert.equal(manifest.excludedTables.filter((table) => table.name === name).length, 1, name);
+    assert.equal((await source.query(`SELECT count(*)::int AS n FROM ${name}`)).rows[0].n, 1, name);
+  }
+  const target = await temporaryDatabase(t);
+  const storage = await scratch(t, 'restore-derived', 'storage');
+  const restored = await runBackup(
+    ['restore', '--vault', vault, '--point', point, '--storage', storage, '--yes'],
+    { ARKVORY_RESTORE_DATABASE_URL: target.url },
+  );
+  assert.equal(restored.code, 0, restored.stdout + restored.stderr);
+  const pool = new Pool({ connectionString: target.url, max: 1 });
+  target.release(() => pool.end());
+  await assertEmptyDerivedCache(pool);
+});
+
+test('a schema-48 point restores through migration 49 with empty derived cache state', async (t) => {
+  const database = await temporaryDatabase(t);
+  const pool = new Pool({ connectionString: database.url, max: 2 });
+  database.release(() => pool.end());
+  const target = new PostgresRestoreDatabase(pool);
+  await target.prepare(48);
+  assert.equal(
+    (await pool.query("SELECT to_regclass('arkvory_derived_cache_owners') IS NULL AS absent"))
+      .rows[0].absent,
+    true,
+  );
+  const loaded = await target.load(
+    {
+      schemaVersion: 48,
+      pointId: randomUUID(),
+      storageId: randomUUID(),
+      restoredAt: new Date().toISOString(),
+      tables: tablesAt(48).map((table) => ({
+        name: table.name,
+        rows: 0,
+        lines: async function* () {},
+      })),
+    },
+    new AbortController().signal,
+  );
+  assert.equal(loaded.rows, 0);
+  await target.finish();
+  assert.equal(
+    (await pool.query('SELECT max(version) AS version FROM arkvory_migrations')).rows[0].version,
+    SCHEMA_VERSION,
+  );
+  await assertEmptyDerivedCache(pool);
 });

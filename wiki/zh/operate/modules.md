@@ -198,3 +198,15 @@ sudo arkvory module revocations /root/module-revocations.json --root /opt/proani
 ## 模块请求的生命周期 {#request-scope}
 
 模块路由在整个响应期间（包括流式响应）使用调用者的权限。取消或完成会撤销权限并关闭读取资源。`upload-read` 仅读取未完成上传中已确认的分片，并检查所有者、`upload.read`、范围和取消信号。模块可在运行时撤回传输提议，后续能力查询将不再包含它。现有路由和传输保持可用。客户端可能缓存旧提议，因此路由必须检查每次操作。
+
+## 派生缓存恢复 {#derived-cache}
+
+签名模块可声明 `derived-cache`（extension API 0.9.0）。API 和 worker 构建并读取不可变代，reader 仅可读取；backup 不获得此服务。每次请求仍须检查源数据权限。模块资源预算同时涵盖旧数据/缓存和保留的代。缓存缺失时须重新生成或回退。
+
+PostgreSQL 会话丢失并不能证明文件 I/O 已停止。不确定 owner 的预留和持久化 reader 引用仍计入配额。首先应用此核心版本的数据库迁移。恢复前，停止所有参与主机并确认进程和 I/O 已终止，或证明准确的 owner 进程实例已终止且无法恢复；对不可达主机执行 fencing。从诊断中获取准确的 owner UUID，并记录证据。PID、超时或数据库锁消失都不足以证明停止。
+
+在已配置 `ARKVORY_DATABASE_URL` 的受信主机上，使用此核心版本已构建的包执行以下命令。该标志确认物理停止；存在活动 owner 锁时仍拒绝恢复。没有确认则不执行操作。之后恢复 reconciliation 并检查清理；确认本身不会立即释放配额。这是主机维护权限，不是模块或远程 CLI 权限。
+
+```sh
+node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
+```

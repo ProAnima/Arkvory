@@ -1,4 +1,7 @@
 export * from './local-blobs.js';
+export { ModuleDerivedCache } from './module-derived-cache.js';
+export type { ModuleDerivedCacheOptions } from './module-derived-cache.js';
+export { recoverDerivedCacheOwner, derivedCacheUsage } from './derived-cache-catalog.js';
 export { StorageBackends } from './storage-backends.js';
 export type {
   CollectingBlobStore,

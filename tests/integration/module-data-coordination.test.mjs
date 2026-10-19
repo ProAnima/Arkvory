@@ -8,6 +8,7 @@ import { Pool } from 'pg';
 import { openModuleData, ModuleHostServices } from '@proanima/arkvory-infrastructure';
 import { PostgresModuleDataCoordinator } from '../../packages/infrastructure/dist/module-data-coordinator.js';
 import { removeTestDirectory } from '../helpers.mjs';
+import { setup } from './fixture.mjs';
 
 const options = { durable: false, exclusive: false };
 async function fixture(t, quota = { bytes: 10, files: 3 }) {
@@ -155,11 +156,15 @@ test('directory close drains sinks before coordinator release and shutdown is id
 
 test('two runtime hosts receive mandatory coordinators and drain before pool close', async (t) => {
   const f = await fixture(t);
+  // Runtime hosts account reservations in migration 49; bare coordinator tests above
+  // deliberately need no catalog schema, but this host fixture must use a migrated DB.
+  const runtime = await setup(t);
+  const pool = runtime.catalog.sessions;
   await Promise.all(f.handles.map((handle) => handle.close()));
   await Promise.all(f.coordinators.map((coordinator) => coordinator.close()));
   const sources = {
     dataDirectory: f.root,
-    dataPool: f.pool,
+    dataPool: pool,
     reserve: { bytes: 0, inodes: 0 },
     readOnly: false,
     catalog: () => ({}),
@@ -187,10 +192,6 @@ test('two runtime hosts receive mandatory coordinators and drain before pool clo
   } finally {
     await Promise.all(hosts.map((host) => host.close()));
   }
-  assert.equal(f.pool.waitingCount, 0);
-  assert.equal(
-    f.pool.totalCount,
-    f.pool.idleCount,
-    'no checked-out owner sessions survive shutdown',
-  );
+  assert.equal(pool.waitingCount, 0);
+  assert.equal(pool.totalCount, pool.idleCount, 'no checked-out owner sessions survive shutdown');
 });

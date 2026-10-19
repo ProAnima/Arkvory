@@ -173,12 +173,15 @@ test('a plan refuses unreadable manifests and duplicate ids before any other rul
 
 test('a manifest written for another extension API is incompatible, not malformed', () => {
   // A later contract may add fields and extension points this core cannot read.
-  const later = { ...manifest('next', { extensionApi: '^0.9.0', kind: 'search' }), dataClass: 'x' };
+  const later = {
+    ...manifest('next', { extensionApi: '^0.10.0', kind: 'search' }),
+    dataClass: 'x',
+  };
   assert.deepEqual(problems([candidate('npm'), { ...candidate('next'), manifest: later }]), [
-    ['incompatible_api', 'next', '^0.9.0'],
+    ['incompatible_api', 'next', '^0.10.0'],
   ]);
   // Without a readable id or range there is nothing to name: the manifest is malformed.
-  const nameless = manifest('Next', { extensionApi: '^0.9.0' });
+  const nameless = manifest('Next', { extensionApi: '^0.10.0' });
   assert.deepEqual(planModules([{ ...candidate('next'), manifest: nameless }], host).problems, [
     { code: 'invalid_manifest', module: null, subject: '/0/id', reason: 'format' },
   ]);
@@ -198,8 +201,8 @@ test('core modules are built in and enabled; every module matches the extension 
   assert.deepEqual(problems([candidate('next', { extensionApi: '^1.0.0' })]), [
     ['incompatible_api', 'next', '^1.0.0'],
   ]);
-  assert.deepEqual(problems([candidate('newer', { extensionApi: '^0.9.0' })]), [
-    ['incompatible_api', 'newer', '^0.9.0'],
+  assert.deepEqual(problems([candidate('newer', { extensionApi: '^0.10.0' })]), [
+    ['incompatible_api', 'newer', '^0.10.0'],
   ]);
   // A manifest of the previous contract lacks fields this one requires: incompatible.
   const { publisher: _publisher, ...previous } = manifest('old', { extensionApi: '^0.1.0' });
@@ -216,6 +219,31 @@ test('core modules are built in and enabled; every module matches the extension 
   assert.deepEqual(problems([candidate('own', {}, { packageSha256: 'a'.repeat(64) })]), [
     ['invalid_package', 'own', null],
   ]);
+});
+
+test('the 0.8 manifest shape remains usable in 0.9 with an explicitly updated API range', () => {
+  // Additive shapes do not widen pre-1.0 caret ranges implicitly.
+  const previous = candidate(
+    'legacy-reader',
+    { extensionApi: '^0.8.0', roles: ['api', 'reader'], uses: ['catalog-read', 'content-read'] },
+    signed,
+  );
+  const currentHost = { ...host, extensionApi: '0.9.0', services: HOST_SERVICES };
+  assert.deepEqual(problems([previous], currentHost), [
+    ['incompatible_api', 'legacy-reader', '^0.8.0'],
+  ]);
+  const updated = { ...previous, manifest: { ...previous.manifest, extensionApi: '^0.9.0' } };
+  const before = plan([previous], { ...currentHost, extensionApi: '0.8.0' });
+  const after = plan([updated], currentHost);
+  assert.deepEqual(after.startOrder, before.startOrder);
+  assert.deepEqual(after.stopOrder, before.stopOrder);
+  assert.deepEqual(
+    after.modules,
+    before.modules.map((module) => ({
+      ...module,
+      manifest: { ...module.manifest, extensionApi: '^0.9.0' },
+    })),
+  );
 });
 
 test('requirements are closed by enabled providers that run wherever their consumers run', () => {
@@ -460,6 +488,7 @@ test('sources and host services are published as lists of known values', () => {
     'upload-read',
     'change-feed',
     'data-directory',
+    'derived-cache',
     'routes',
     'compute',
     'license',

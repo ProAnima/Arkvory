@@ -198,3 +198,15 @@ Cada cambio del conjunto de módulos se registra en el diario de actualizaciones
 ## Duración de la solicitud del módulo {#request-scope}
 
 La ruta usa los permisos del solicitante hasta el final de la respuesta, incluido el flujo. La cancelación o finalización revoca los permisos y cierra los recursos de lectura. `upload-read` lee partes aceptadas de cargas pendientes y comprueba el propietario, `upload.read`, el rango y la cancelación. Los módulos pueden retirar ofertas de transferencia en ejecución. Las siguientes consultas de capacidades las omiten; las rutas y transferencias activas se mantienen. El cliente puede conservar ofertas en caché, por lo que la ruta debe comprobar cada operación.
+
+## Recuperación de la caché derivada {#derived-cache}
+
+Los módulos firmados pueden declarar `derived-cache` (extension API 0.9.0). API y worker crean y leen generaciones inmutables; reader solo lee y backup no recibe el servicio. Los permisos del origen se comprueban en cada solicitud. El presupuesto de recursos incluye los datos/cachés anteriores y las generaciones retenidas. Un fallo de caché exige regeneración o fallback.
+
+Perder una sesión PostgreSQL no demuestra que la E/S de archivos haya terminado. Las reservas de propietarios inciertos y las referencias persistentes de lectores siguen contabilizadas. Aplique primero las migraciones de esta versión del núcleo. Antes de recuperar, detenga todos los hosts participantes y confirme el fin de sus procesos y E/S, o demuestre el fin de la instancia exacta del proceso propietario y que no puede reanudarse; aísle mediante fencing los hosts inaccesibles. Obtenga el UUID exacto del propietario del diagnóstico y registre la prueba. Un PID, un timeout o la ausencia del bloqueo de BD no bastan.
+
+En el host de confianza, con `ARKVORY_DATABASE_URL` configurado, ejecute el comando siguiente con los paquetes compilados de esta versión. La opción confirma la parada física; un bloqueo de propietario activo sigue impidiendo la recuperación. Sin confirmación no se actúa. Después reanude la reconciliación y compruebe la limpieza: confirmar no libera la cuota inmediatamente. Es mantenimiento del host, no un permiso del módulo ni del CLI remoto.
+
+```sh
+node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
+```
