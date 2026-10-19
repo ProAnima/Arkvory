@@ -118,6 +118,12 @@ export class ModuleDerivedCache implements DerivedCache {
       .run(async () => {
         await this.ready();
         signal.throwIfAborted();
+        // Eviction cannot satisfy a reservation larger than the entire module quota.
+        if (
+          reservation.bytes > this.options.quota.bytes ||
+          reservation.files > this.options.quota.files
+        )
+          return null;
         if (this.builds.size >= 8) return null;
         const client = await this.session.get();
         const id = randomUUID();

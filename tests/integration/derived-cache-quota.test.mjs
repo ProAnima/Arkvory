@@ -161,3 +161,47 @@ test('derived cache: begin snapshots budget synchronously before queued admissio
   assert.deepEqual(result.rows, [{ reserve_bytes: '1024', reserve_files: 4 }]);
   await build.abort();
 });
+
+test('derived cache: impossible byte or file reservation preserves unpinned ready generations', async (t) => {
+  const f = await cacheFixture(t);
+  const cache = f.create().cache;
+  const values = { data: Buffer.from('keep this cached result') };
+  for (const key of ['tree-a', 'tree-b']) {
+    const build = await cache.begin(key, { bytes: 4096, files: 4 }, signal);
+    assert.ok(build);
+    await writeBuild(build, values);
+    await build.commit(signal);
+  }
+  const snapshot = async () =>
+    (
+      await f.catalog.pool.query(
+        'SELECT id,key,state,manifest_hash FROM arkvory_derived_cache_generations WHERE module_id=$1 ORDER BY key',
+        [f.moduleId],
+      )
+    ).rows;
+  const before = await snapshot();
+  assert.equal(before.length, 2);
+  assert.ok(before.every((row) => row.state === 'ready'));
+  const usage = await derivedCacheUsage(f.catalog.pool, f.moduleId);
+  // No reader pins: preservation must come from admission, not eviction contention.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    for (const budget of [
+      { bytes: reservation.bytes + 1, files: 4 },
+      { bytes: 4096, files: reservation.files + 1 },
+    ]) {
+      assert.equal(await cache.begin('impossible', budget, signal), null);
+      assert.deepEqual(await snapshot(), before);
+      assert.deepEqual(await derivedCacheUsage(f.catalog.pool, f.moduleId), usage);
+    }
+  }
+  for (const row of before) {
+    const directory = join(f.directory, 'module-derived-cache', f.moduleId, row.id);
+    assert.equal((await readdir(directory)).length, 2, 'payload and manifest remain on disk');
+    const reader = await cache.open(row.key, signal);
+    try {
+      await assertRead(reader, values);
+    } finally {
+      await reader?.release();
+    }
+  }
+});
