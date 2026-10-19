@@ -57,8 +57,8 @@ test('data replacement respects global reader pins and backup pins of another up
     await f.catalog.pool.query(
       `INSERT INTO arkvory_backup_jobs
     (id,kind,state,phase,idempotency_key,vault_id,point_id)
-    VALUES($1,'capture','completed','done',$1,$2,$3)`,
-      [job, randomUUID(), randomUUID()],
+    VALUES($1,'capture','completed','done',$4,$2,$3)`,
+      [job, randomUUID(), randomUUID(), job],
     );
     await f.catalog.pool.query('INSERT INTO arkvory_backup_pins(upload_id,job_id) VALUES($1,$2)', [
       blob.id,

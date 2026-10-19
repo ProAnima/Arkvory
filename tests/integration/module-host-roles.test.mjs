@@ -15,20 +15,23 @@ import { publish } from './backup-fixture.mjs';
 test('module cleanup protects every active reader, including a different upload sharing chunks', async (t) => {
   const f = await setup(t);
   const pins = new PostgresContentPins(f.catalog.sessions);
-  t.after(() => pins.close());
-  const admission = new ModuleUnlinkAdmission(f.catalog.sessions);
-  const read = await pins.acquire(randomUUID());
-  await assert.rejects(
-    admission.run(async () => assert.fail('must not unlink')),
-    { code: 'busy' },
-  );
-  await read.release();
-  await admission.run(async (check) => {
-    check();
-    await assert.rejects(pins.acquire(randomUUID()), { code: 'busy' });
-  });
-  const after = await pins.acquire(randomUUID());
-  await after.release();
+  try {
+    const admission = new ModuleUnlinkAdmission(f.catalog.sessions);
+    const read = await pins.acquire(randomUUID());
+    await assert.rejects(
+      admission.run(async () => assert.fail('must not unlink')),
+      { code: 'busy' },
+    );
+    await read.release();
+    await admission.run(async (check) => {
+      check();
+      await assert.rejects(pins.acquire(randomUUID()), { code: 'busy' });
+    });
+    const after = await pins.acquire(randomUUID());
+    await after.release();
+  } finally {
+    await pins.close();
+  }
 });
 
 test('module cleanup refuses a pin on ANY upload and a closed capture barrier', async (t) => {
@@ -37,8 +40,8 @@ test('module cleanup refuses a pin on ANY upload and a closed capture barrier', 
   const job = randomUUID();
   await f.catalog.pool.query(
     `INSERT INTO arkvory_backup_jobs
-    (id,kind,state,phase,idempotency_key,vault_id,point_id) VALUES($1,'capture','completed','done',$1,$2,$3)`,
-    [job, randomUUID(), randomUUID()],
+    (id,kind,state,phase,idempotency_key,vault_id,point_id) VALUES($1,'capture','completed','done',$4,$2,$3)`,
+    [job, randomUUID(), randomUUID(), job],
   );
   const admission = new ModuleUnlinkAdmission(f.catalog.sessions);
   await f.catalog.pool.query('INSERT INTO arkvory_backup_pins(upload_id,job_id) VALUES($1,$2)', [
