@@ -127,3 +127,10 @@ export {
   type TransferResponse,
   type TransferUpload,
 } from './client.js';
+export {
+  LICENSE_STATES,
+  type LicenseEvidence,
+  type LicenseService,
+  type LicenseState,
+  type LicenseView,
+} from './license.js';

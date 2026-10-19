@@ -1,0 +1,19 @@
+{
+  "source": "https://github.com/ProAnima/pas-Hub",
+  "main": "fe23743324cb81c13b74530042b999e4acebe5e7",
+  "lastChange": "6487224c4d324d4d393f3255fce03e09c77736dd",
+  "copied": "2026-10-18",
+  "spec": {
+    "path": "docs/licence-format.md",
+    "decided": "2026-10-18",
+    "sha256": "04750688a054d83c5a38bb4c5c8c0bae704219d8dc3136f6c3d560f5e7cc8276"
+  },
+  "files": {
+    "01-delegation.json": "7c9ec300301e51b7bdcdad4ee7ee91ef1682b574b01e4d53ea6635a5168e65fa",
+    "02-activation.json": "a945f7807524a5cac939dce24b15a487255f5e20b5843040e5c8c589fd6e424f",
+    "03-revocation.json": "6e64a0a82851ca06618d552f0e63bb7b522a9c39d7ecda8065c3aa2f261b7aa7",
+    "04-revocation-list.json": "8540471963bb9ab89fdd7f7bd7f2f19eb41aaf31b5e1f7e8bee602eb57582ff6",
+    "05-invalid.json": "be588ab97485fe004ae29b93290e0280106582dd2764581362f1b25f9498a352",
+    "keys.json": "493dcb8e46b46b050ba2868afe5556c491829f24f64333da2f5041a3906eef8b"
+  }
+}

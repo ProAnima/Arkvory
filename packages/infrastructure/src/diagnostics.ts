@@ -16,6 +16,7 @@ export type LogComponent =
   | 'tree'
   | 'fleet'
   | 'module'
+  | 'license'
   | 'migrate'
   | 'process'
   | 'diagnostics';
@@ -48,6 +49,8 @@ export interface DiagnosticFields {
   backend?: string;
   /** Webhook subscription id (ADR 0069); an operator-chosen name, never a URL. */
   subscription?: string;
+  /** Licence activation id (ADR 0078, R2), `act_…`: in every token, never a secret. */
+  activation?: string;
   /** Feed action of a mirror entry put aside on a conflict (ADR 0058), e.g. `stage.add`. */
   action?: string;
   durationMs?: number;

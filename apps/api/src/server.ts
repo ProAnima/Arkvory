@@ -45,6 +45,7 @@ import { registerFleetRoutes } from './fleet-routes.js';
 import { registerModuleRoutes } from './module-routes.js';
 import { registerExtensionDocuments } from './extension-documents.js';
 import { declaredRoutes } from './extension-routes.js';
+import { registerLicenseRoutes } from './license-routes.js';
 import { moduleMetrics } from './module-metrics.js';
 import { RecentLog } from './recent-log.js';
 import { registerOwnershipRecovery } from './ownership-recovery.js';
@@ -342,6 +343,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
     fingerprint: runtime.modules.plan.fingerprint,
     sets,
   });
+  registerLicenseRoutes(app, context.principal, runtime.licences);
   registerFeedback(app, context.principal, {
     hub: config.hub ?? null,
     version: parts.identity.version,

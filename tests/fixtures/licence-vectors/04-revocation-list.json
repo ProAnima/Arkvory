@@ -1,0 +1,20 @@
+{
+  "description": "A licence revocation list number 1, signed by the root directly.",
+  "document": "{\"format\":2,\"payload\":\"eyJjZXJ0aWZpY2F0ZXMiOltdLCJmb3JtYXQiOjIsImlzc3VlZEF0IjoiMjAyNi0xMC0yMVQwMDowMDowMFoiLCJraW5kIjoicmV2b2NhdGlvbi1saXN0IiwibGljZW5jZXMiOlt7ImxpY2VuY2VJZCI6ImxpY18wMTIzNDU2Nzg5QUJDREVGR0hKS01OUFFSUyIsInJlYXNvbiI6InJlZnVuZCJ9XSwibnVtYmVyIjoxLCJwcm9kdWN0IjoiYXJrdm9yeSJ9\",\"signature\":\"untrusted comment: signature from ProAnima licence key 1000000000000001\\nRUQQAAAAAAAAAYUMrR8Pxj+iHgRiT2RJxr1trrWP857aeBma6McQsHYVTw6JswgPK7RMCuZpqSi45I7WG6DUm2s8871FJ35hPgA=\\ntrusted comment: timestamp:1792540800\\tfile:licence-revocation-list\\nzbqI25afB12bIAMIQcq7Q9MEPln64upS4LrQ7UjVaTDExTv3yMteDtRSon6jliwBCdsOcSyWVqHqF32I6SZKBA==\\n\",\"chain\":[]}",
+  "kind": "revocation-list",
+  "payload": {
+    "certificates": [],
+    "format": 2,
+    "issuedAt": "2026-10-21T00:00:00Z",
+    "kind": "revocation-list",
+    "licences": [
+      {
+        "licenceId": "lic_0123456789ABCDEFGHJKMNPQRS",
+        "reason": "refund"
+      }
+    ],
+    "number": 1,
+    "product": "arkvory"
+  },
+  "valid": true
+}

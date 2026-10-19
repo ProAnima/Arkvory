@@ -17,3 +17,5 @@ wiki/api/errors.md
 wiki/*/api/reference/
 wiki/*/api/errors.md
 wiki/.vitepress/cache/
+# Golden vectors of the hub, byte for byte (tests/fixtures/licence-vectors/README.md)
+tests/fixtures/licence-vectors/

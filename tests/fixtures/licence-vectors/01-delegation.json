@@ -1,0 +1,20 @@
+{
+  "description": "The root delegates the online key: activations and revocations, 120 days, tokens of up to 90 days.",
+  "document": "{\"format\":2,\"payload\":\"eyJmb3JtYXQiOjIsImtpbmQiOiJkZWxlZ2F0aW9uIiwicHJvZHVjdCI6ImFya3ZvcnkiLCJrZXlJZCI6IjIwMDAwMDAwMDAwMDAwMDIiLCJwdWJsaWNLZXkiOiJvSnFsOUhwbldZQXYrVlg0M0MwcUZLWEpuU08rbC9oa0VuLzVPRFJWcFBBPSIsInB1cnBvc2VzIjpbImFjdGl2YXRpb24iLCJyZXZvY2F0aW9uIl0sIm5vdEJlZm9yZSI6IjIwMjYtMTAtMDFUMDA6MDA6MDBaIiwibm90QWZ0ZXIiOiIyMDI3LTAxLTI5VDAwOjAwOjAwWiIsIm1heFRva2VuRGF5cyI6OTB9\",\"signature\":\"untrusted comment: signature from ProAnima licence key 1000000000000001\\nRUQQAAAAAAAAAT59mb2+jnxf/SKJQbdGfHCoa4DZ8n2/HDAKfSijqjf8crNanDwofNCAvdm+K2DgWp05XNri3ixDDqZrhcY1vgw=\\ntrusted comment: timestamp:1790812800\\tfile:licence-delegation\\nxKmpxvl4/p6qwglBJmcbNpjT//vZ6Zq1th2N02R2RN+o7PCGnEamBRLsPyHAocOkvn3yK2/O/Zz30HW60dxrCQ==\\n\",\"chain\":[]}",
+  "kind": "delegation",
+  "payload": {
+    "format": 2,
+    "keyId": "2000000000000002",
+    "kind": "delegation",
+    "maxTokenDays": 90,
+    "notAfter": "2027-01-29T00:00:00Z",
+    "notBefore": "2026-10-01T00:00:00Z",
+    "product": "arkvory",
+    "publicKey": "oJql9HpnWYAv+VX43C0qFKXJnSO+l/hkEn/5ODRVpPA=",
+    "purposes": [
+      "activation",
+      "revocation"
+    ]
+  },
+  "valid": true
+}

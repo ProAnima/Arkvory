@@ -1016,6 +1016,14 @@
       "summary": "获取单个模块的 API 文档",
       "description": "返回模块 `id` 在应答的进程中于 `/api/ext/<id>/v<major>/` 下提供的路由的 OpenAPI 3.1 文档：模块记录的路径和架构（服务器已将其与模块的路由核对），以及每个操作在模块运行前由服务器执行的检查（`x-arkvory-access`、带有指明仓库的路径参数的 `x-arkvory-action`、`x-arkvory-effect`）。`info.version` 是模块规划的 `fingerprint`。读取网关只返回它提供的读取操作。在应答的进程中不提供路由、已禁用或未能启动的模块返回 `not_found`。只有全局管理员可以读取；任何已认证的调用方都可以在 `/api/ext/openapi.json` 读取所有模块的合并文档，其中只包含它可以调用的操作。"
     },
+    "getSystemLicense": {
+      "en": {
+        "summary": "Show the licences of this installation",
+        "description": "Returns the installation id the writer recorded (`installation`), the time licences are judged by (`effectiveTime`: the latest of the database clock, the highest time already seen and the latest issue time of an accepted document, so setting a clock back extends nothing), `clockRollback` when the database clock is more than a day behind a time already seen, the number of offline activation requests waiting for their answer (`pendingRequests`), and every activation in `licenses`: `licenseId`, `activationId`, `licensee`, `licenseType`, `activation` (`online` or `offline`), `features`, `limits` (decimal strings of 64-bit values), the end of the licence term (`notAfter`, null when perpetual), `graceUntil`, the end of the current token (`offlineGraceUntil`), `lastRefreshAt`, `refreshFailing` and `state` (`valid`, `offline-grace`, `grace`, `expired`, `revoked`, `mismatch` or `invalid`) with its `reason`. Every stored document is verified again on each request. No licence key, activation secret or signature bytes are returned, and the answer never waits for the hub. The free core works without any licence. Only the global administrator may read it."
+      },
+      "summary": "查看本安装的许可证",
+      "description": "返回写入进程记录的安装 ID（`installation`）、判断许可证所依据的时间（`effectiveTime`：数据库时钟、已见过的最大时间与已接受文档的最晚签发时间三者中最晚的一个，因此把时钟调回不会延长任何期限）、数据库时钟比已见过的时间落后超过一天时的 `clockRollback`、等待答复的离线激活请求数（`pendingRequests`），以及 `licenses` 中的每个激活：`licenseId`、`activationId`、`licensee`、`licenseType`、`activation`（`online` 或 `offline`）、`features`、`limits`（64 位值的十进制字符串）、许可证期限结束时间（`notAfter`，永久许可证为 null）、`graceUntil`、当前令牌的结束时间（`offlineGraceUntil`）、`lastRefreshAt`、`refreshFailing`，以及 `state`（`valid`、`offline-grace`、`grace`、`expired`、`revoked`、`mismatch` 或 `invalid`）及其 `reason`。每次请求都会重新验证每个已保存的文档。不会返回许可证密钥、激活密钥或签名字节，响应也从不等待中心。免费核心无需许可证即可工作。只有全局管理员可以读取。"
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",
