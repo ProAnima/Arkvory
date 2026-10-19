@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import {
+  migrate,
   ModuleUnlinkAdmission,
   PostgresContentPins,
   PostgresModuleCursors,
@@ -73,6 +74,11 @@ test('module cursor CAS fences stale acknowledgements, with isolated module and 
   assert.equal(await cursors.save('signed-index', 'build', stale, epoch, 20n), false);
   assert.equal((await cursors.read('signed-index', 'build')).position, 10n);
   assert.equal((await cursors.read('other-index', 'build')).position, 0n);
+  // Recovery may repeat a migration whose table already exists; persisted offsets survive.
+  await f.catalog.pool.query('DELETE FROM arkvory_migrations WHERE version=48');
+  await migrate(f.catalog.pool);
+  await migrate(f.catalog.pool);
+  assert.equal((await cursors.read('signed-index', 'build')).position, 10n);
 });
 
 test(
