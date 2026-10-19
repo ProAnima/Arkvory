@@ -40,7 +40,7 @@ function availability(name: string): Availability | undefined {
 }
 
 /**
- * Every service an enabled module uses must be known, provided by this host, offered in every
+ * Every service an enabled module uses must be known, provided by this host, offered in at least one
  * process the module runs in and open to the module's source. A disabled module is not checked:
  * it may be written for a later contract whose services this core does not know yet.
  */
@@ -56,11 +56,25 @@ export function checkServices(
       const usable =
         found !== undefined &&
         provided.some((service) => service === name) &&
-        m.manifest.roles.every((role) => found.roles.includes(role)) &&
+        m.manifest.roles.some((role) => found.roles.includes(role)) &&
         (found.plugins || !plugin);
       if (!usable)
         problems.push({ code: 'service_unavailable', module: m.manifest.id, subject: name });
     }
   }
   return problems;
+}
+
+/** A role receives only its declared services; other roles of the same module receive none. */
+export function hostServiceAvailable(
+  name: string,
+  role: ModuleRole,
+  source: ModuleSource,
+): boolean {
+  const found = availability(name);
+  return (
+    found !== undefined &&
+    found.roles.includes(role) &&
+    (found.plugins || !PLUGIN_SOURCES.includes(source))
+  );
 }

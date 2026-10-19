@@ -219,3 +219,13 @@ export {
   takeRehomeSingleton,
 } from './blob-moves-steps.js';
 export type { RehomeSingleton } from './blob-moves-steps.js';
+
+export * from './module-host.js';
+export * from './module-telemetry.js';
+export { ModuleStorages, ModuleRemoval } from './module-storage.js';
+export { processModules, type HostedModuleContext } from './module-process.js';
+export { ModuleUnlinkAdmission } from './module-unlink.js';
+export { ModuleChangeFeed } from './module-feed.js';
+export { PostgresModuleCursors } from './module-feed-store.js';
+export { moduleCatalogSource } from './module-catalog-source.js';
+export { ModuleCompute } from './module-compute.js';

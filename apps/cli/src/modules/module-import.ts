@@ -162,6 +162,10 @@ export async function importClientModule(
 
 /** A manifest as plain JSON, for comparing two of them field by field. */
 function manifestJson(manifest: ModuleManifest): ModuleJson {
-  const { resources, ...rest } = manifest;
-  return { ...rest, resources: resources ? { ...resources } : null };
+  const { resources, compute, ...rest } = manifest;
+  return {
+    ...rest,
+    ...(compute ? { compute: compute.map((task) => ({ ...task })) } : {}),
+    resources: resources ? { ...resources } : null,
+  };
 }

@@ -1,3 +1,4 @@
+import { ModuleCompute } from './module-compute.js';
 import {
   EXTENSION_API_VERSION,
   ModuleConfigError,
@@ -167,6 +168,7 @@ async function loadSigned<Context>(
     }
     return {
       ...planned,
+      compute: () => new ModuleCompute(module.directory, module.manifest.module.compute ?? []),
       create: (context) => {
         try {
           return descriptor.create(context, config);

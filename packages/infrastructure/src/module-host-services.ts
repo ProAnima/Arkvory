@@ -1,3 +1,9 @@
+import type { Pool } from 'pg';
+import { PostgresModuleDataCoordinator } from './module-data-coordinator.js';
+import type { ModuleCompute } from './module-compute.js';
+import type { ModuleChangeFeed } from './module-feed.js';
+import type { ModuleStorages } from './module-storage.js';
+import { hostServiceAvailable, ModuleServiceError } from '@proanima/arkvory-extension-api';
 import type {
   CatalogRead,
   ContentRead,
@@ -5,6 +11,7 @@ import type {
   ModuleDataDirectory,
   ModuleFiles,
   ModuleResources,
+  ModuleRole,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
 import type { ScopedCatalog } from '@proanima/arkvory-application';
@@ -21,9 +28,14 @@ const MIB = 1024 * 1024;
 export interface HostServiceSources {
   /** ARKVORY_DATA_DIR, where `module-data/<id>/` lives. */
   readonly dataDirectory: string;
+  readonly dataPool?: Pool;
   readonly reserve: VolumeReserve;
   /** A read gateway: data directories are read-only there. */
   readonly readOnly: boolean;
+  readonly role?: ModuleRole;
+  readonly storage?: ModuleStorages;
+  readonly feed?: ModuleChangeFeed;
+  readonly compute?: (id: string) => ModuleCompute | undefined;
   /** The catalog use cases, built when the first module that uses one is created. */
   readonly catalog: () => ScopedCatalog;
 }
@@ -68,25 +80,63 @@ function lazyFiles(
  * and their periodic reconciliation until `close`.
  */
 export class ModuleHostServices {
+  private readonly computations = new Map<string, ModuleCompute>();
   private readonly moduleScopes = new Map<string, AccessScopes>();
   private scoped: ScopedCatalog | undefined;
   private readonly data = new Map<string, { opening: Promise<ModuleData>; opened?: ModuleData }>();
+  private readonly openings = new Set<Promise<ModuleData>>();
   private timer: ReturnType<typeof setInterval> | undefined;
 
-  constructor(private readonly sources: HostServiceSources) {}
+  private readonly coordinator: PostgresModuleDataCoordinator | undefined;
+  private closing: Promise<void> | undefined;
+  constructor(private readonly sources: HostServiceSources) {
+    if (!sources.readOnly && sources.dataPool)
+      this.coordinator = new PostgresModuleDataCoordinator(sources.dataPool);
+  }
 
   /** The services of one module; `resources` is the approved size of its data directory. */
   for(module: PlannedModule, resources: ModuleResources | null): HostServices {
-    const uses = (name: string) => module.manifest.uses.includes(name);
+    if (this.closing) throw new ModuleServiceError('unavailable');
+    const role = this.sources.role ?? (this.sources.readOnly ? 'reader' : 'api');
+    const uses = (name: string) =>
+      module.manifest.uses.includes(name) && hostServiceAvailable(name, role, module.source);
     const catalog =
       uses('catalog-read') || uses('content-read') ? this.catalog(module.manifest.id) : undefined;
+    const compute = uses('compute') ? this.sources.compute?.(module.manifest.id) : undefined;
+    if (compute) this.computations.set(module.manifest.id, compute);
     return {
+      ...(compute ? { compute } : {}),
+      ...(uses('change-feed') && this.sources.feed
+        ? { 'change-feed': this.sources.feed.for(module.manifest.id) }
+        : {}),
+      ...(uses('blob-store') && this.sources.storage
+        ? { 'blob-store': this.sources.storage.storage(module.manifest.id) }
+        : {}),
+      ...(uses('staged-completion') && this.sources.storage
+        ? { 'staged-completion': this.sources.storage.staged(module.manifest.id) }
+        : {}),
       ...(catalog && uses('catalog-read') ? { 'catalog-read': catalog.catalog } : {}),
       ...(catalog && uses('content-read') ? { 'content-read': catalog.content } : {}),
       ...(uses('data-directory')
         ? { 'data-directory': this.directory(module.manifest.id, resources) }
         : {}),
     };
+  }
+
+  seal(moduleId: string): void {
+    this.sources.storage?.seal(moduleId);
+  }
+  activate(moduleId: string): void {
+    this.sources.storage?.active(moduleId, true);
+    this.sources.feed?.activate(moduleId);
+  }
+  withdraw(moduleId: string): void {
+    this.sources.storage?.active(moduleId, false);
+    this.sources.feed?.stop(moduleId);
+    void this.computations
+      .get(moduleId)
+      ?.close()
+      .catch(() => undefined);
   }
 
   /**
@@ -118,9 +168,13 @@ export class ModuleHostServices {
       opening: openModuleData({
         dataDirectory: this.sources.dataDirectory,
         moduleId,
+        ...(this.coordinator ? { coordinator: this.coordinator } : {}),
         quota,
         reserve: this.sources.reserve,
         readOnly: this.sources.readOnly,
+        ...(this.sources.storage
+          ? { requireRemoval: () => this.sources.storage?.removal(moduleId).require() }
+          : {}),
       }).then((opened) => {
         entry.opened = opened;
         return opened;
@@ -128,6 +182,7 @@ export class ModuleHostServices {
     };
     // A failure to open reaches the module on its first use, not as an unhandled rejection.
     entry.opening.catch(() => undefined);
+    this.openings.add(entry.opening);
     this.data.set(moduleId, entry);
     this.timer ??= setInterval(() => {
       void this.reconcile();
@@ -145,8 +200,29 @@ export class ModuleHostServices {
     for (const { opened } of this.data.values()) await opened?.reconcile().catch(() => undefined);
   }
 
-  close(): void {
+  close(): Promise<void> {
+    return (this.closing ??= this.closeOwned());
+  }
+
+  private async closeOwned(): Promise<void> {
     clearInterval(this.timer);
     this.timer = undefined;
+    // Compute may still use module resources until termination has completed.
+    const computeResults = await Promise.allSettled(
+      [...this.computations.values()].map((compute) => compute.close()),
+    );
+    const results = await Promise.allSettled([
+      ...[...this.openings].map(async (opening) => {
+        const data = await opening.catch(() => undefined);
+        await data?.close();
+      }),
+      Promise.resolve().then(() => this.sources.feed?.close()),
+    ]);
+    // Release the owner lock only after all sinks have relinquished their OS handles.
+    await this.coordinator?.close();
+    const errors = [...computeResults, ...results].flatMap((result) =>
+      result.status === 'rejected' ? [result.reason] : [],
+    );
+    if (errors.length) throw new AggregateError(errors, 'Module host close failed');
   }
 }

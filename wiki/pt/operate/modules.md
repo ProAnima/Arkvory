@@ -56,7 +56,9 @@ Um módulo instalado fica desativado até você ativá-lo. Os serviços carregam
 3. Reinicie os serviços, como em [Aplicar uma alteração](../install/configuration#apply-change).
 4. Verifique o módulo como administrador global: `GET /api/v1/system/modules` o mostra com `running: true` e `health.status` `ok` na API e em cada gateway de leitura.
 
-A API e os gateways de leitura executam os módulos. O worker verifica os mesmos módulos e não executa nenhum. Esta versão recusa módulos que rodam no worker ou no agente de backup (`role_unsupported`) e módulos que declaram prefixos de rotas sem atender rotas pelo Arkvory (`routes_unsupported`). Instalações com Docker Compose ainda não carregam módulos.
+Os módulos assinados executam na API, nos gateways de leitura, no worker e no agente de backup conforme os papéis declarados. Cada processo fornece apenas os serviços do seu papel declarados em `uses`. As rotas exigem `routes`. O Docker Compose ainda não carrega módulos.
+
+Os armazenamentos de módulos são registrados como `<module>.<name>` e podem receber novos uploads. Quando deixam de aceitar gravações, os novos uploads usam `default`. O núcleo verifica todos os bytes antes de publicar objetos montados de partes. A limpeza aguarda leitores ativos, todas as proteções de backup e a barreira de captura. Os cálculos usam threads limitadas. As assinaturas confirmam eventos após processamento bem-sucedido e podem repetir a entrega após erros.
 
 Antes de um serviço importar qualquer código de um módulo, ele verifica o pacote de novo:
 

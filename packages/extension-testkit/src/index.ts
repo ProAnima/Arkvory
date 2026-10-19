@@ -1,3 +1,8 @@
+export {
+  storageRegistrationContract,
+  computeContract,
+  changeFeedContract,
+} from './host-registration.js';
 /**
  * Contract suites of the extension points and host services (ADR 0079, section 7; ADR 0083,
  * section 1). Each suite is a function of a factory of the implementation under test; core
@@ -32,6 +37,9 @@ export { bytesOf, descriptorOf, gather, sha256 } from './support.js';
  * suite here is refused by a governance test: a point enters the contract with its suite.
  */
 export const CONTRACT_SUITES = {
+  'blob-store': 'storageRegistrationContract',
+  compute: 'computeContract',
+  'change-feed': 'changeFeedContract',
   'staged-completion': 'stagedCompletionContract',
   'catalog-read': 'catalogReadContract',
   'content-read': 'catalogReadContract',

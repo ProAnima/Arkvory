@@ -84,6 +84,15 @@ export class PostgresEventLog implements EventLogReader {
   constructor(private readonly pool: Pool) {}
 
   read(query: EventLogQuery): Promise<EventLogPage> {
+    return this.page(query, false);
+  }
+
+  /** Trusted internal subscribers only; still restricted to repository/system event scopes. */
+  readInternal(query: EventLogQuery): Promise<EventLogPage> {
+    return this.page(query, true);
+  }
+
+  private page(query: EventLogQuery, allRepositories: boolean): Promise<EventLogPage> {
     return inTransaction(this.pool, async (client) => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY');
       const state = await client.query<StateRow>(
@@ -100,10 +109,18 @@ export class PostgresEventLog implements EventLogReader {
         `SELECT position::text, type, schema_version, scope, repository, partition_key, subject,
            occurred_at, data
          FROM (${scanned}) s
-         WHERE ((scope='repository' AND repository=ANY($3::text[])) OR (scope='system' AND $4::boolean))
+         WHERE ((scope='repository' AND ($7::boolean OR repository=ANY($3::text[]))) OR (scope='system' AND $4::boolean))
            AND ($5::text[] IS NULL OR type=ANY($5::text[]))
          ORDER BY s.position LIMIT $6`,
-        [String(after), query.scan, query.repositories, query.system, query.types, query.limit],
+        [
+          String(after),
+          query.scan,
+          query.repositories,
+          query.system,
+          query.types,
+          query.limit,
+          allRepositories,
+        ],
       );
       const frontier = await client.query<{ through: string | null }>(
         `SELECT max(position)::text AS through FROM (

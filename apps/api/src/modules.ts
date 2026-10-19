@@ -1,3 +1,4 @@
+import { hostServiceAvailable } from '@proanima/arkvory-extension-api';
 import type {
   HostServices,
   ModuleCapabilities,
@@ -28,7 +29,9 @@ export type ModuleServicesOf = (
 /** What a module of the API process receives from the core (ADR 0083, section 2.4). */
 export type ApiModuleContext = ModuleContext<ApiServices> & { readonly role: 'api' | 'reader' };
 
-const usesRoutes = (module: PlannedModule) => module.manifest.uses.includes('routes');
+const usesRoutes = (module: PlannedModule) =>
+  module.manifest.uses.includes('routes') &&
+  module.manifest.roles.some((role) => hostServiceAvailable('routes', role, module.source));
 
 /**
  * The modules of this API process from a loaded installation (`loadInstallation`): the built-in
@@ -43,6 +46,7 @@ export function apiModules(
   telemetry: ModuleTelemetry,
   registry = new ModuleRouteRegistry(),
   services: ModuleServicesOf = () => ({}),
+  hooks?: { seal(id: string): void; activate(id: string): void; withdraw(id: string): void },
 ): ModuleRuntime<ApiModuleContext> {
   const context = (
     module: PlannedModule,
@@ -64,11 +68,18 @@ export function apiModules(
   });
   const created = (module: PlannedModule) => {
     if (usesRoutes(module)) registry.seal(module.manifest);
+    hooks?.seal(module.manifest.id);
   };
   return new ModuleRuntime<ApiModuleContext>(
     installation.plan,
     installation.prepared,
-    { role, context, created },
+    {
+      role,
+      context,
+      created,
+      activated: (m) => hooks?.activate(m.manifest.id),
+      withdrawn: (id) => hooks?.withdraw(id),
+    },
     installation.refused,
   );
 }

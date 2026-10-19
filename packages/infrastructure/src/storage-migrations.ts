@@ -1,3 +1,4 @@
+import { migrateModuleCursors } from './module-feed-store.js';
 import type { PoolClient } from 'pg';
 import { migrateStoragePolicy } from './storage-policy-schema.js';
 import { migrateCleanup } from './cleanup-schema.js';
@@ -59,6 +60,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [44, migrateStoragePlacement],
   [45, migrateBlobMoves],
   [46, migrateTreeIndexes],
+  [48, migrateModuleCursors],
 ];
 
 /** upTo bounds the applied versions (restore of an older backup); the order never changes. */

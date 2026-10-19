@@ -1,3 +1,4 @@
+import type { ModuleCompute } from './module-compute.js';
 import { createHash } from 'node:crypto';
 import {
   EXTENSION_API_VERSION,
@@ -23,6 +24,7 @@ export interface PreparedModule<Context> {
   readonly candidate: ModuleCandidate;
   /** What a signed package stores (ADR 0078, I1); null for built-in modules. */
   readonly dataClass: DataClass | null;
+  readonly compute?: () => ModuleCompute;
   /**
    * The data directory the module may fill (ADR 0083, N6): the operator's approval in
    * `ARKVORY_MODULES_FILE`, else the manifest's request; null for none.
@@ -97,6 +99,10 @@ export function planOrThrow<Context>(
  */
 export const PROVIDED_HOST_SERVICES: readonly HostService[] = [
   'routes',
+  'blob-store',
+  'staged-completion',
+  'change-feed',
+  'compute',
   'catalog-read',
   'content-read',
   'data-directory',

@@ -23,3 +23,12 @@ Asset-page выполняет ограниченный SQL seek по repository/
 PostgresAttachments и migration 12 хранят историю вложений и FK-пины исходных файлов. CAS сериализуется на строке основного артефакта, targets проверяются в том же репозитории, audit входит в транзакцию. [Контракт](../../docs/BUILD_DETAILS.md).
 
 PostgresRetention сохраняет cancellation, deletion receipt и audit атомарно. Catalog-mutation сериализует короткие записи каталога по repository и исключает поздние pins/annotations после удаления; байты не блокируются. Миграция 13 фиксирует publication time, миграция 14 строит indexes concurrently. Package queries исключают tombstones, immutable identity сохраняется. [Контракт и ограничения](../../docs/ARTIFACT_RETENTION.md).
+
+Общий серверный хост подписанных модулей (`module-host`, `module-process`) используется
+API, worker и backup. `module-storage` связывает переносимые регистрации с
+`StorageBackends`; `module-unlink` даёт консервативный глобальный допуск cleanup
+при отсутствии активных чтений, любых backup pins и закрытого барьера.
+`module-feed` подтверждает durable cursor только после обработки события worker;
+`module-compute-thread` устанавливает собственный resolution confinement перед
+импортом task. Закрытие compute ожидает termination до закрытия ресурсов хоста.
+См. дополнение A [ADR 0083](../../docs/adr/0083-core-extension-points.md).

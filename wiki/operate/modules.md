@@ -56,7 +56,9 @@ An installed module stays disabled until you enable it. The services load module
 3. Restart the services, as in [Apply a change](../install/configuration#apply-change).
 4. Check the module as a global administrator: `GET /api/v1/system/modules` lists it with `running: true` and `health.status` `ok` on the API and on each read gateway.
 
-The API and the read gateways run modules. The worker checks the same modules and runs none of them. This release refuses modules that run in the worker or the backup agent (`role_unsupported`) and modules that declare route prefixes without serving routes through Arkvory (`routes_unsupported`). Docker Compose installations do not load modules yet.
+Signed modules run in the API, read gateways, worker and backup agent according to their declared roles. Each process gives a module only the services available to that role and declared in `uses`. Route prefixes still require the `routes` service (`routes_unsupported`). Docker Compose installations do not load modules yet.
+
+A module storage registers instances named `<module>.<name>`. Placement policies can select these instances for new uploads; when an instance stops accepting writes, new uploads fall back to `default`. The core checks the complete bytes before publishing an object composed from stored parts. Module data cleanup waits while any content reader, backup pin or capture barrier protects the installation. Computations run in bounded threads; background subscriptions acknowledge events only after a successful handler and may deliver them again after a failure.
 
 Before a service imports any code of a module, it checks the package again:
 

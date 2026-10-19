@@ -40,7 +40,8 @@
         "packages/application",
         "packages/domain",
         "packages/extension-api",
-        "packages/signing"
+        "packages/signing",
+        "packages/resolution"
       ]
     },
     {

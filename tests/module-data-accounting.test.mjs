@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -5,7 +6,7 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { syncBuiltinESMExports } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openModuleData } from '@proanima/arkvory-infrastructure';
+import { openModuleData as openCoordinatedData } from '@proanima/arkvory-infrastructure';
 import { removeTestDirectory } from './helpers.mjs';
 
 // Races and stale credits of the data directory's accounting (ADR 0083, N6).
@@ -103,9 +104,9 @@ test('a file that replaced nothing at its close is counted against the file quot
   await put(data.directory.data, 'a', 1);
   const sink = await data.directory.data.create('a', replaceable);
   await data.directory.data.remove('a');
-  await put(data.directory.data, 'b', 1);
+  await assert.rejects(put(data.directory.data, 'b', 1), quotaRefusal);
   await sink.write(Buffer.alloc(1));
-  await assert.rejects(sink.close(), quotaRefusal);
+  await sink.close();
   assert.equal(data.directory.data.usage().files, 1);
 });
 
@@ -184,3 +185,18 @@ test('a ranged read never returns fewer bytes of another version of the file', a
     (error) => assert.equal(error.code, 'invalid_input'),
   );
 });
+
+// Single-process contract fixture only. PostgreSQL ownership is covered by integration tests.
+function openModuleData(options) {
+  return openCoordinatedData({
+    ...options,
+    coordinator: {
+      owner: randomUUID(),
+      run: async (_module, work) =>
+        work({
+          check() {},
+          orphan: async () => {},
+        }),
+    },
+  });
+}
