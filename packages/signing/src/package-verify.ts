@@ -2,7 +2,12 @@ import { SigningError } from './errors.js';
 import { verifyClassified } from './keys.js';
 import type { ClassifiedKey } from './keys.js';
 import { checkCompatibility, parsePackageManifest } from './package-manifest.js';
-import type { CompatibilityHost, PackageFile, PackageManifest } from './package-manifest.js';
+import type {
+  CompatibilityHost,
+  PackageFile,
+  PackageManifest,
+  PackageSide,
+} from './package-manifest.js';
 import { MANIFEST_FILE } from './package-paths.js';
 import { packageSigner } from './signer.js';
 import type { PackageSigner, SignerPurpose } from './signer.js';
@@ -13,6 +18,14 @@ export interface PackageHost extends CompatibilityHost {
   readonly keys: readonly ClassifiedKey[];
   /** Milliseconds since the epoch, for the expiry of operator keys. */
   readonly now: number;
+  /**
+   * Which packages this host runs: `server` (the default — the host tool and the services) or
+   * `client` (`arkvoryctl`, ADR 0079, 5.11). A package of the other side is refused with
+   * `side_mismatch`, so no server process ever loads a client package and the other way round.
+   * A client host accepts ProAnimaStudio module keys only: operator plugins are server-side
+   * (ADR 0082).
+   */
+  readonly side?: PackageSide;
 }
 
 /** A package whose signature, manifest and signer passed; files are compared separately. */
@@ -41,11 +54,12 @@ export function verifySignedManifest(
   } catch (error) {
     throw new SigningError('signature_malformed', null, { cause: error });
   }
+  const side = host.side ?? 'server';
   const key = verifyClassified(
     manifestBytes,
     signatureText,
     host.keys,
-    ['module', 'operator'],
+    side === 'client' ? ['module'] : ['module', 'operator'],
     MANIFEST_FILE,
   );
   let input: unknown;
@@ -55,6 +69,7 @@ export function verifySignedManifest(
     throw new SigningError('manifest_invalid', '', { cause: error });
   }
   const manifest = parsePackageManifest(input);
+  if (manifest.package.side !== side) throw new SigningError('side_mismatch', manifest.module.id);
   return { manifest, signer: packageSigner(key, manifest, host.now, purpose) };
 }
 

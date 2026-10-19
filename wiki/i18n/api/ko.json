@@ -240,6 +240,14 @@
       "summary": "아티팩트 다운로드",
       "description": "원본 바이트를 `Content-Length`, `Content-Disposition`(아티팩트 이름), 강한 `ETag`(`\"sha256:<hex>\"`)와 함께 스트리밍합니다. `Range`를 하나 지정하면 206이고(만족할 수 없는 범위는 416), ETag와 함께 `If-Range`를 보내면 안전하게 재개되며, `If-None-Match`에는 304로 응답합니다. HEAD는 본문 없이 같은 헤더를 반환하며 `Range`는 무시합니다. `Authorization` 헤더 대신 `createDownloadLink`로 만든 다운로드 링크를 `token`으로 전달할 수도 있습니다. 다운로드는 서버의 다운로드 수용 제어에서 빈 슬롯이 생길 때까지 대기합니다."
     },
+    "getArtifactTree": {
+      "en": {
+        "summary": "Read the table of contents of an archive",
+        "description": "For a `.zip` or `.upack` artifact, lists its file entries in archive order: `ordinal`, `path`, `size`, the `sha256` of the content as computed by the server, `method` (`stored` or `deflate`) and the data range `dataOffset`/`dataLength` inside the archive; that byte range of `downloadArtifact` is the entry's data (for `stored`, the file itself). `status` is `ready`, `pending` while the server has not read the archive yet (ask again later) or `unavailable` with a `reason`: `not_archive`, `invalid_archive`, `unsafe_entry` (a path outside the root, a link or a special file), `encrypted_entry`, `too_many_entries` (over 100 000), `too_large` (over 100 GiB of content), `unsupported_method`, `crc_mismatch` or `duplicate_entry` (also paths that differ only in case). A page holds up to `limit` entries (1–1000, default 1000); pass `next` as `after` for the following page, null marks the end. `archiveSha256` is the artifact's SHA-256 and `entries` the number of file entries. Needs `content.read`; a missing or forbidden artifact answers as `downloadArtifact` does."
+      },
+      "summary": "아카이브 목차 읽기",
+      "description": "`.zip` 또는 `.upack` 아티팩트의 파일 항목을 아카이브 순서대로 나열합니다. 각 항목에는 `ordinal`, `path`, `size`, 서버가 계산한 내용의 `sha256`, `method`(`stored` 또는 `deflate`), 아카이브 안의 데이터 범위 `dataOffset`/`dataLength`가 있습니다. `downloadArtifact`의 이 바이트 범위가 항목의 데이터입니다(`stored`이면 파일 자체). `status`는 `ready`, 서버가 아직 아카이브를 읽지 않았으면 `pending`(나중에 다시 요청하세요), 또는 `reason`과 함께 `unavailable`입니다. `reason`은 `not_archive`, `invalid_archive`, `unsafe_entry`(루트 밖의 경로, 링크 또는 특수 파일), `encrypted_entry`, `too_many_entries`(100 000개 초과), `too_large`(내용이 100 GiB 초과), `unsupported_method`, `crc_mismatch`, `duplicate_entry`(대소문자만 다른 경로 포함) 중 하나입니다. 한 페이지에는 최대 `limit`개(1–1000, 기본 1000)의 항목이 담깁니다. 다음 페이지는 `next`를 `after`로 전달해 받으며, null은 끝을 뜻합니다. `archiveSha256`은 아티팩트의 SHA-256이고 `entries`는 파일 항목 수입니다. `content.read`가 필요하며, 없거나 금지된 아티팩트에는 `downloadArtifact`와 같은 응답을 합니다."
+    },
     "listCatalogChanges": {
       "en": {
         "summary": "Follow the change feed of a repository",

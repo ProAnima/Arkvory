@@ -72,6 +72,7 @@ arkvoryctl doctor
 | `--not-before T`           |              | 不在 T 之前开始下载：RFC 3339 或 `HH:MM`（时钟下一次显示该时间）                        |
 | `--not-after T`            |              | 若队列会在 T 之后才开始下载，则以退出码 4 放弃                                          |
 | `--verbose`                | 关闭         | 每个 HTTP 请求向 stderr 输出一行：方法、路径、状态、耗时、请求 ID。不包含请求头或密钥。 |
+| `--transfer MODE`          | `auto`       | [客户端模块](#client-modules)的传输扩展：`auto`、`strict` 或 `core`（不使用）           |
 | `--help`、`--version`      |              | 帮助；以 JSON 形式输出客户端版本                                                        |
 | `--`                       |              | 结束选项，用于以 `-` 开头的文件名                                                       |
 
@@ -115,6 +116,17 @@ arkvoryctl link 00000000-0000-4000-8000-000000000001 --ttl 900
 ```
 
 下载链接是机密信息，在过期之前无法撤销。
+
+### 目录树 {#directory-trees}
+
+| 命令                                                                                | 结果                                                 |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | 将文件夹发布为一个 ZIP 制品，可续传                  |
+| `tree pull ID DIR`                                                                  | 使文件夹与树一致：下载整个归档，或只下载不一致的文件 |
+| `tree verify ID DIR`                                                                | 列出缺失、不一致和多余的文件；有任何差异时退出码为 5 |
+| `tree repair ID DIR`                                                                | 重新写入缺失和不一致的文件；保留多余的文件           |
+
+参见[目录树](../use/trees)。
 
 ### 包与晋级 {#packages-and-promotion}
 
@@ -256,6 +268,25 @@ claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 - **数据。** 结果中的名称、标签和元数据由其他人编写。代理必须将其视为数据，而不是指令。
 - 客户端必须支持 MCP 2025-06-18 或更高版本。
 
+## 客户端模块 {#client-modules}
+
+客户端模块是来自 ProAnimaStudio 的签名软件包，用于扩展 `arkvoryctl` 本身，例如更快的字节传输方式（传输扩展）。免费客户端不包含任何此类模块；没有模块时，每条命令都按本页所述工作。
+
+| 命令                                                      | 结果                                              |
+| --------------------------------------------------------- | ------------------------------------------------- |
+| `module install FILE [--yes] [--allow-stale-revocations]` | 验证软件包并显示其信息和条款；使用 `--yes` 时安装 |
+| `module list`                                             | 已安装的模块、启用范围以及撤销列表的状态          |
+| `module enable ID [--profile NAME]`                       | 为所有配置文件或某一个配置文件启用模块            |
+| `module disable ID [--profile NAME]`                      | 在所有位置或为某一个配置文件禁用模块              |
+| `module remove ID`                                        | 删除模块                                          |
+| `module revocations FILE`                                 | 保存签名的撤销列表，适用于无法访问互联网的机器    |
+
+- **位置。** 模块为当前用户安装在 CLI 文件夹（`ARKVORY_CLI_HOME`，默认为 `~/.config/arkvory`）的 `modules` 文件夹中。新模块在您启用之前处于禁用状态。
+- **检查。** 只接受使用 ProAnimaStudio 模块密钥签名并为该客户端构建的软件包。在命令使用模块之前，`arkvoryctl` 会再次检查签名和每个文件，并确认其他用户无法更改这些文件（在 Linux 和 macOS 上：归您所有、其他人不可写、没有链接；在 Windows 上：没有链接或交接点（junction），且所有者和访问规则只允许您和管理员更改，否则为 `module_access`）。已撤销的版本绝不会被加载。未通过检查的模块会在 stderr 上报告（`client module ID VERSION not loaded (code)`）并被跳过；命令在没有它的情况下继续执行。
+- **撤销。** `module install` 需要当前有效的撤销列表。软件包可能自带较新的列表；否则请用 `module revocations` 保存一份。`--allow-stale-revocations` 会照常安装，结果中会注明这一点。
+- **代码。** 模块的代码只能加载它自己的文件和 Node 内置模块。只有传输内容的命令才会加载模块：`upload`、`download`、`put`、`get`、`packages publish`、`packages download` 和 `tree`。
+- **传输扩展。** 只有当服务器在 `GET /api/v1/capabilities` 的 `transfer` 中提供相同的扩展时，才会使用模块的扩展。客户端自己检查结果：每次下载的大小和 SHA-256，以及每次上传的已发布校验和。使用 `--transfer auto` 时，如果扩展拒绝或失败，客户端会回退到自己的传输；`--transfer strict` 则直接失败（`transfer_unavailable`，退出码 4）；`--transfer core` 不加载任何模块。`--verbose` 会显示每次传输走的是哪种方式。
+
 ## 输出 {#output}
 
 - 结果以 JSON 形式输出到 stdout。不带 `--json` 时，JSON 会带缩进。备份命令除非添加 `--json`，否则输出便于阅读的文本行。
@@ -290,10 +321,13 @@ claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 | `destination_exists`（退出码 6）           | 输出文件已存在。请选择其他名称。                                                                |
 | `put` 上的 `revision_mismatch`（退出码 6） | 在此期间有人更改了该路径。请检查路径的历史记录，然后再决定如何处理。                            |
 | 退出码 8                                   | 配额已用尽或磁盘已满。请联系管理员。                                                            |
+| `checksum_mismatch`（退出码 5）            | 树中的某个文件与已发布的文件不一致；文件夹中的文件保持原样。请重复执行该命令。                  |
+| `path_outside_root`、`unsafe_name`         | 归档或文件清单中指定了文件夹之外的路径，或 Windows 无法使用的名称。没有写入任何内容。           |
+| `stale_revocations`（退出码 6）            | `module install` 没有当前有效的撤销列表。请用 `module revocations FILE` 保存一份。              |
 
 ## 相关页面 {#related-pages}
 
 - [客户端与协议](./index)
-- [传输](../use/transfers)和[文件与路径](../use/files)
+- [传输](../use/transfers)、[目录树](../use/trees)和[文件与路径](../use/files)
 - [TypeScript SDK](./sdk)
 - [错误](../api/errors)

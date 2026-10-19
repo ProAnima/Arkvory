@@ -225,9 +225,13 @@ export class PostgresOnlineCleanup {
       }
       check();
       // Retry after crash is safe: unlink is idempotent; quota is released only after durable deletion.
+      // The table of contents of reclaimed content goes in the same statement (ADR 0083, N8).
       const reclaimed = await c.query(
-        `UPDATE arkvory_uploads SET temp_cleaned=true,
-        reclaimed=CASE WHEN status='cancelled' THEN true ELSE reclaimed END WHERE id=$1 AND status=$2 RETURNING size::text`,
+        `WITH changed AS (UPDATE arkvory_uploads SET temp_cleaned=true,
+        reclaimed=CASE WHEN status='cancelled' THEN true ELSE reclaimed END WHERE id=$1 AND status=$2
+        RETURNING id,reclaimed,size::text AS size),
+        dropped AS (DELETE FROM arkvory_tree_indexes WHERE upload_id IN (SELECT id FROM changed WHERE reclaimed))
+        SELECT size FROM changed`,
         [item.id, item.status],
       );
       if (reclaimed.rowCount) {

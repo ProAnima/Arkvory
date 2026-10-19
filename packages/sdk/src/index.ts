@@ -2,6 +2,10 @@ export * from './client.js';
 export * from './download-queue.js';
 export * from './checkpointed-download.js';
 export { newDownloadId, downloadIdPattern } from './download-api.js';
+export type { RangeDownloadOptions } from './download-api.js';
+export { chooseTransfer } from './transfer-extensions.js';
+export type { ChosenTransfer, TransferEvent, TransferMode } from './transfer-extensions.js';
+export type { ArtifactTreeQuery } from './tree-api.js';
 export {
   ArkvoryHttpError,
   ArkvoryNetworkError,

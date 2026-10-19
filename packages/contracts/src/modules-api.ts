@@ -202,16 +202,29 @@ export interface TransferCapability {
   readonly prefix: string;
 }
 
-/** Validates `capabilities.transfer`; fields a newer server adds are left out. */
-export function readTransferCapabilities(value: unknown): readonly TransferCapability[] {
+/**
+ * Validates one list of capability offers (`capabilities.transfer`, `capabilities.tree`):
+ * one strict reader for both, a malformed entry fails the whole list. Fields a newer server
+ * adds are left out. `prefixes` says which module prefixes the list may name.
+ */
+export function readCapabilityOffers(
+  value: unknown,
+  prefixes: RegExp,
+  kind: string,
+): readonly TransferCapability[] {
   return items(value).map((entry) => {
     const row = record(entry);
     const versions = items(row['versions']).map(text);
     const prefix = text(row['prefix']);
-    if (versions.length === 0 || !prefix.startsWith('/api/ext/'))
-      throw new Error('Invalid server transfer capability');
+    if (versions.length === 0 || !prefixes.test(prefix))
+      throw new Error(`Invalid server ${kind} capability`);
     return { name: text(row['name']), versions, module: text(row['module']), prefix };
   });
+}
+
+/** Validates `capabilities.transfer`; fields a newer server adds are left out. */
+export function readTransferCapabilities(value: unknown): readonly TransferCapability[] {
+  return readCapabilityOffers(value, /^\/api\/ext\//, 'transfer');
 }
 
 /** `GET /api/v1/system/modules/{id}/openapi`: the frame is checked, the module's paths are not. */

@@ -113,3 +113,17 @@ export {
   type ModuleRoutes,
   type ModuleTransferOffer,
 } from './routes.js';
+export {
+  TRANSFER_NAME_PATTERN,
+  type ClientModule,
+  type ClientModuleContext,
+  type ClientModuleDescriptor,
+  type ClientModuleManifest,
+  type TransferChannel,
+  type TransferDownload,
+  type TransferExtension,
+  type TransferOffer,
+  type TransferRequest,
+  type TransferResponse,
+  type TransferUpload,
+} from './client.js';

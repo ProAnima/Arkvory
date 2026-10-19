@@ -22,12 +22,24 @@ export interface PackageFile {
   readonly sha256: string;
 }
 
+/** Where a package runs: the server processes, or `arkvoryctl` (ADR 0078, 3.1; ADR 0079, 5.11). */
+export const PACKAGE_SIDES = ['server', 'client'] as const;
+export type PackageSide = (typeof PACKAGE_SIDES)[number];
+
+/** The single entry role of a client package. */
+export const CLIENT_ENTRY = 'arkvoryctl';
+
+/** A role with an entry: a server role, or `arkvoryctl` for a client package. */
+export type PackageEntryRole = ModuleRole | typeof CLIENT_ENTRY;
+
 /** The fields of `module.json` that describe the package rather than the module (ADR 0078, 3.1). */
 export interface PackageFields {
-  /** Server packages only in format 1 of this core; client packages come with arkvoryctl (X5). */
-  readonly side: 'server';
-  /** The ES module each role imports, a path of `files`. */
-  readonly entry: Readonly<Partial<Record<ModuleRole, string>>>;
+  readonly side: PackageSide;
+  /**
+   * The ES module each role imports, a path of `files`: one per server role, or only
+   * `arkvoryctl` for a client package.
+   */
+  readonly entry: Readonly<Partial<Record<PackageEntryRole, string>>>;
   readonly dataClass: DataClass;
   /** The license feature the module itself checks, or null. */
   readonly licenseFeature: string | null;
@@ -97,18 +109,22 @@ function files(value: unknown): readonly PackageFile[] {
   return list;
 }
 
-function entry(value: unknown, manifest: ModuleManifest, listed: readonly PackageFile[]) {
+function entry(
+  value: unknown,
+  roles: readonly PackageEntryRole[],
+  listed: readonly PackageFile[],
+): Partial<Record<PackageEntryRole, string>> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw invalid('/entry');
   const row: Row = Object.fromEntries(Object.entries(value));
-  const result: Partial<Record<ModuleRole, string>> = {};
+  const result: Partial<Record<PackageEntryRole, string>> = {};
   for (const [role, path] of Object.entries(row)) {
-    const known = manifest.roles.find((candidate) => candidate === role);
+    const known = roles.find((candidate) => candidate === role);
     if (known === undefined) throw invalid(`/entry/${role}`);
     if (typeof path !== 'string' || !path.endsWith('.mjs') || !listed.some((f) => f.path === path))
       throw invalid(`/entry/${role}`);
     result[known] = path;
   }
-  const missing = manifest.roles.find((role) => result[role] === undefined);
+  const missing = roles.find((role) => result[role] === undefined);
   if (missing !== undefined) throw invalid(`/entry/${missing}`);
   return result;
 }
@@ -137,6 +153,43 @@ function moduleManifest(rest: Row): ModuleManifest {
 }
 
 /**
+ * The module fields of a client package (ADR 0079, 5.11): read by the same rules as a server
+ * module except `roles`, which a client package has none of — `parseModuleManifest` requires at
+ * least one, so it reads the fields with a placeholder role that is dropped again. A client
+ * module runs in no server process: it has no routes, metrics, tables, host services, plan
+ * dependencies or capability values, and stores nothing on the server.
+ */
+function clientManifest(rest: Row): ModuleManifest {
+  if (Object.hasOwn(rest, 'roles')) throw invalid('/roles');
+  const module: ModuleManifest = { ...moduleManifest({ ...rest, roles: ['api'] }), roles: [] };
+  const refused: readonly [boolean, string][] = [
+    [module.routePrefixes.length > 0, '/routePrefixes'],
+    [module.metricPrefix !== null, '/metricPrefix'],
+    [module.tablePrefix !== null, '/tablePrefix'],
+    [module.uses.length > 0, '/uses'],
+    [module.requires.length > 0, '/requires'],
+    [module.optional.length > 0, '/optional'],
+    [module.provides.length > 0, '/provides'],
+    [module.exposeTo.length > 0, '/exposeTo'],
+    [module.resources !== null, '/resources'],
+    [module.core, '/core'],
+  ];
+  const field = refused.find(([bad]) => bad);
+  if (field) throw invalid(field[1]);
+  return module;
+}
+
+/**
+ * Reads the module fields of `module.json` for `side` as untrusted input: what the entry of a
+ * client package must export as its manifest (the CLI compares the two).
+ */
+export function parseModuleFields(input: unknown, side: PackageSide): ModuleManifest {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) throw invalid('');
+  const row: Row = Object.fromEntries(Object.entries(input));
+  return side === 'client' ? clientManifest(row) : moduleManifest(row);
+}
+
+/**
  * Reads `module.json` as untrusted input: the package fields here, every other field with
  * `parseModuleManifest` of extension-api, so a package and a built-in module are read by the
  * same rules. `licenseFeature` and `coreRelease` may be absent (null); the rest is required.
@@ -147,20 +200,24 @@ export function parsePackageManifest(input: unknown): PackageManifest {
   const rest = Object.fromEntries(
     Object.entries(row).filter(([key]) => !PACKAGE_FIELDS.includes(key)),
   );
-  const module = moduleManifest(rest);
+  const side = PACKAGE_SIDES.find((value) => value === row['side']);
+  if (side === undefined) throw invalid('/side');
+  const module = side === 'client' ? clientManifest(rest) : moduleManifest(rest);
   // `modules/<id>/<version>/` is a directory name: on a case-folding file system (Windows,
   // macOS) `1.0.0-Beta` and `1.0.0-beta` would be one package, and replacing one would delete
   // the other. Module ids are lower case already.
   if (/[A-Z]/.test(module.version)) throw invalid('/version');
-  if (row['side'] !== 'server') throw invalid('/side');
   const dataClass = DATA_CLASSES.find((value) => value === row['dataClass']);
   if (dataClass === undefined) throw invalid('/dataClass');
+  // A client module keeps nothing on the server.
+  if (side === 'client' && dataClass !== 'none') throw invalid('/dataClass');
   const listed = files(row['files']);
+  const roles: readonly PackageEntryRole[] = side === 'client' ? [CLIENT_ENTRY] : module.roles;
   return {
     module,
     package: {
-      side: 'server',
-      entry: entry(row['entry'], module, listed),
+      side,
+      entry: entry(row['entry'], roles, listed),
       dataClass,
       licenseFeature: nullable(row, 'licenseFeature', (text) => FEATURE.test(text)),
       coreRelease: nullable(row, 'coreRelease', (text) => parseCaretRange(text) !== null),

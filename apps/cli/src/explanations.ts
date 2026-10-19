@@ -1,3 +1,5 @@
+import { treeExplanations } from './tree-explanations.js';
+
 /** What to do next, per failure code; [English, Russian]. Keys never contain user data. */
 type Text = readonly [string, string];
 
@@ -384,6 +386,7 @@ export function explain(
         server[serverCode])
       : undefined) ??
     local[code] ??
+    treeExplanations[code] ??
     (code === 'http_error' ? http : undefined) ??
     // Generated option codes, e.g. missing_server or invalid_timeout.
     (code.startsWith('missing_') ? local['missing_option'] : undefined) ??

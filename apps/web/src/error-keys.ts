@@ -128,6 +128,8 @@ const clientKeys: Readonly<Record<ClientErrorCode, MessageKey>> = {
   completion_failed: 'errorCompletionFailed',
   // The console sets no download window; another caller's is a busy server too.
   queue_deadline: 'errorBusy',
+  // The console loads no transfer extensions, so it never runs in strict transfer mode.
+  transfer_unavailable: 'errorUnexpectedResponse',
 };
 
 /** 401: the typed password, the page credential, or the request's lack of one. */

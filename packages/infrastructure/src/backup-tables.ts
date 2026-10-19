@@ -76,6 +76,9 @@ export const exportedTables: readonly BackupTable[] = [
   { name: 'arkvory_webhook_state', key: ['subscription'], since: 33 },
   // Where new uploads go (ADR 0083, N11); the restored storages carry the same ids.
   { name: 'arkvory_storage_placement', key: ['repository'], since: 44 },
+  // Tables of contents of archives (ADR 0083, N8): restored, the worker does not read them again.
+  { name: 'arkvory_tree_indexes', key: ['upload_id'], since: 46 },
+  { name: 'arkvory_tree_entries', key: ['upload_id', 'ordinal'], since: 46 },
 ];
 
 /**

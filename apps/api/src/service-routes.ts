@@ -80,6 +80,8 @@ export function registerServiceRoutes(
         module,
         prefix,
       })),
+      // ADR 0083, N8: the archive table of contents route of the core (`zip-tree` version 1).
+      tree: [{ name: 'zip-tree', versions: ['1.0.0'], module: 'core', prefix: '/api/v1/' }],
     }),
   );
   app.get('/api/v1/auth/permissions', (request) => {

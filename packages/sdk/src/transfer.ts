@@ -83,7 +83,9 @@ export type ClientErrorCode =
   | 'upload_cancelled'
   | 'completion_failed'
   /** ADR 0076: the server's queue would start the download after the caller's `notAfter`. */
-  | 'queue_deadline';
+  | 'queue_deadline'
+  /** ADR 0079, 5.2: `strict` transfer mode and no transfer extension the server offers took it. */
+  | 'transfer_unavailable';
 
 /** Machine-coded local failure; `message` keeps the previous English text for old callers. */
 export class ArkvoryClientError extends Error {

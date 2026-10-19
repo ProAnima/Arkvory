@@ -17,8 +17,10 @@
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.0",
     "@proanima/arkvory-contracts": "0.0.0",
+    "@proanima/arkvory-extension-api": "0.5.0",
     "@proanima/arkvory-resolution": "0.0.0",
     "@proanima/arkvory-sdk": "0.0.0",
+    "@proanima/arkvory-signing": "0.0.0",
     "zod": "4.6.5"
   }
 }

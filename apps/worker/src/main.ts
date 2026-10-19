@@ -33,6 +33,7 @@ import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructur
 import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
 import { runMirrors } from './mirror-loop.js';
 import { runWebhooks } from './webhook-loop.js';
+import { runTreeIndexing } from './tree-loop.js';
 import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 import { acquireWithPlan, watchModulePlan } from './module-plan.js';
@@ -239,6 +240,19 @@ try {
       ...failureCause(error),
     });
   });
+  // Tables of contents of published archives (ADR 0083, N8); reads go through the storage port.
+  const indexing = runTreeIndexing({ catalog, blobs, stop: stop.signal, diagnostics }).catch(
+    (error: unknown) => {
+      // Awaited only at shutdown: a rejection left until then would end the process early.
+      diagnostics.write({
+        level: 'error',
+        component: 'tree',
+        code: 'tree.pass_failed',
+        errorCode: 'internal',
+        ...failureCause(error),
+      });
+    },
+  );
   const sequencing = runEventSequencer({
     catalog,
     retention: eventRetention,
@@ -266,6 +280,7 @@ try {
     await delivering;
     await sequencing;
     await rehoming;
+    await indexing;
     clearInterval(recovery);
     unwatchPlan();
     unwatchStorage();

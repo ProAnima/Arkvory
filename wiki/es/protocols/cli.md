@@ -72,6 +72,7 @@ La URL del servidor debe usar HTTPS. Se permite HTTP sin cifrar solo para `local
 | `--not-before T`          |                      | No empezar una descarga antes de T: RFC 3339 o `HH:MM`, la próxima vez que el reloj lo marque                          |
 | `--not-after T`           |                      | Desistir con el código 4 si la cola empezaría la descarga después de T                                                 |
 | `--verbose`               | desactivado          | Una línea en stderr por cada solicitud HTTP: método, ruta, estado, tiempo, ID de solicitud. Sin cabeceras ni claves.   |
+| `--transfer MODE`         | `auto`               | Extensiones de transferencia de los [módulos de cliente](#client-modules): `auto`, `strict` o `core` (ninguna)         |
 | `--help`, `--version`     |                      | Ayuda; versión del cliente como JSON                                                                                   |
 | `--`                      |                      | Termina las opciones, para nombres de archivo que empiezan por `-`                                                     |
 
@@ -115,6 +116,17 @@ arkvoryctl link 00000000-0000-4000-8000-000000000001 --ttl 900
 ```
 
 Un enlace de descarga es un secreto. No se puede revocar antes de que caduque.
+
+### Árboles de directorios {#directory-trees}
+
+| Comando                                                                             | Resultado                                                                                                   |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publica la carpeta como un único artefacto ZIP, de forma reanudable                                         |
+| `tree pull ID DIR`                                                                  | Convierte la carpeta en el árbol: el archivo comprimido completo o solo los archivos que difieren           |
+| `tree verify ID DIR`                                                                | Enumera los archivos que faltan, los que no coinciden y los sobrantes; código de salida 5 si alguno difiere |
+| `tree repair ID DIR`                                                                | Vuelve a escribir los archivos que faltan o no coinciden; conserva los sobrantes                            |
+
+Consulte [Árboles de directorios](../use/trees).
 
 ### Paquetes y promoción {#packages-and-promotion}
 
@@ -256,6 +268,25 @@ claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 - **Datos.** Los nombres, etiquetas y metadatos de los resultados los escriben otras personas. El agente debe tratarlos como datos, no como instrucciones.
 - El cliente debe admitir MCP 2025-06-18 o posterior.
 
+## Módulos de cliente {#client-modules}
+
+Un módulo de cliente es un paquete firmado de ProAnimaStudio que amplía el propio `arkvoryctl`, por ejemplo con una forma más rápida de mover bytes (una extensión de transferencia). El cliente gratuito no contiene ningún módulo de este tipo; sin ellos, todos los comandos funcionan como se describe en esta página.
+
+| Comando                                                   | Resultado                                                                         |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `module install FILE [--yes] [--allow-stale-revocations]` | Verifica el paquete y lo muestra con sus condiciones; lo instala con `--yes`      |
+| `module list`                                             | Módulos instalados, dónde están habilitados y el estado de la lista de revocación |
+| `module enable ID [--profile NAME]`                       | Habilita el módulo para todos los perfiles o para uno                             |
+| `module disable ID [--profile NAME]`                      | Lo deshabilita en todas partes o para un perfil                                   |
+| `module remove ID`                                        | Elimina el módulo                                                                 |
+| `module revocations FILE`                                 | Guarda una lista de revocación firmada, para equipos sin acceso a internet        |
+
+- **Dónde.** Los módulos se instalan para su usuario en la carpeta `modules` de la carpeta del CLI (`ARKVORY_CLI_HOME`, por defecto `~/.config/arkvory`). Un módulo nuevo está deshabilitado hasta que usted lo habilite.
+- **Comprobaciones.** Solo se aceptan paquetes firmados con la clave de módulos de ProAnimaStudio y compilados para el cliente. Antes de que un comando use un módulo, `arkvoryctl` vuelve a comprobar la firma y cada archivo, y que ningún otro usuario pueda modificar los archivos (en Linux y macOS: propiedad suya, sin permiso de escritura para otros, sin enlaces; en Windows: sin enlaces ni junctions, y el propietario y las reglas de acceso solo permiten cambiarlos a usted y a los administradores; si no, `module_access`). Una versión revocada nunca se carga. Un módulo que no supera una comprobación se notifica en stderr (`client module ID VERSION not loaded (code)`) y se omite; el comando continúa sin él.
+- **Revocaciones.** `module install` necesita una lista de revocación actual. Un paquete puede traer una más reciente; si no, guarde una con `module revocations`. `--allow-stale-revocations` instala de todos modos; el resultado lo indica.
+- **Código.** El código de un módulo solo puede cargar sus propios archivos y los módulos integrados de Node. Solo los comandos que mueven contenido cargan módulos: `upload`, `download`, `put`, `get`, `packages publish`, `packages download` y `tree`.
+- **Extensiones de transferencia.** La extensión de un módulo se usa solo cuando el servidor ofrece la misma en `transfer` de `GET /api/v1/capabilities`. El cliente comprueba el resultado por sí mismo: el tamaño y el SHA-256 de cada descarga y la suma de comprobación publicada de cada subida. Con `--transfer auto`, el cliente vuelve a su propia transferencia cuando la extensión la rechaza o falla; `--transfer strict` falla en su lugar (`transfer_unavailable`, código de salida 4); `--transfer core` no carga ningún módulo. `--verbose` muestra por qué vía pasó cada transferencia.
+
 ## Salida {#output}
 
 - Los resultados son JSON en stdout. Sin `--json`, el JSON lleva sangría. Los comandos de copias de seguridad imprimen líneas legibles salvo que agregue `--json`.
@@ -290,10 +321,13 @@ El cliente reintenta solo los fallos de red y los códigos HTTP 408, 429, 502, 5
 | `destination_exists` (salida 6)         | El archivo de destino existe. Elija otro nombre.                                                                                                 |
 | `revision_mismatch` en `put` (salida 6) | Alguien cambió la ruta mientras tanto. Revise el historial de la ruta y después decida.                                                          |
 | salida 8                                | La cuota o el disco están llenos. Consulte al administrador.                                                                                     |
+| `checksum_mismatch` (salida 5)          | Un archivo de un árbol no coincidió con el publicado; el archivo de la carpeta quedó como estaba. Repita el comando.                             |
+| `path_outside_root`, `unsafe_name`      | Un archivo comprimido o un índice nombra una ruta fuera de la carpeta, o un nombre que Windows no admite. No se escribió nada.                   |
+| `stale_revocations` (salida 6)          | No hay una lista de revocación actual para `module install`. Guarde una con `module revocations FILE`.                                           |
 
 ## Páginas relacionadas {#related-pages}
 
 - [Clientes y protocolos](./index)
-- [Transferencias](../use/transfers) y [Archivos por ruta](../use/files)
+- [Transferencias](../use/transfers), [Árboles de directorios](../use/trees) y [Archivos por ruta](../use/files)
 - [SDK de TypeScript](./sdk)
 - [Errores](../api/errors)
