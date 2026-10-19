@@ -33,6 +33,8 @@ interface Declaration {
   readonly fragments: unknown[];
   readonly offers: unknown[];
   sealed: boolean;
+  readonly withdrawn: Set<string>;
+  checkedOffers: readonly TransferOffer[];
 }
 
 const NAME = /^[a-z][a-z0-9-]{1,31}$/;
@@ -85,6 +87,8 @@ export class ModuleRouteRegistry {
       fragments: [],
       offers: [],
       sealed: false,
+      withdrawn: new Set(),
+      checkedOffers: [],
     };
     this.declarations.set(manifest.id, declaration);
     this.sets.delete(manifest.id);
@@ -98,6 +102,17 @@ export class ModuleRouteRegistry {
       },
       document: (fragment: ModuleJson) => {
         open(declaration.fragments, fragment);
+      },
+      withdrawTransfer: (name: string) => {
+        if (typeof name !== 'string' || !NAME.test(name))
+          throw new TypeError('Invalid transfer name');
+        if (
+          (declaration.sealed ? declaration.checkedOffers : declaration.offers).some(
+            (offer) =>
+              typeof offer === 'object' && offer !== null && Reflect.get(offer, 'name') === name,
+          )
+        )
+          declaration.withdrawn.add(name);
       },
       offerTransfer: (offer: ModuleTransferOffer) => {
         open(declaration.offers, offer);
@@ -120,7 +135,9 @@ export class ModuleRouteRegistry {
     if (fragment === undefined && routes.length > 0)
       throw new ModuleSetupError('openapi_invalid', '');
     const taken = new Set(
-      [...this.sets.values()].flatMap((set) => set.offers.map((offer) => offer.name)),
+      [...this.declarations.values()]
+        .filter((entry) => entry !== declaration && this.sets.has(entry.manifest.id))
+        .flatMap((entry) => entry.checkedOffers.map((offer) => offer.name)),
     );
     const offers: TransferOffer[] = [];
     declaration.offers.forEach((offer, index) => {
@@ -128,11 +145,14 @@ export class ModuleRouteRegistry {
       taken.add(checked.name);
       offers.push(checked);
     });
+    declaration.checkedOffers = offers;
     this.sets.set(manifest.id, {
       module: manifest.id,
       routes,
       fragment: fragment === undefined ? null : checkFragment(fragment, manifest, routes),
-      offers,
+      get offers() {
+        return offers.filter((offer) => !declaration.withdrawn.has(offer.name));
+      },
     });
   }
 

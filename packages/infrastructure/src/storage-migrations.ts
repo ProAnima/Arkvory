@@ -62,6 +62,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [45, migrateBlobMoves],
   [46, migrateTreeIndexes],
   [47, migrateLicences],
+
   [48, migrateModuleCursors],
 ];
 

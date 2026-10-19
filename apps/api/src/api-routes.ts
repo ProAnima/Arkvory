@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { DiagnosticLogger } from '@proanima/arkvory-infrastructure';
+import type { AccessScopes, DiagnosticLogger } from '@proanima/arkvory-infrastructure';
 import type { createApiServices } from './api-services.js';
 import type { RequestContext } from './request-context.js';
 import type { TransferControls } from './transfer-controls.js';
@@ -30,6 +30,7 @@ import { registerExtensionRoutes } from './extension-routes.js';
 import type { ModuleRouteSet } from './extension-registry.js';
 
 interface Composition {
+  scopes(module: string): AccessScopes;
   services: ReturnType<typeof createApiServices>;
   context: RequestContext;
   transfers: TransferControls;
@@ -71,7 +72,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
     maxObjectBytes: s.service.maxObjectBytes,
     selfRegistration: s.identity.allowRegistration,
     modules,
-    transfer: extensions.flatMap((set) => set.offers),
+    transfer: () => extensions.flatMap((set) => set.offers),
   });
   registerRepositoryRoutes(app, principal);
   registerArtifactRoutes(app, s.service, principal);
@@ -114,6 +115,7 @@ export function registerApiRoutes(app: FastifyInstance, dependencies: Compositio
       downloadGate: transfers.downloadGate,
       downloadBandwidth: transfers.downloadBandwidth,
       maxObjectBytes: s.service.maxObjectBytes,
+      scopes: (module) => dependencies.scopes(module),
     },
   );
   registerStoragePolicyRoutes(app, s.storage, s.storagePolicies, principal);

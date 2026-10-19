@@ -299,3 +299,54 @@ test('a module whose routes break the contract fails alone and serves nothing', 
     ['echo'],
   );
 });
+
+test('signed routes read accepted upload ranges with ownership and request scope; offers withdraw live', async (t) => {
+  const host = await moduleInstallation(t);
+  await host.install(
+    echoRoutesPackage(
+      host.keys.module,
+      { uses: ['routes', 'catalog-read', 'upload-read'] },
+      { scope: true },
+    ),
+  );
+  const f = await fixture(t, { installedModules: host.source(), modules: enable('echo') });
+  const bytes = Buffer.from('accepted bytes before completion');
+  const created = await create(f, bytes);
+  assert.equal(created.statusCode, 201, created.body);
+  const id = created.json().id;
+  const accepted = await f.app.inject({
+    method: 'PUT',
+    url: `${base}/uploads/${id}/parts/0`,
+    headers: {
+      ...f.headers,
+      'content-type': 'application/octet-stream',
+      'x-content-sha256': createHash('sha256').update(bytes).digest('hex'),
+    },
+    payload: bytes,
+  });
+  assert.equal(accepted.statusCode, 204, accepted.body);
+  const url = `${ext}/uploads/releases/${id}`;
+  const get = (suffix = '', headers = f.headers, method = 'GET') =>
+    f.app.inject({ method, url: url + suffix, headers });
+  const result = await get('?start=3&end=13');
+  assert.equal(result.statusCode, 200, result.body);
+  assert.deepEqual(result.rawPayload, bytes.subarray(3, 14));
+  assert.equal((await get('?retained=1')).json().upload, null);
+  assert.equal((await get('?view=1')).json().state, 'pending');
+  assert.equal((await get('?view=1', f.readerHeaders)).statusCode, 404);
+  assert.equal((await get('?start=0&end=2&eager=1', f.headers, 'HEAD')).statusCode, 200);
+  assert.equal((await get('?retained=1')).json().upload, null);
+  assert.equal(
+    (await get('?start=0&end=2&eager=1', { ...f.headers, 'if-none-match': '"upload"' })).statusCode,
+    304,
+  );
+  await f.catalog.exclusive(id, async () => undefined);
+  const capabilities = () => f.app.inject({ url: '/api/v1/capabilities', headers: f.headers });
+  assert.equal((await capabilities()).json().transfer.length, 1);
+  assert.equal(
+    (await f.app.inject({ method: 'POST', url: ext + '/withdraw', headers: f.headers })).statusCode,
+    200,
+  );
+  assert.deepEqual((await capabilities()).json().transfer, []);
+  assert.equal((await get('?view=1')).statusCode, 200, 'withdrawal retains routes');
+});

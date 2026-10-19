@@ -92,3 +92,20 @@ test('a scope reads only through the services of the module it was made for', as
   assert.ok(Object.isFrozen(host.scopes('op-index').principalsOf(scope)[0].permissions));
   assert.deepEqual(host.scopes('op-index').principalsOf(scope)[0].permissions, ['read']);
 });
+
+test('stopping the host revokes scopes and intersections before module drain', () => {
+  const host = new ModuleHostServices({
+    dataDirectory: '.',
+    reserve: { bytes: 0, inodes: 0 },
+    readOnly: false,
+    catalog: () => ({}),
+  });
+  const scopes = host.scopes('echo');
+  const root = scopes.of([{ id: 'owner', repositories: ['releases'], permissions: ['read'] }]);
+  const child = scopes.intersect(root, root);
+  assert.equal(scopes.principalsOf(child).length, 2);
+  host.stop();
+  assert.deepEqual(scopes.principalsOf(child), []);
+  assert.deepEqual(scopes.principalsOf(host.scopes('later').of([{ id: 'owner' }])), []);
+  host.close();
+});

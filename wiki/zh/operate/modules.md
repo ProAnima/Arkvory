@@ -194,3 +194,7 @@ sudo arkvory module revocations /root/module-revocations.json --root /opt/proani
 ## 中断之后 {#recover}
 
 模块集合的每次更改都会记录在更新日志中。如果命令中途停止，下一个部署命令会以 `Interrupted deployment` 拒绝。运行 `sudo arkvory recover --root …`：它会恢复之前的模块集合。 在此之前，每个会更改内容的模块命令都会拒绝，包括 `module trust` 和 `module revocations`。
+
+## 模块请求的生命周期 {#request-scope}
+
+模块路由在整个响应期间（包括流式响应）使用调用者的权限。取消或完成会撤销权限并关闭读取资源。`upload-read` 仅读取未完成上传中已确认的分片，并检查所有者、`upload.read`、范围和取消信号。模块可在运行时撤回传输提议，后续能力查询将不再包含它。现有路由和传输保持可用。客户端可能缓存旧提议，因此路由必须检查每次操作。

@@ -65,6 +65,7 @@ export class ApiRuntime {
   /** Temporary files of raw and OCI uploads, on the data volume beside the content. */
   readonly staging: StagingArea;
   readonly pins: PostgresContentPins;
+  readonly uploadPins: PostgresContentPins;
   readonly lease: PostgresDownloadLease | undefined;
   readonly downloadSettings: DownloadSettingsControl;
   private closing: Promise<void> | undefined;
@@ -135,6 +136,7 @@ export class ApiRuntime {
       config.databasePoolSize ?? 20,
     );
     this.pins = new PostgresContentPins(this.catalog.sessions);
+    this.uploadPins = new PostgresContentPins(this.catalog.sessions, 'upload');
     this.licences = {
       store: new PostgresLicenceStore(this.catalog.pool),
       verifier: licenceVerifier(),
@@ -146,6 +148,7 @@ export class ApiRuntime {
         catalog: this.catalog,
         blobs: this.blobs,
         pins: this.pins,
+        uploadPins: this.uploadPins,
         license: () => this.license(),
       },
       installation,
@@ -278,6 +281,7 @@ export class ApiRuntime {
   stop(): void {
     this.stopped = true;
     this.modules.cancelStart();
+    this.hostServices.stop();
     clearInterval(this.ticketRetry);
     this.transfers.close();
     this.lease?.close();
@@ -302,7 +306,11 @@ export class ApiRuntime {
         try {
           await this.pins.close();
         } finally {
-          await this.catalog.close();
+          try {
+            await this.uploadPins.close();
+          } finally {
+            await this.catalog.close();
+          }
         }
       }
     }

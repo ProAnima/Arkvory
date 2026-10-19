@@ -194,3 +194,7 @@ This release keeps the trust list; plugins are installed by a later release.
 ## After an interruption {#recover}
 
 Every change of the module set is recorded in the update journal. If a command stops halfway, the next deployment command refuses with `Interrupted deployment`. Run `sudo arkvory recover --root …`: it restores the previous module set. Until then, every module command that changes something refuses, `module trust` and `module revocations` included.
+
+## Module request lifetime {#request-scope}
+
+A module route uses the caller’s permissions until its response ends, including streaming. Cancellation or completion revokes these permissions and closes read resources. The `upload-read` service reads accepted parts of unfinished uploads after checking ownership, `upload.read`, range and cancellation. Modules can withdraw transfer offers while running. Subsequent capability queries omit them; routes and active transfers remain. Clients may cache old offers, so routes must check each operation.

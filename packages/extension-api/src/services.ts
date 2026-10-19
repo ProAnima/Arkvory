@@ -1,3 +1,5 @@
+import type { UploadRead } from './upload-read.js';
+
 import type { ComputePool } from './compute.js';
 import type { ChangeFeed } from './change-feed.js';
 import type { ModuleStorageRegistry, StagedCompletionRegistry } from './storage-backend.js';
@@ -19,6 +21,7 @@ export interface HostServiceTypes {
   readonly routes: ModuleRoutes;
   readonly 'catalog-read': CatalogRead;
   readonly 'content-read': ContentRead;
+  readonly 'upload-read': UploadRead;
   readonly 'data-directory': ModuleDataDirectory;
   /** Read-only licence view (ADR 0078, R2): signed ProAnimaStudio modules only (ADR 0082, 18). */
   readonly license: LicenseService;

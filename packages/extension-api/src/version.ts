@@ -3,7 +3,7 @@
  * version may change the contract incompatibly; `api-report.d.ts` records what each version
  * exports, and a policy test keeps the record, this constant and the manifest version equal.
  */
-export const EXTENSION_API_VERSION = '0.7.0';
+export const EXTENSION_API_VERSION = '0.8.0';
 
 export interface SemanticVersion {
   readonly major: number;

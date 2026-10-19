@@ -6,7 +6,8 @@ declare const accessScopeBrand: unique symbol;
  * Whose rights a read uses (ADR 0083, N4): the principal of a route request, the service
  * principal of a module, or the intersection of such scopes. Opaque: only the core creates one,
  * a module can narrow it with `CatalogRead.intersect` but never build or widen it. An object the
- * core did not create reads as a scope without rights.
+ * core did not create reads as a scope without rights. Request scopes and all their derived
+ * intersections expire on cancellation, failure, shutdown or response completion.
  */
 export interface AccessScope {
   readonly [accessScopeBrand]: true;
@@ -102,7 +103,8 @@ export interface ContentRef {
 /**
  * Bytes of a published blob, protected from removal until `release` (ADR 0035). The caller
  * releases it as soon as it is done, at the latest when its response ends; reading after
- * `release` fails with `unavailable`.
+ * `release` fails with `unavailable`. The host also releases it on scope revocation, including
+ * HEAD/304 responses and errors; late opens after revocation return null.
  */
 export interface ContentHandle {
   readonly descriptor: BlobDescriptor;

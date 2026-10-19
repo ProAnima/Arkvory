@@ -128,6 +128,15 @@ export {
   type TransferUpload,
 } from './client.js';
 
+export type { UploadRead, UploadView } from './upload-read.js';
+export {
+  LICENSE_STATES,
+  type LicenseEvidence,
+  type LicenseService,
+  type LicenseState,
+  type LicenseView,
+} from './license.js';
+
 export { hostServiceAvailable } from './plan-services.js';
 export type {
   ModuleStorageBlobs,
@@ -143,10 +152,3 @@ export type {
   FeedSubscription,
 } from './change-feed.js';
 export type { ComputeMessage, ComputePool, ComputeTask } from './compute.js';
-export {
-  LICENSE_STATES,
-  type LicenseEvidence,
-  type LicenseService,
-  type LicenseState,
-  type LicenseView,
-} from './license.js';

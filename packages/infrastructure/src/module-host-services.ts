@@ -15,7 +15,8 @@ import type {
   ModuleRole,
   PlannedModule,
 } from '@proanima/arkvory-extension-api';
-import type { ScopedCatalog } from '@proanima/arkvory-application';
+import { moduleUploads } from './module-upload-read.js';
+import type { ScopedUploads, ScopedCatalog } from '@proanima/arkvory-application';
 import { AccessScopes, moduleCatalog } from './module-catalog.js';
 import { openModuleData } from './module-data.js';
 import type { ModuleData } from './module-data.js';
@@ -39,6 +40,7 @@ export interface HostServiceSources {
   readonly compute?: (id: string) => ModuleCompute | undefined;
   /** The catalog use cases, built when the first module that uses one is created. */
   readonly catalog: () => ScopedCatalog;
+  readonly uploads?: () => ScopedUploads;
   /**
    * The `license` service (ADR 0078, R2), built on first use; absent, no module receives it.
    * Reading it never calls the hub: it reads what the writer stored (ADR 0078, I1).
@@ -86,6 +88,8 @@ function lazyFiles(
  * and their periodic reconciliation until `close`.
  */
 export class ModuleHostServices {
+  private readonly lifetime = new AbortController();
+
   private readonly computations = new Map<string, ModuleCompute>();
   private readonly moduleScopes = new Map<string, AccessScopes>();
   private scoped: ScopedCatalog | undefined;
@@ -111,6 +115,9 @@ export class ModuleHostServices {
     const compute = uses('compute') ? this.sources.compute?.(module.manifest.id) : undefined;
     if (compute) this.computations.set(module.manifest.id, compute);
     return {
+      ...(uses('upload-read') && this.sources.uploads
+        ? { 'upload-read': moduleUploads(this.sources.uploads(), this.scopes(module.manifest.id)) }
+        : {}),
       ...(compute ? { compute } : {}),
       ...(uses('change-feed') && this.sources.feed
         ? { 'change-feed': this.sources.feed.for(module.manifest.id) }
@@ -164,7 +171,7 @@ export class ModuleHostServices {
   scopes(moduleId: string): AccessScopes {
     let scopes = this.moduleScopes.get(moduleId);
     if (!scopes) {
-      scopes = new AccessScopes();
+      scopes = new AccessScopes(this.lifetime.signal);
       this.moduleScopes.set(moduleId, scopes);
     }
     return scopes;
@@ -217,7 +224,13 @@ export class ModuleHostServices {
     for (const { opened } of this.data.values()) await opened?.reconcile().catch(() => undefined);
   }
 
+  /** Revoke request authority before shutdown waits for the modules or HTTP streams. */
+  stop(): void {
+    this.lifetime.abort();
+  }
+
   close(): Promise<void> {
+    this.stop();
     return (this.closing ??= this.closeOwned());
   }
 
