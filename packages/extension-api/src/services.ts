@@ -1,4 +1,8 @@
 import type { UploadRead } from './upload-read.js';
+
+import type { ComputePool } from './compute.js';
+import type { ChangeFeed } from './change-feed.js';
+import type { ModuleStorageRegistry, StagedCompletionRegistry } from './storage-backend.js';
 import type { CatalogRead, ContentRead } from './catalog-read.js';
 import type { LicenseService } from './license.js';
 import type { ModuleDataDirectory } from './module-files.js';
@@ -10,6 +14,10 @@ import type { ModuleRoutes } from './routes.js';
  * a module that declares one this host or the module's roles and source do not offer.
  */
 export interface HostServiceTypes {
+  readonly compute: ComputePool;
+  readonly 'change-feed': ChangeFeed;
+  readonly 'blob-store': ModuleStorageRegistry;
+  readonly 'staged-completion': StagedCompletionRegistry;
   readonly routes: ModuleRoutes;
   readonly 'catalog-read': CatalogRead;
   readonly 'content-read': ContentRead;
@@ -19,5 +27,5 @@ export interface HostServiceTypes {
   readonly license: LicenseService;
 }
 
-/** The services a module of the API process may receive; each is present only when declared. */
+/** Services available to a server module: filtered by declaration, process role and source. */
 export type HostServices = { readonly [K in keyof HostServiceTypes]?: HostServiceTypes[K] };

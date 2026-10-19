@@ -136,3 +136,19 @@ export {
   type LicenseState,
   type LicenseView,
 } from './license.js';
+
+export { hostServiceAvailable } from './plan-services.js';
+export type {
+  ModuleStorageBlobs,
+  ModuleStorageLifecycle,
+  ModuleStorageInstance,
+  ModuleStorageRegistry,
+  StagedCompletionRegistry,
+} from './storage-backend.js';
+export type {
+  ChangeEvent,
+  ChangeSubscription,
+  ChangeFeed,
+  FeedSubscription,
+} from './change-feed.js';
+export type { ComputeMessage, ComputePool, ComputeTask } from './compute.js';

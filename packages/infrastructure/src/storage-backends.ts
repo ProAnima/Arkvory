@@ -91,6 +91,14 @@ export class StorageBackends implements BlobStore, StorageBackendStates, StagedP
       if (instance.enabled) this.faults.set(instance.id, 'not_opened');
   }
 
+  /** A module's validated registration, before readiness; duplicate ids never replace data owners. */
+  register(instance: StorageInstance): void {
+    if (this.instances.has(instance.id))
+      throw new ArkvoryError('conflict', 'Duplicate storage backend');
+    this.instances.set(instance.id, instance);
+    this.faults.set(instance.id, 'not_opened');
+  }
+
   /** The configured storages other than `default`, in configuration order. */
   extras(): readonly StorageInstance[] {
     return [...this.instances.values()].filter((instance) => instance !== this.core);

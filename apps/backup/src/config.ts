@@ -1,8 +1,10 @@
+import type { InstalledModulesSource } from '@proanima/arkvory-infrastructure';
 import { BackupFailure } from '@proanima/arkvory-domain';
-import { storageReserveBytes } from '@proanima/arkvory-infrastructure';
+import { installedModulesFrom, storageReserveBytes } from '@proanima/arkvory-infrastructure';
 
 /** Source of a capture: the same variables as API and worker, plus bounded backup timings. */
 export interface SourceConfig {
+  readonly installedModules?: InstalledModulesSource | undefined;
   readonly databaseUrl: string;
   readonly dataDirectory: string;
   /** ARKVORY_MODULES_FILE: storages beside `default` (ADR 0083, N11), read at opening. */
@@ -40,6 +42,7 @@ export function sourceConfig(env: NodeJS.ProcessEnv): SourceConfig {
     throw new BackupFailure('invalid_argument', 'Invalid ARKVORY_STORAGE_RESERVE_BYTES');
   }
   return {
+    installedModules: installedModulesFrom(env),
     databaseUrl: databaseUrl(env['ARKVORY_DATABASE_URL'], 'ARKVORY_DATABASE_URL'),
     dataDirectory,
     modulesFile: env['ARKVORY_MODULES_FILE'] || undefined,

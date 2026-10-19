@@ -42,13 +42,8 @@ export interface VerifiedModule {
   readonly manifest: PackageManifest;
 }
 
-/**
- * Processes that host signed modules in this release: the writer and read gateways. The worker
- * and the backup agent plan every installed module, so their fingerprint matches the writer's,
- * but run none yet: a module with their role is refused everywhere (`role_unsupported`) rather
- * than planned and silently not run there.
- */
-export const HOSTED_ROLES: readonly ModuleRole[] = ['api', 'reader'];
+/** All server processes plan the same installation and execute their declared signed roles. */
+export const HOSTED_ROLES: readonly ModuleRole[] = ['api', 'reader', 'worker', 'backup'];
 
 /**
  * The decision for a package whose signature and files verified (ADR 0078, 3.3 and 3.4), in this

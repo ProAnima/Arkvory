@@ -1,6 +1,7 @@
+import { confinePackage } from '@proanima/arkvory-resolution';
 import { realpathSync } from 'node:fs';
 import { registerHooks } from 'node:module';
-import { join } from 'node:path';
+import { join, relative, isAbsolute } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { canonicalJson, parseModuleManifest } from '@proanima/arkvory-extension-api';
 import type {
@@ -72,8 +73,12 @@ function descriptorOf(
 
 /** A manifest as plain JSON, for comparing two of them field by field. */
 function manifestJson(manifest: ModuleManifest): ModuleJson {
-  const { resources, ...rest } = manifest;
-  return { ...rest, resources: resources ? { ...resources } : null };
+  const { resources, compute, ...rest } = manifest;
+  return {
+    ...rest,
+    ...(compute ? { compute: compute.map((task) => ({ ...task })) } : {}),
+    resources: resources ? { ...resources } : null,
+  };
 }
 
 /** A created module checked for the lifecycle the host calls; anything else is refused. */
@@ -84,7 +89,21 @@ function instanceOf(value: unknown): ModuleLifecycle {
   const health = member(value, 'health');
   if (!isFunction(start) || !isFunction(drain) || !isFunction(stop) || !isFunction(health))
     throw new ModuleLoadError('instance_invalid');
+  const capability = member(value, 'capability');
+  const freeze = member(value, 'freeze');
+  const thaw = member(value, 'thaw');
+  for (const hook of [capability, freeze, thaw])
+    if (hook !== undefined && !isFunction(hook)) throw new ModuleLoadError('instance_invalid');
   return {
+    ...(isFunction(capability)
+      ? { capability: (name: string) => capability.call(value, name) }
+      : {}),
+    ...(isFunction(freeze)
+      ? { freeze: (ms: number) => Promise.resolve(freeze.call(value, ms)).then(() => undefined) }
+      : {}),
+    ...(isFunction(thaw)
+      ? { thaw: () => Promise.resolve(thaw.call(value)).then(() => undefined) }
+      : {}),
     start: (signal) => Promise.resolve(start.call(value, signal)).then(() => undefined),
     drain: (budgetMs) => Promise.resolve(drain.call(value, budgetMs)).then(() => undefined),
     stop: () => Promise.resolve(stop.call(value)).then(() => undefined),
@@ -217,4 +236,27 @@ export async function importVerifiedEntry(
     throw new ModuleLoadError('import_failed', { cause: error });
   }
   return descriptorOf(exported, signed);
+}
+
+/** Compute-thread loader: establishes its own hooks before evaluating any signed code. */
+export async function runVerifiedComputation(
+  directory: string,
+  entry: string,
+  input: unknown,
+): Promise<unknown> {
+  if (!/^files\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.mjs$/.test(entry))
+    throw new ModuleLoadError('import_failed');
+  const rootPath = realpathSync(directory);
+  const file = realpathSync(join(rootPath, ...entry.split('/')));
+  const within = relative(rootPath, file);
+  if (within.startsWith('..') || isAbsolute(within)) throw new ModuleLoadError('import_failed');
+  const url = pathToFileURL(file).href;
+  verifiedPackages.add(comparable(`${pathToFileURL(rootPath).href}/`));
+  verifiedEntries.set(url, comparable(`${pathToFileURL(rootPath).href}/`));
+  confine();
+  confinePackage(rootPath);
+  const loaded: unknown = await import(url);
+  const task = member(loaded, 'default');
+  if (!isFunction(task)) throw new ModuleLoadError('descriptor_invalid');
+  return task(input);
 }

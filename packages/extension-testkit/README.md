@@ -11,3 +11,9 @@
 - `capabilityContract` — значения возможностей хоста (N13) с тестовыми модулями `counterProvider` и `counterConsumer`: совместимое значение и порядок остановки, несовместимая версия в плане, неверная форма и несовместимый токен (`capability_invalid`), необязательная возможность без поставщика.
 
 `CONTRACT_SUITES` сопоставляет службы хоста с наборами; служба, которую ядро предоставляет без набора, не проходит governance-тест. Реализации ядра подключают наборы обычными файлами `tests/*.test.mjs`.
+
+Дополнения 0.7.0: `storageRegistrationContract` проверяет namespace, дубли и
+запрет поздней регистрации; `computeContract` — объявленные задачи, копирование
+сообщения и отмену; `changeFeedContract` — лимиты подписок и уникальность consumer.
+Проверки потоков, startup confinement, core placement, durable cursor CAS и
+backup/read admission находятся также в unit/integration тестах ядра.

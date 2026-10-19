@@ -541,7 +541,7 @@ test('a module uses only services this host provides, in its processes and for i
   assert.deepEqual(
     problems(
       [
-        candidate('router', { roles: ['api', 'worker'], uses: ['routes'] }),
+        candidate('router', { roles: ['worker'], uses: ['routes'] }),
         candidate('teleport', { uses: ['teleport'] }),
         candidate('op-licensed', { uses: ['license', 'blob-store'] }, operator),
       ],
@@ -560,4 +560,35 @@ test('a module uses only services this host provides, in its processes and for i
   ]);
   // A disabled module may use services of a later contract.
   plan([candidate('later', { uses: ['teleport'] }, { enabled: false })]);
+});
+
+test('multi-role signed modules request the union of services available to their roles', () => {
+  const result = plan(
+    [
+      candidate(
+        'multi',
+        {
+          roles: ['api', 'worker', 'backup'],
+          uses: ['routes', 'change-feed', 'blob-store', 'staged-completion', 'compute'],
+        },
+        signed,
+      ),
+    ],
+    { ...host, services: HOST_SERVICES },
+  );
+  assert.equal(result.modules.find((m) => m.manifest.id === 'multi').enabled, true);
+});
+
+test('compute entries are bounded declarations inside the package, never arbitrary paths', () => {
+  const good = { name: 'digest', entry: 'files/compute/digest.mjs' };
+  assert.deepEqual(parseModuleManifest(manifest('digest', { compute: [good] })).compute, [good]);
+  for (const entry of [
+    '../task.mjs',
+    '/task.mjs',
+    'files/../task.mjs',
+    'https://example.com/task.mjs',
+  ])
+    refused(manifest('digest', { compute: [{ ...good, entry }] }), 'format', '/compute/0');
+  refused(manifest('digest', { compute: [good, good] }), 'format', '/compute/1');
+  refused(manifest('digest', { compute: [{ ...good, extra: true }] }), 'format', '/compute/0');
 });
