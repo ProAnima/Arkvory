@@ -1,5 +1,6 @@
 import type { UploadRead } from './upload-read.js';
 import type { CatalogRead, ContentRead } from './catalog-read.js';
+import type { LicenseService } from './license.js';
 import type { ModuleDataDirectory } from './module-files.js';
 import type { ModuleRoutes } from './routes.js';
 
@@ -14,6 +15,8 @@ export interface HostServiceTypes {
   readonly 'content-read': ContentRead;
   readonly 'upload-read': UploadRead;
   readonly 'data-directory': ModuleDataDirectory;
+  /** Read-only licence view (ADR 0078, R2): signed ProAnimaStudio modules only (ADR 0082, 18). */
+  readonly license: LicenseService;
 }
 
 /** The services a module of the API process may receive; each is present only when declared. */

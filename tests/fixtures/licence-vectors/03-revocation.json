@@ -1,0 +1,20 @@
+{
+  "description": "A revocation statement for a revoked licence, seq above the last token's.",
+  "document": "{\"format\":2,\"payload\":\"eyJmb3JtYXQiOjIsImtpbmQiOiJyZXZvY2F0aW9uIiwicHJvZHVjdCI6ImFya3ZvcnkiLCJsaWNlbmNlSWQiOiJsaWNfMDEyMzQ1Njc4OUFCQ0RFRkdISktNTlBRUlMiLCJhY3RpdmF0aW9uSWQiOiJhY3RfMDEyMzQ1Njc4OUFCQ0RFRkdISktNTlBRUlMiLCJpbnN0YWxsYXRpb24iOiIzZjJiOGMxZS03ZDRhLTRlOWItYTZjNS0wZjFlMmQzYzRiNWEiLCJyZWFzb24iOiJsaWNlbmNlX3Jldm9rZWQiLCJyZXZva2VkQXQiOiIyMDI2LTEwLTIwVDEyOjAwOjAwWiIsImlzc3VlZEF0IjoiMjAyNi0xMC0yMVQwODozMDowMFoiLCJzZXEiOjIsIm5vbmNlIjoiWnI3S3AxUXM5VG4zVmI1WGQ4RmcySCIsImtleUlkIjoiMjAwMDAwMDAwMDAwMDAwMiJ9\",\"signature\":\"untrusted comment: signature from ProAnima licence key 2000000000000002\\nRUQgAAAAAAAAAmEYWTqnPQmXcWXSZnGNa7TMqQHWIAGuIEIHjsVrQcJxCs5WtJuf35ggvH6EdxrD/TzS73tseeDB7jbDyXa+kAk=\\ntrusted comment: timestamp:1792571400\\tfile:licence-revocation\\nhoyKo1p3pxBkz2u75Cvkb6Rbhh8e+ur/O7pEk8FsZWpp7e5xB7v14/KpVYjbaTupHU11D4nDTBIOjlFXPzznBQ==\\n\",\"chain\":[{\"format\":2,\"payload\":\"eyJmb3JtYXQiOjIsImtpbmQiOiJkZWxlZ2F0aW9uIiwicHJvZHVjdCI6ImFya3ZvcnkiLCJrZXlJZCI6IjIwMDAwMDAwMDAwMDAwMDIiLCJwdWJsaWNLZXkiOiJvSnFsOUhwbldZQXYrVlg0M0MwcUZLWEpuU08rbC9oa0VuLzVPRFJWcFBBPSIsInB1cnBvc2VzIjpbImFjdGl2YXRpb24iLCJyZXZvY2F0aW9uIl0sIm5vdEJlZm9yZSI6IjIwMjYtMTAtMDFUMDA6MDA6MDBaIiwibm90QWZ0ZXIiOiIyMDI3LTAxLTI5VDAwOjAwOjAwWiIsIm1heFRva2VuRGF5cyI6OTB9\",\"signature\":\"untrusted comment: signature from ProAnima licence key 1000000000000001\\nRUQQAAAAAAAAAT59mb2+jnxf/SKJQbdGfHCoa4DZ8n2/HDAKfSijqjf8crNanDwofNCAvdm+K2DgWp05XNri3ixDDqZrhcY1vgw=\\ntrusted comment: timestamp:1790812800\\tfile:licence-delegation\\nxKmpxvl4/p6qwglBJmcbNpjT//vZ6Zq1th2N02R2RN+o7PCGnEamBRLsPyHAocOkvn3yK2/O/Zz30HW60dxrCQ==\\n\",\"chain\":[]}]}",
+  "kind": "revocation",
+  "payload": {
+    "activationId": "act_0123456789ABCDEFGHJKMNPQRS",
+    "format": 2,
+    "installation": "3f2b8c1e-7d4a-4e9b-a6c5-0f1e2d3c4b5a",
+    "issuedAt": "2026-10-21T08:30:00Z",
+    "keyId": "2000000000000002",
+    "kind": "revocation",
+    "licenceId": "lic_0123456789ABCDEFGHJKMNPQRS",
+    "nonce": "Zr7Kp1Qs9Tn3Vb5Xd8Fg2H",
+    "product": "arkvory",
+    "reason": "licence_revoked",
+    "revokedAt": "2026-10-20T12:00:00Z",
+    "seq": 2
+  },
+  "valid": true
+}

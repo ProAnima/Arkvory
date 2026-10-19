@@ -1016,6 +1016,14 @@
       "summary": "모듈 하나의 API 문서 가져오기",
       "description": "응답한 프로세스에서 모듈 `id`가 `/api/ext/<id>/v<major>/` 아래에서 제공하는 라우트의 OpenAPI 3.1 문서를 반환합니다. 모듈이 기술하고 서버가 해당 라우트와 대조한 경로와 스키마, 그리고 작업마다 모듈을 실행하기 전에 서버가 확인하는 내용(`x-arkvory-access`, 리포지토리를 가리키는 경로 매개변수가 있는 `x-arkvory-action`, `x-arkvory-effect`)이 들어 있습니다. `info.version`은 모듈 계획의 `fingerprint`입니다. 읽기 게이트웨이는 자신이 제공하는 읽기 작업만 반환합니다. 응답한 프로세스에서 라우트를 제공하지 않거나, 비활성화되었거나, 시작하지 않은 모듈은 `not_found`입니다. 전역 관리자만 읽을 수 있으며, 인증된 호출자는 누구나 호출할 수 있는 작업만 담긴 모든 모듈의 통합 문서를 `/api/ext/openapi.json`에서 읽습니다."
     },
+    "getSystemLicense": {
+      "en": {
+        "summary": "Show the licences of this installation",
+        "description": "Returns the installation id the writer recorded (`installation`), the time licences are judged by (`effectiveTime`: the latest of the database clock, the highest time already seen and the latest issue time of an accepted document, so setting a clock back extends nothing), `clockRollback` when the database clock is more than a day behind a time already seen, the number of offline activation requests waiting for their answer (`pendingRequests`), and every activation in `licenses`: `licenseId`, `activationId`, `licensee`, `licenseType`, `activation` (`online` or `offline`), `features`, `limits` (decimal strings of 64-bit values), the end of the licence term (`notAfter`, null when perpetual), `graceUntil`, the end of the current token (`offlineGraceUntil`), `lastRefreshAt`, `refreshFailing` and `state` (`valid`, `offline-grace`, `grace`, `expired`, `revoked`, `mismatch` or `invalid`) with its `reason`. Every stored document is verified again on each request. No licence key, activation secret or signature bytes are returned, and the answer never waits for the hub. The free core works without any licence. Only the global administrator may read it."
+      },
+      "summary": "이 설치의 라이선스 보기",
+      "description": "쓰기 프로세스가 기록한 설치 ID(`installation`), 라이선스를 판단하는 기준 시각(`effectiveTime`: 데이터베이스 시계, 이미 본 가장 늦은 시각, 수락한 문서의 가장 늦은 발급 시각 중 가장 늦은 값이므로 시계를 되돌려도 아무것도 연장되지 않음), 데이터베이스 시계가 이미 본 시각보다 하루 넘게 늦을 때의 `clockRollback`, 응답을 기다리는 오프라인 활성화 요청 수(`pendingRequests`), 그리고 `licenses`의 각 활성화를 반환합니다: `licenseId`, `activationId`, `licensee`, `licenseType`, `activation`(`online` 또는 `offline`), `features`, `limits`(64비트 값의 10진수 문자열), 라이선스 기간의 끝(`notAfter`, 영구 라이선스는 null), `graceUntil`, 현재 토큰의 끝(`offlineGraceUntil`), `lastRefreshAt`, `refreshFailing`, 그리고 `reason`과 함께 `state`(`valid`, `offline-grace`, `grace`, `expired`, `revoked`, `mismatch` 또는 `invalid`). 저장된 모든 문서는 요청마다 다시 검증됩니다. 라이선스 키, 활성화 비밀, 서명 바이트는 반환되지 않으며 응답은 허브를 기다리지 않습니다. 무료 코어는 라이선스 없이 작동합니다. 전역 관리자만 읽을 수 있습니다."
+    },
     "createFleetPairing": {
       "en": {
         "summary": "Make a pairing code",

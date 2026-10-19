@@ -23,6 +23,7 @@ import { writePlan } from './cluster-plan-files.js';
 import { checkCluster, fenceTest, switchover } from './cluster-ops.js';
 import { moduleCommand } from './module-commands.js';
 import { storageCommand } from './storage-commands.js';
+import { licenseCommand } from './license-commands.js';
 import { expectMount, initializeVolume } from './storage-volume.js';
 
 function argumentsOf(args: string[]): Map<string, string> {
@@ -307,6 +308,8 @@ async function main(): Promise<void> {
   if (operation === 'module') return moduleCommand(process.argv.slice(3));
   // `arkvory storage rehome|moves …` plans moves between storages (ADR 0083, N2).
   if (operation === 'storage') return storageCommand(process.argv.slice(3));
+  // `arkvory license <command> …` (ADR 0078, R2): run by the installed release with its runtime.
+  if (operation === 'license') return licenseCommand(process.argv.slice(3));
   if (!COMMANDS.has(operation))
     throw new Error(`Unknown command ${operation}; "arkvory help" lists every command`);
   const options = argumentsOf(process.argv.slice(3));

@@ -129,3 +129,10 @@ export {
 } from './client.js';
 
 export type { UploadRead, UploadView } from './upload-read.js';
+export {
+  LICENSE_STATES,
+  type LicenseEvidence,
+  type LicenseService,
+  type LicenseState,
+  type LicenseView,
+} from './license.js';

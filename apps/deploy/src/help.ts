@@ -51,6 +51,17 @@ module trust add <file.pub | key> --label <text> [--plugins op-a-*,…] [--allow
 module trust list | module trust remove <keyId>   / Список доверия
 `;
 
+/** Licences of signed modules (ADR 0078, R2); the free core needs none. */
+const licenseHelp = `license activate --key-file <file>   Activate a licence through the hub; the key is read
+                     from the file and sent once, never stored / Активировать лицензию
+license refresh [<act_…>]   Refresh now (the worker does it about daily) / Обновить сейчас
+license deactivate <lic_… | act_…>   Free the place on the hub, delete the secret / Освободить место
+license status [--json]   Licences, states and terms; never a key or secret / Состояние лицензий
+license request --key-file <file> --out <file>   Offline: a request file without the key
+                     / Файл запроса офлайн-активации
+license install <file>   Offline answer or licence revocation list / Ответ офлайн или список отзыва
+`;
+
 export function deploymentHelp(): string {
   return `ProAnima Arkvory · Installation & lifecycle / Установка и обслуживание
 
@@ -71,7 +82,7 @@ update         Update; a schema change first captures and verifies a backup in t
 upgrade        Schema change without the built-in vault; --backup-record required / Вручную
 recover        Finish an interrupted update: back before a migration, forward after it
                / Завершить прерванное обновление
-${clusterHelp}${moduleHelp}${storageHelp}volume-init    --directory <absolute dir> [--expect-mount | --no-expect-mount]
+${clusterHelp}${moduleHelp}${storageHelp}${licenseHelp}volume-init    --directory <absolute dir> [--expect-mount | --no-expect-mount]
                Mark an empty directory as a new storage volume (file storage-id); the services
                never do it. --expect-mount (default on Linux): the directory must be a mount
                point / Подготовить пустой каталог как новый том хранилища

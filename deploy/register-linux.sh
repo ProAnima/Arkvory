@@ -43,6 +43,11 @@ for role in api worker backup; do
     writable="ReadWritePaths=\"$root/data\" \"$root/logs\"
 ReadWritePaths=\"-$root/updates/inbox\""
   fi
+  if [[ $role == worker ]]; then
+    # The worker rotates licence activation secrets (ADR 0078, R2); the directory may not exist yet.
+    writable="$writable
+ReadWritePaths=\"-$root/config/licenses\""
+  fi
   cat > "$unit" <<EOF
 # Arkvory installation: $root
 [Unit]

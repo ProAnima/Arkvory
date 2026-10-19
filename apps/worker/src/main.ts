@@ -19,6 +19,7 @@ import {
   PostgresServices,
   installedModulesFrom,
   loadInstallation,
+  readLicenceConfiguration,
   readMirrorSettings,
   readModuleSelections,
   readWebhookCertificates,
@@ -34,6 +35,7 @@ import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
 import { runMirrors } from './mirror-loop.js';
 import { runWebhooks } from './webhook-loop.js';
 import { runTreeIndexing } from './tree-loop.js';
+import { runLicences } from './license-loop.js';
 import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 import { acquireWithPlan, watchModulePlan } from './module-plan.js';
@@ -110,6 +112,8 @@ try {
     process.env['ARKVORY_WEBHOOKS_CA_FILE'],
     receiverAuthorities,
   );
+  // ADR 0078, R2: licensing paths; without ARKVORY_LICENSE_DIR the worker has no licence work.
+  const licences = await readLicenceConfiguration(process.env);
   // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
   const eventRetention = readEventRetention(process.env);
   // ADR 0083, N2: the copy budget of moves between storages.
@@ -259,6 +263,13 @@ try {
     stop: stop.signal,
     diagnostics,
   });
+  const licensing = runLicences({
+    databaseUrl: process.env['ARKVORY_DATABASE_URL'] ?? '',
+    configuration: licences,
+    coreVersion: identity.version,
+    stop: stop.signal,
+    diagnostics,
+  });
   try {
     while (!stop.signal.aborted && catalog.active) {
       await retireExhausted(jobs, diagnostics);
@@ -281,6 +292,7 @@ try {
     await sequencing;
     await rehoming;
     await indexing;
+    await licensing;
     clearInterval(recovery);
     unwatchPlan();
     unwatchStorage();

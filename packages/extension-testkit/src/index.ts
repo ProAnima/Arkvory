@@ -10,6 +10,7 @@ export {
   type StagedHarness,
 } from './staged-completion.js';
 export { catalogReadContract, type CatalogReadHarness } from './catalog-read.js';
+export { licenseContract, type LicenseHarness } from './license.js';
 export {
   dataDirectoryContract,
   type DataDirectoryHarness,
@@ -32,6 +33,7 @@ export { bytesOf, descriptorOf, gather, sha256 } from './support.js';
  * suite here is refused by a governance test: a point enters the contract with its suite.
  */
 export const CONTRACT_SUITES = {
+  license: 'licenseContract',
   'staged-completion': 'stagedCompletionContract',
   'catalog-read': 'catalogReadContract',
   'content-read': 'catalogReadContract',

@@ -323,6 +323,7 @@ const entries = [
   'apps/worker/src/gc.ts',
   'apps/worker/src/scrub.ts',
   'apps/worker/src/rehome.ts',
+  'apps/worker/src/license.ts',
   'apps/backup/src/main.ts',
   'apps/deploy/src/main.ts',
   'apps/deploy/src/container.ts',
