@@ -479,10 +479,6 @@ export type ComputeMessage =
   | {
       readonly [key: string]: ComputeMessage;
     };
-export interface ComputeTask {
-  readonly name: string;
-  readonly entry: string;
-}
 /** Declared signed entries only. One task at a time, at most 64 queued; timeout 60 seconds. */
 export interface ComputePool {
   run(task: string, input: ComputeMessage, signal: ModuleSignal): Promise<ComputeMessage>;
@@ -853,6 +849,11 @@ export declare const MODULE_ID_PATTERN: RegExp;
  * duplicate list entries are refused with a machine code and the field's JSON Pointer.
  */
 export declare function parseModuleManifest(input: unknown): ModuleManifest;
+/** A declared entry in the signed package, executed by the host compute pool. */
+export interface ComputeTask {
+  readonly name: string;
+  readonly entry: string;
+}
 
 // module-files.d.ts
 /** A file being written; nothing is visible under its name before `close` succeeds. */
