@@ -163,6 +163,8 @@ export interface StoredActivation {
   readonly pendingNonce: string | null;
   readonly pendingSeq: number | null;
   readonly pendingSince: number | null;
+  /** Sends reserved durably before I/O: 1 original, 2 original plus the only replay. */
+  readonly pendingSends: number;
   readonly lastRefreshAt: number | null;
   readonly failure: string | null;
   readonly failures: number;
@@ -215,8 +217,20 @@ export interface LicenceStore {
     seq: number,
     issuedAt: number,
   ): Promise<'saved' | 'stale'>;
-  /** Records the nonce of an attempt before it is sent, so a retry can repeat it. */
+  /**
+   * Under exclusive(): durably reserve the original send before HTTP. The caller must not
+   * replace a pending attempt for the same secret; only a newer verified secret starts anew.
+   */
   startAttempt(activationId: string, nonce: string, seq: number): Promise<void>;
+  /** Under exclusive(): reserve the only replay if the original attempt is still in its window. */
+  reserveReplay(
+    activationId: string,
+    nonce: string,
+    seq: number,
+    windowMs: number,
+  ): Promise<boolean>;
+  /** Only after a definitive refusal or an original request proven not sent. */
+  clearAttempt(activationId: string): Promise<void>;
   recordFailure(activationId: string, failure: string, nextAttemptAt: number | null): Promise<void>;
   remove(activationId: string): Promise<void>;
   revocationList(): Promise<{ readonly number: number; readonly text: string } | null>;

@@ -18,7 +18,7 @@ Arkvory 的免费核心不需要许可证。本文档中的每项功能都无需
    sudo arkvory license activate --key-file /root/arkvory.key --root /opt/proanima-arkvory
    ```
 
-3. 删除密钥文件。Arkvory 不保存密钥，以后也不再需要它。
+3. 激活后删除本地密钥文件。请保留在账户中获取许可证密钥的权限：恢复激活时可能再次需要它。
 
 Arkvory 通过校验证书的 HTTPS 把请求发送到安装的中心（hub）（`config/hub.json` 中的地址，与更新使用的相同）。只有当答复由 ProAnimaStudio 的许可证密钥签名、且针对本安装和本次请求时，才会被接受。有拼写错误的密钥在发送任何内容之前就会被拒绝。用同一密钥再次激活同一安装不会占用许可证的新名额。
 
@@ -68,6 +68,8 @@ sudo arkvory license refresh --root /opt/proanima-arkvory
 ```
 
 把时钟调回不会延长任何期限：Arkvory 以它见过的最晚时间为准。数据库时钟比该时间落后超过一天时，会显示 `clockRollback`。
+
+如果刷新请求可能已到达中心（hub），但答复丢失，Arkvory 只允许在 10 分钟窗口内重试一次，重启也不会重置次数。如果结果仍不确定、重试次数已用完、窗口已结束或收到的令牌无效，`activation_recovery_required` 将停止后续刷新。当前令牌在到期前仍然有效。请获取密钥并重新执行 `license activate --key-file <file>`；`license refresh` 无法解除此状态。
 
 ### 副本与恢复 {#copies}
 

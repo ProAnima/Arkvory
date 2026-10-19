@@ -54,11 +54,13 @@ The "Read by" column uses these names: **API** is the HTTP server (also a read g
 
 ## Storage and limits {#storage-and-limits}
 
-| Variable                        | Read by            | Default      | Meaning                                                                                                                                                                                |
-| ------------------------------- | ------------------ | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_CAPACITY_BYTES`        | API, worker        | 10 TiB       | Upper limit, in bytes, for all reserved content: published, unfinished uploads and content that waits for cleanup. It is not a disk check. The worker reads it only for mirror copies. |
-| `ARKVORY_STORAGE_RESERVE_BYTES` | API, worker, agent | `1073741824` | Free space, in bytes, that uploads never use. It is kept for the database, logs and the system. `0` turns the reserve off.                                                             |
-| `ARKVORY_MAX_OBJECT_BYTES`      | API                | about 10 TiB | Largest object, in bytes. The highest allowed value is 10 000 parts of 1 GiB. Set a lower value to limit file size.                                                                    |
+| Variable                          | Read by            | Default        | Meaning                                                                                                                                                                                |
+| --------------------------------- | ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_CAPACITY_BYTES`          | API, worker        | 10 TiB         | Upper limit, in bytes, for all reserved content: published, unfinished uploads and content that waits for cleanup. It is not a disk check. The worker reads it only for mirror copies. |
+| `ARKVORY_STORAGE_RESERVE_BYTES`   | API, worker, agent | `1073741824`   | Free space, in bytes, that uploads never use. It is kept for the database, logs and the system. `0` turns the reserve off.                                                             |
+| `ARKVORY_STORAGE_RESERVE_INODES`  | API, worker        | `100000`       | Free inodes that writes never use on each volume. File systems without an inode count, such as NTFS, skip this check. `0` turns it off.                                                |
+| `ARKVORY_REHOME_BYTES_PER_SECOND` | worker             | `0` (no limit) | Copy speed, in bytes per second, of [moves between volumes](../operate/storage#rehome).                                                                                                |
+| `ARKVORY_MAX_OBJECT_BYTES`        | API                | about 10 TiB   | Largest object, in bytes. The highest allowed value is 10 000 parts of 1 GiB. Set a lower value to limit file size.                                                                    |
 
 ## Transfers and bandwidth {#transfers-and-bandwidth}
 

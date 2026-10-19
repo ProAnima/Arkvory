@@ -1,4 +1,5 @@
-import { HOST_SERVICES, type HostService, type ModuleSource } from './context.js';
+import { HOST_SERVICES, type HostService } from './context.js';
+import type { ModuleSource } from './sources.js';
 import type { ModuleRole } from './manifest.js';
 import type { ReadModule, RuleProblem } from './plan-rules.js';
 

@@ -16,11 +16,54 @@ export {
   type ModuleKind,
   type ModuleManifest,
   type ModuleManifestProblem,
+  type ModuleResources,
   type ModuleRole,
 } from './manifest.js';
 export {
+  CAPABILITY_NAME,
+  capabilityName,
+  defineCapability,
+  parseProvidedCapability,
+  parseRequiredCapability,
+  type CapabilityEntry,
+  type CapabilityToken,
+  type ModuleCapabilities,
+} from './capabilities.js';
+export {
+  ModuleServiceError,
+  SERVICE_ERROR_CODES,
+  type BlobDescriptor,
+  type ByteRange,
+  type Page,
+  type PageRequest,
+  type PartRef,
+  type ServiceErrorCode,
+} from './portable.js';
+export type { HostServices, HostServiceTypes } from './services.js';
+export type { StagedCompletion, StagedObject } from './staged.js';
+export type {
+  AccessScope,
+  ArtifactView,
+  AssetView,
+  BatchView,
+  CatalogRead,
+  ContentHandle,
+  ContentRead,
+  ContentRef,
+  PackageQuery,
+  PackageView,
+  SearchHit,
+  SearchQuery,
+} from './catalog-read.js';
+export type {
+  FileSink,
+  ModuleDataDirectory,
+  ModuleDataUsage,
+  ModuleFiles,
+} from './module-files.js';
+export { MODULE_SOURCES, type ModuleSource } from './sources.js';
+export {
   HOST_SERVICES,
-  MODULE_SOURCES,
   type HostService,
   type ModuleContext,
   type ModuleCounter,
@@ -30,7 +73,6 @@ export {
   type ModuleLogRecord,
   type ModuleMetrics,
   type ModuleMode,
-  type ModuleSource,
 } from './context.js';
 export {
   ModuleConfigError,
@@ -52,6 +94,39 @@ export {
   type PlannedModule,
 } from './plan.js';
 export type { ModulePlanRuleCode } from './plan-rules.js';
+export {
+  MODULE_JSON_BODY_LIMIT,
+  MODULE_JSON_RESPONSE_LIMIT,
+  MODULE_ROUTE_ACTIONS,
+  MODULE_ROUTE_ERRORS,
+  MODULE_ROUTE_LIMIT,
+  MODULE_ROUTE_METHODS,
+  MODULE_ROUTE_TIMEOUT_LIMIT_MS,
+  type ModuleRequest,
+  type ModuleRequestBody,
+  type ModuleResponse,
+  type ModuleRoute,
+  type ModuleRouteAction,
+  type ModuleRouteBody,
+  type ModuleRouteError,
+  type ModuleRouteMethod,
+  type ModuleRoutes,
+  type ModuleTransferOffer,
+} from './routes.js';
+export {
+  TRANSFER_NAME_PATTERN,
+  type ClientModule,
+  type ClientModuleContext,
+  type ClientModuleDescriptor,
+  type ClientModuleManifest,
+  type TransferChannel,
+  type TransferDownload,
+  type TransferExtension,
+  type TransferOffer,
+  type TransferRequest,
+  type TransferResponse,
+  type TransferUpload,
+} from './client.js';
 export {
   LICENSE_STATES,
   type LicenseEvidence,

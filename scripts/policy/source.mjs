@@ -26,6 +26,9 @@ export const COMPUTED_IMPORTS = {
   // The loader of signed modules (ADR 0079, X4): imports an entry only of a package directory
   // that passed the access check and verifyInstalledModule in the same process start.
   'packages/infrastructure/src/module-import.ts': 'verified signed module package',
+  // The loader of client modules of arkvoryctl (ADR 0079, 5.11): imports an entry only of a
+  // package directory that passed the access check and verifyInstalledModule in the same run.
+  'apps/cli/src/modules/module-import.ts': 'verified signed client module package',
   // Registers the resolution hook of every shipped entry; it loads nothing and refuses whatever
   // resolves outside the release (ADR 0031, addendum 2026-10-18).
   'packages/resolution/src/index.ts': 'resolution confined to the release',

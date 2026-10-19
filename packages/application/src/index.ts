@@ -1,5 +1,7 @@
 export * from './ports.js';
 export * from './storage.js';
+export * from './catalog-read.js';
+export * from './blob-moves.js';
 export * from './storage-placement.js';
 export * from './operations.js';
 export * from './catalog.js';
@@ -48,6 +50,7 @@ export type { ReplicaState } from './replica.js';
 export * from './fleet-control.js';
 export * from './download-settings.js';
 export * from './events.js';
+export * from './artifact-tree.js';
 export * from './licence-ports.js';
 export * from './licence-exchange.js';
 export * from './licence-overview.js';

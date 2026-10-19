@@ -18,7 +18,7 @@ Les commandes de cette page s’exécutent sur l’hôte de l’installation, en
    sudo arkvory license activate --key-file /root/arkvory.key --root /opt/proanima-arkvory
    ```
 
-3. Supprimez le fichier de la clé. Arkvory ne conserve pas la clé et n’en a plus besoin.
+3. Supprimez le fichier local de la clé après activation. Gardez accès à la clé dans votre compte : une récupération peut la nécessiter à nouveau.
 
 Arkvory envoie la demande au hub de l’installation (l’adresse de `config/hub.json`, la même que pour les mises à jour) en HTTPS avec vérification du certificat. Il n’accepte la réponse que si la clé de licences de ProAnimaStudio l’a signée, pour cette installation et pour cette demande. Une clé avec une faute de frappe est refusée avant tout envoi. Réactiver la même installation avec la même clé n’occupe pas de nouvelle place de la licence.
 
@@ -68,6 +68,8 @@ sudo arkvory license refresh --root /opt/proanima-arkvory
 ```
 
 Reculer l’horloge ne prolonge rien : Arkvory juge selon l’heure la plus tardive qu’il a vue. Une horloge de base de données en retard de plus d’un jour sur cette heure affiche `clockRollback`.
+
+Si une demande de renouvellement a pu atteindre le hub mais que sa réponse est perdue, Arkvory autorise une seule répétition dans la fenêtre de 10 minutes, même après un redémarrage. Si le résultat reste inconnu, que la répétition est consommée, que la fenêtre se ferme ou que le jeton reçu est invalide, `activation_recovery_required` arrête les renouvellements. Le jeton actuel reste valable jusqu’à son expiration. Récupérez la clé et répétez `license activate --key-file <file>` ; `license refresh` ne résout pas cet état.
 
 ### Copies et restaurations {#copies}
 

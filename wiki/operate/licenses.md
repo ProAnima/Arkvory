@@ -18,7 +18,7 @@ The commands of this page run on the host of the installation, as root on Linux 
    sudo arkvory license activate --key-file /root/arkvory.key --root /opt/proanima-arkvory
    ```
 
-3. Delete the key file. Arkvory does not keep the key and does not need it again.
+3. Delete the local key file after activation. Keep access to the licence key in your account: recovery may require it again.
 
 Arkvory sends the request to the hub of the installation (the address in `config/hub.json`, the same as for updates) over HTTPS with certificate verification. It accepts the answer only when ProAnimaStudio's licence key signed it, for this installation and for this request. A key with a typo is refused before anything is sent. Activating the same installation with the same key again takes no new place of the licence.
 
@@ -68,6 +68,8 @@ sudo arkvory license refresh --root /opt/proanima-arkvory
 ```
 
 Setting the clock back extends nothing: Arkvory judges by the latest time it has seen. A database clock more than a day behind that time shows `clockRollback`.
+
+If a refresh may have reached the hub but its answer was lost, Arkvory permits only one replay within the 10-minute window, including after a restart. If the outcome remains unknown, the replay budget is spent, the window ends, or the returned token is invalid, `activation_recovery_required` stops further refreshes. The current token remains valid until its expiry. Retrieve the key and repeat `license activate --key-file <file>`; `license refresh` cannot resolve this state.
 
 ### Copies and restores {#copies}
 

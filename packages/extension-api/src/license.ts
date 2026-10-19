@@ -60,8 +60,9 @@ export interface LicenseView {
 
 /** An accepted document, exactly as the hub signed it, for a module to verify on its own. */
 export interface LicenseEvidence {
-  readonly licenseId: string;
-  readonly kind: 'activation' | 'offline-activation' | 'revocation';
+  /** Null only for the global revocation-list (licences and delegated certificates). */
+  readonly licenseId: string | null;
+  readonly kind: 'activation' | 'offline-activation' | 'revocation' | 'revocation-list';
   /** UTF-8 bytes of the envelope with its chain. */
   readonly document: Uint8Array;
 }
@@ -72,6 +73,6 @@ export interface LicenseService {
    * waits for the hub: it reads the state the core keeps.
    */
   view(feature?: string): Promise<LicenseView>;
-  /** The accepted tokens and revocation statements of every licence. */
+  /** Tokens, statements and the verified global list, once, even without activations. */
   evidence(): Promise<readonly LicenseEvidence[]>;
 }

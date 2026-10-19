@@ -1,4 +1,8 @@
-import { parseLogLevel, storageReserveBytes } from '@proanima/arkvory-infrastructure';
+import {
+  parseLogLevel,
+  storageReserveBytes,
+  storageReserveInodes,
+} from '@proanima/arkvory-infrastructure';
 import type { LogLevel } from '@proanima/arkvory-infrastructure';
 
 export interface OperabilityOptions {
@@ -7,6 +11,8 @@ export interface OperabilityOptions {
   /** Concurrent authenticated requests per process, including queued transfers. */
   readonly maxRequests?: number;
   readonly storageReserveBytes?: number;
+  /** Free inodes every volume keeps (ADR 0083, N6). */
+  readonly storageReserveInodes?: number;
   readonly accessLog?: boolean;
   /** Time admitted requests may finish after SIGTERM/SIGINT before connections are closed. */
   readonly drainTimeoutMs?: number;
@@ -52,6 +58,7 @@ export function readOperability(
     databasePoolSize: integer(env, 'ARKVORY_DATABASE_POOL_SIZE', 20, 4, 200),
     maxRequests,
     storageReserveBytes: storageReserveBytes(env['ARKVORY_STORAGE_RESERVE_BYTES']),
+    storageReserveInodes: storageReserveInodes(env['ARKVORY_STORAGE_RESERVE_INODES']),
     accessLog: flag(env, 'ARKVORY_ACCESS_LOG', true),
     drainTimeoutMs: integer(
       env,

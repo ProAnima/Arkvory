@@ -40,6 +40,7 @@ export const SIGNING_PROBLEMS = [
   'manifest_missing',
   'signature_missing',
   'manifest_invalid',
+  'side_mismatch',
   'module_incompatible',
   'file_missing',
   'file_unlisted',

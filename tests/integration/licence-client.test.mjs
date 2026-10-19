@@ -15,6 +15,7 @@ import {
 } from '@proanima/arkvory-application';
 import {
   DiagnosticLogger,
+  PostgresLicenceStore,
   createLicenseService,
   exportedTables,
   licenceKeyDigest,
@@ -35,7 +36,7 @@ const REFRESH_FIELDS = [
 const hubCalls = (hub, route) => hub.requests.filter((r) => r.path.endsWith(`/licence/${route}`));
 
 async function activated(f) {
-  f.hub.licence(f.key);
+  if (!f.hub.licences.has(f.key)) f.hub.licence(f.key);
   const result = await activateLicence(f.env, { key: f.key, installation: INSTALLATION });
   assert.equal(result.outcome, 'activated', JSON.stringify(result));
   return result;
@@ -159,9 +160,116 @@ test('a lost answer is repeated with the same nonce inside the hub window', asyn
   assert.equal((await refreshLicence(f.env, activationId)).outcome, 'refreshed');
 });
 
-test('a replayed or foreign answer is refused; the rotated secret is kept', async (t) => {
+test('two lost answers stop refresh, retain the token and recover only by activation', async (t) => {
   const f = await licenceSetup(t);
   const { activationId } = await activated(f);
+  const before = await f.env.store.activation(activationId);
+  f.hub.next.push('drop', 'drop');
+  const result = await refreshLicence(f.env, activationId);
+  assert.equal(result.code, 'activation_recovery_required');
+  assert.equal(result.nextAttemptAt, null);
+  const row = await f.env.store.activation(activationId);
+  assert.equal(row.pendingSends, 2);
+  assert.equal(row.token, before.token);
+  assert.equal(f.hub.activations.get(activationId).state, 'active');
+  const restarted = { ...f.env, store: new PostgresLicenceStore(f.pool) };
+  assert.equal((await refreshLicence(restarted, activationId)).code, result.code);
+  assert.deepEqual(await refreshDueLicences(restarted), []);
+  // Scheduling/failure bookkeeping cannot replenish the durable send budget.
+  await f.env.store.recordFailure(
+    activationId,
+    'unreachable',
+    (await f.env.store.databaseNow()) - 1,
+  );
+  assert.equal((await refreshLicence(restarted, activationId)).code, result.code);
+  assert.equal(hubCalls(f.hub, 'refresh').length, 2);
+  assert.equal((await createLicenseService(restarted).view()).state, 'valid');
+  await activated(f);
+  assert.equal((await refreshLicence(restarted, activationId)).outcome, 'refreshed');
+});
+
+test('a crash after replay reservation cannot create another replay', async (t) => {
+  const f = await licenceSetup(t);
+  const { activationId } = await activated(f);
+  f.hub.next.push('drop');
+  let sends = 0;
+  const crashing = {
+    ...f.env,
+    hub: {
+      ...f.env.hub,
+      refresh: async (...args) => {
+        if (++sends === 2) throw new Error('simulated crash before replay HTTP');
+        return f.env.hub.refresh(...args);
+      },
+    },
+  };
+  await assert.rejects(refreshLicence(crashing, activationId), /simulated crash/);
+  assert.equal((await f.env.store.activation(activationId)).pendingSends, 2);
+  const restarted = { ...f.env, store: new PostgresLicenceStore(f.pool) };
+  assert.equal(
+    (await refreshLicence(restarted, activationId)).code,
+    'activation_recovery_required',
+  );
+  assert.equal(hubCalls(f.hub, 'refresh').length, 1);
+  assert.equal(f.hub.activations.get(activationId).state, 'active');
+});
+
+test('restart replays the pending nonce once and never restarts its window', async (t) => {
+  for (const age of [0, 600_000, -60_000]) {
+    const f = await licenceSetup(t);
+    const { activationId } = await activated(f);
+    f.hub.next.push('drop');
+    await assert.rejects(
+      refreshLicence(
+        {
+          ...f.env,
+          sleep: async () => {
+            throw new Error('crash');
+          },
+        },
+        activationId,
+      ),
+      /crash/,
+    );
+    const pending = await f.env.store.activation(activationId);
+    assert.equal(pending.pendingSends, 1);
+    await f.pool.query(
+      "UPDATE arkvory_license_activations SET pending_since=now() - $1 * interval '1 millisecond'",
+      [age],
+    );
+    const restarted = { ...f.env, store: new PostgresLicenceStore(f.pool) };
+    const result = await refreshLicence(restarted, activationId);
+    if (age === 0) {
+      assert.equal(result.outcome, 'refreshed');
+      assert.equal(hubCalls(f.hub, 'refresh')[1].body.nonce, pending.pendingNonce);
+      assert.equal((await secretFile(f, activationId)).seq, 3);
+    } else {
+      assert.equal(result.code, 'activation_recovery_required');
+      assert.equal(hubCalls(f.hub, 'refresh').length, 1);
+      assert.equal((await f.env.store.activation(activationId)).token, pending.token);
+    }
+    assert.equal(f.hub.activations.get(activationId).state, 'active');
+  }
+});
+
+test('a durable rotated secret recovers a crash before the token database write', async (t) => {
+  const f = await licenceSetup(t);
+  const { activationId } = await activated(f);
+  const store = new PostgresLicenceStore(f.pool);
+  store.saveToken = async () => {
+    throw new Error('crash after secret');
+  };
+  await assert.rejects(refreshLicence({ ...f.env, store }, activationId), /crash after secret/);
+  assert.equal((await secretFile(f, activationId)).seq, 2);
+  assert.equal((await f.env.store.activation(activationId)).seq, 1);
+  assert.equal((await refreshLicence(f.env, activationId)).outcome, 'refreshed');
+  assert.equal(f.hub.activations.get(activationId).state, 'active');
+});
+
+test('a replayed or foreign answer requires recovery without guessing the new secret seq', async (t) => {
+  const f = await licenceSetup(t);
+  const { activationId } = await activated(f);
+  const before = await secretFile(f, activationId);
   const old = (await f.pool.query('SELECT token FROM arkvory_license_activations')).rows[0].token;
   // An answer over TLS with an old token: the hub has rotated, the document is a replay.
   f.hub.next.push({
@@ -169,9 +277,11 @@ test('a replayed or foreign answer is refused; the rotated secret is kept', asyn
     body: { token: old, activationSecret: 'S'.repeat(43), activationId },
   });
   const replay = await refreshLicence(f.env, activationId);
-  assert.equal(replay.outcome, 'failed');
-  assert.equal(replay.code, 'answer_invalid');
-  assert.equal((await secretFile(f, activationId)).secret, 'S'.repeat(43));
+  assert.equal(replay.outcome, 'refused');
+  assert.equal(replay.code, 'activation_recovery_required');
+  assert.deepEqual(await secretFile(f, activationId), before);
+  assert.equal((await activated(f)).outcome, 'activated');
+  const recovered = await secretFile(f, activationId);
   // A signed token of this request, seq and activation, but bound to another installation.
   const nonce = 'FixedRefreshNonce001';
   const licenceId = [...f.hub.licences.values()][0].licenceId;
@@ -187,14 +297,16 @@ test('a replayed or foreign answer is refused; the rotated secret is kept', asyn
     body: { token: foreign, activationSecret: 'T'.repeat(43), activationId },
   });
   const moved = await refreshLicence({ ...f.env, nonce: () => nonce }, activationId);
-  assert.equal(moved.code, 'answer_invalid');
-  assert.equal((await secretFile(f, activationId)).secret, 'T'.repeat(43));
+  assert.equal(moved.code, 'activation_recovery_required');
+  assert.deepEqual(await secretFile(f, activationId), recovered);
   assert.equal(
     (await licenceOverview(f.env)).licences[0].status.state,
     'valid',
     'the kept token stays',
   );
   // An unsigned refusal revokes nothing and is not retried until an administrator acts.
+  await activated(f);
+  const kept = await f.env.store.activation(activationId);
   f.hub.next.push({ status: 403, body: { code: 'licence_expired', message: 'x', details: {} } });
   const refusal = await refreshLicence(f.env, activationId);
   assert.equal(refusal.outcome, 'refused');
@@ -205,7 +317,7 @@ test('a replayed or foreign answer is refused; the rotated secret is kept', asyn
   assert.equal(overview.licences[0].nextAttemptAt, null);
   // A token not above the kept seq never replaces the kept one.
   const row = (await f.pool.query('SELECT seq FROM arkvory_license_activations')).rows[0];
-  assert.equal(Number(row.seq), 1);
+  assert.equal(Number(row.seq), kept.seq);
 });
 
 test('a signed revocation revokes at once and blocks every earlier token', async (t) => {
@@ -240,7 +352,7 @@ test('a signed revocation revokes at once and blocks every earlier token', async
   assert.equal(hubCalls(f.hub, 'refresh').length, 1, 'a revoked activation is not refreshed');
 });
 
-test('a reused secret suspends the activation as a clone; a lapsed one comes back', async (t) => {
+test('a known retired secret is not sent; a lapsed activation comes back', async (t) => {
   const f = await licenceSetup(t);
   const { activationId } = await activated(f);
   const path = join(f.directory, `${activationId}.secret`);
@@ -249,9 +361,10 @@ test('a reused secret suspends the activation as a clone; a lapsed one comes bac
   // A copy of the installation still holds the retired secret.
   await writeFile(path, copy, { mode: 0o600 });
   const clone = await refreshLicence(f.env, activationId);
-  assert.equal(clone.code, 'activation_secret_reused');
+  assert.equal(clone.code, 'activation_recovery_required');
   assert.equal(clone.nextAttemptAt, null);
-  assert.equal(f.hub.activations.get(activationId).state, 'suspended');
+  assert.equal(f.hub.activations.get(activationId).state, 'active');
+  assert.equal(hubCalls(f.hub, 'refresh').length, 1, 'a known older secret is not sent');
 
   const g = await licenceSetup(t);
   const lapsed = await activated(g);
@@ -372,6 +485,13 @@ test('licence revocation lists: newer only, from a file or the hub, and they rev
   const view = await createLicenseService(f.env).view('dedup');
   assert.equal(view.state, 'revoked');
   const older = f.authority.revocationList({ number: 1 });
+  const service = createLicenseService(f.env, { ttlMs: 0 });
+  const evidence = await service.evidence();
+  assert.equal(evidence.length, 2);
+  assert.equal(evidence[1].kind, 'revocation-list');
+  assert.equal(evidence[1].licenseId, null);
+  assert.equal(new TextDecoder().decode(evidence[1].document), list);
+  assert.equal(f.env.verifier.revocationList(list).licences.has(licenceId), true);
   assert.equal(
     (await installLicenceDocument(f.env, older, INSTALLATION)).code,
     'revocation_rollback',
@@ -386,10 +506,22 @@ test('licence revocation lists: newer only, from a file or the hub, and they rev
     certificates: [f.authority.online.id],
   });
   assert.equal((await updateLicenceRevocations(f.env)).number, 3);
+  const latest = (await service.evidence()).filter((entry) => entry.kind === 'revocation-list');
+  assert.equal(latest.length, 1);
+  assert.equal(new TextDecoder().decode(latest[0].document), f.hub.revocationList);
+  assert.equal((await service.view()).reason, 'certificate_revoked');
   const [call] = hubCalls(f.hub, 'revocations');
   assert.equal(call.query, '?after=2');
   const unsigned = f.authority.revocationList({ number: 4 }, f.authority.online);
   assert.match((await installLicenceDocument(f.env, unsigned, INSTALLATION)).code, /^signature_/);
+  assert.deepEqual(
+    (await service.evidence()).filter((entry) => entry.kind === 'revocation-list'),
+    latest,
+  );
+  await f.env.store.remove((await f.env.store.activations())[0].activationId);
+  assert.deepEqual(await service.evidence(), latest, 'global list survives without activations');
+  await f.pool.query('UPDATE arkvory_license_revocations SET document=$1', [unsigned]);
+  assert.deepEqual(await service.evidence(), [], 'unverified stored list is never evidence');
 });
 
 test('deactivation frees the place and deletes the secret', async (t) => {

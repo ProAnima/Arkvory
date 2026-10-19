@@ -72,6 +72,7 @@ L’URL du serveur doit utiliser HTTPS. HTTP simple n’est autorisé que pour `
 | `--not-before T`           |                   | Ne pas commencer un téléchargement avant T : RFC 3339 ou `HH:MM`, la prochaine fois que l’horloge l’indique                                                |
 | `--not-after T`            |                   | Abandonner avec le code 4 si la file commencerait le téléchargement après T                                                                                |
 | `--verbose`                | désactivé         | Une ligne stderr par requête HTTP : méthode, chemin, statut, durée, ID de requête. Ni en-têtes ni clés.                                                    |
+| `--transfer MODE`          | `auto`            | Extensions de transfert des [modules client](#client-modules) : `auto`, `strict` ou `core` (aucune)                                                        |
 | `--help`, `--version`      |                   | Aide ; version du client en JSON                                                                                                                           |
 | `--`                       |                   | Termine les options, pour les noms de fichiers qui commencent par `-`                                                                                      |
 
@@ -115,6 +116,17 @@ arkvoryctl link 00000000-0000-4000-8000-000000000001 --ttl 900
 ```
 
 Un lien de téléchargement est un secret. Il ne peut pas être révoqué avant son expiration.
+
+### Arborescences de répertoires {#directory-trees}
+
+| Commande                                                                            | Résultat                                                                                     |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publie le dossier sous forme d’un seul artefact ZIP, avec reprise                            |
+| `tree pull ID DIR`                                                                  | Fait du dossier l’arborescence : archive entière, ou seulement les fichiers qui diffèrent    |
+| `tree verify ID DIR`                                                                | Liste les fichiers manquants, divergents et en trop ; code de sortie 5 si l’un d’eux diffère |
+| `tree repair ID DIR`                                                                | Réécrit les fichiers manquants et divergents ; conserve les fichiers en trop                 |
+
+Voir [Arborescences de répertoires](../use/trees).
 
 ### Paquets et promotion {#packages-and-promotion}
 
@@ -256,6 +268,25 @@ claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 - **Données.** Les noms, étiquettes et métadonnées des résultats sont écrits par d’autres personnes. L’agent doit les traiter comme des données, pas comme des instructions.
 - Le client doit prendre en charge MCP 2025-06-18 ou plus récent.
 
+## Modules client {#client-modules}
+
+Un module client est un paquet signé de ProAnimaStudio qui étend `arkvoryctl` lui-même, par exemple avec un moyen plus rapide de déplacer les octets (une extension de transfert). Le client gratuit ne contient aucun module de ce type ; sans module, chaque commande fonctionne comme décrit sur cette page.
+
+| Commande                                                  | Résultat                                                                           |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `module install FILE [--yes] [--allow-stale-revocations]` | Vérifie le paquet et l’affiche avec ses conditions ; l’installe avec `--yes`       |
+| `module list`                                             | Modules installés, là où ils sont activés, et l’état de la liste de révocation     |
+| `module enable ID [--profile NAME]`                       | Active le module pour tous les profils, ou pour un seul                            |
+| `module disable ID [--profile NAME]`                      | Le désactive partout, ou pour un profil                                            |
+| `module remove ID`                                        | Supprime le module                                                                 |
+| `module revocations FILE`                                 | Enregistre une liste de révocation signée, pour les machines sans accès à internet |
+
+- **Où.** Les modules sont installés pour votre utilisateur dans le dossier `modules` du dossier du CLI (`ARKVORY_CLI_HOME`, par défaut `~/.config/arkvory`). Un nouveau module est désactivé jusqu’à ce que vous l’activiez.
+- **Vérifications.** Seuls les paquets signés avec la clé de modules de ProAnimaStudio et construits pour le client sont acceptés. Avant qu’une commande utilise un module, `arkvoryctl` vérifie de nouveau la signature et chaque fichier, ainsi qu’aucun autre utilisateur ne puisse modifier les fichiers (sous Linux et macOS : ils vous appartiennent, ne sont pas modifiables par les autres, sans liens ; sous Windows : sans liens ni jonctions, et le propriétaire et les règles d’accès ne permettent de les modifier qu’à vous et aux administrateurs, sinon `module_access`). Une version révoquée n’est jamais chargée. Un module qui échoue à une vérification est signalé sur stderr (`client module ID VERSION not loaded (code)`) et écarté ; la commande continue sans lui.
+- **Révocations.** `module install` exige une liste de révocation à jour. Un paquet peut en apporter une plus récente ; sinon, enregistrez-en une avec `module revocations`. `--allow-stale-revocations` installe quand même ; le résultat le signale.
+- **Code.** Le code d’un module ne peut charger que ses propres fichiers et les modules intégrés de Node. Seules les commandes qui déplacent du contenu chargent des modules : `upload`, `download`, `put`, `get`, `packages publish`, `packages download` et `tree`.
+- **Extensions de transfert.** L’extension d’un module n’est utilisée que lorsque le serveur propose la même dans `transfer` de `GET /api/v1/capabilities`. Le client vérifie lui-même le résultat : la taille et le SHA-256 de chaque téléchargement et la somme de contrôle publiée de chaque téléversement. Avec `--transfer auto`, le client revient à son propre transfert lorsque l’extension refuse ou échoue ; `--transfer strict` échoue à la place (`transfer_unavailable`, code de sortie 4) ; `--transfer core` ne charge aucun module. `--verbose` indique quelle voie a prise chaque transfert.
+
 ## Sortie {#output}
 
 - Les résultats sont du JSON sur stdout. Sans `--json`, le JSON est indenté. Les commandes de sauvegarde affichent des lignes lisibles, sauf si vous ajoutez `--json`.
@@ -290,10 +321,13 @@ Le client ne réessaie que les échecs réseau et les codes HTTP 408, 429, 502, 
 | `destination_exists` (code de sortie 6)           | Le fichier de sortie existe. Choisissez un autre nom.                                                                                                        |
 | `revision_mismatch` avec `put` (code de sortie 6) | Quelqu’un a modifié le chemin entre-temps. Consultez l’historique du chemin, puis décidez.                                                                   |
 | code de sortie 8                                  | Le quota est atteint ou le disque est plein. Contactez l’administrateur.                                                                                     |
+| `checksum_mismatch` (code de sortie 5)            | Un fichier d’une arborescence ne correspondait pas au fichier publié ; le fichier du dossier est resté tel quel. Relancez la commande.                       |
+| `path_outside_root`, `unsafe_name`                | Une archive ou une table des matières désigne un chemin hors du dossier, ou un nom que Windows ne peut pas accepter. Rien n’a été écrit.                     |
+| `stale_revocations` (code de sortie 6)            | Pas de liste de révocation à jour pour `module install`. Enregistrez-en une avec `module revocations FILE`.                                                  |
 
 ## Pages associées {#related-pages}
 
 - [Clients et protocoles](./index)
-- [Transferts](../use/transfers) et [Fichiers par chemin](../use/files)
+- [Transferts](../use/transfers), [Arborescences de répertoires](../use/trees) et [Fichiers par chemin](../use/files)
 - [SDK TypeScript](./sdk)
 - [Erreurs](../api/errors)

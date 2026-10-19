@@ -1,4 +1,8 @@
-import { readSystemLicenses, readSystemModules } from '@proanima/arkvory-contracts';
+import {
+  readModuleDocument,
+  readSystemLicenses,
+  readSystemModules,
+} from '@proanima/arkvory-contracts';
 import type { HttpPort } from './http-transport.js';
 
 /**
@@ -14,6 +18,20 @@ export class SystemApi {
   async modules(signal?: AbortSignal) {
     return readSystemModules(
       await this.http.call('/api/v1/system/modules', 'GET', undefined, signal),
+    );
+  }
+  /**
+   * The OpenAPI 3.1 document of the routes one module serves under `/api/ext/` in the answering
+   * process (ADR 0083, N12); `not_found` when it serves none there.
+   */
+  async moduleOpenApi(id: string, signal?: AbortSignal) {
+    return readModuleDocument(
+      await this.http.call(
+        `/api/v1/system/modules/${encodeURIComponent(id)}/openapi`,
+        'GET',
+        undefined,
+        signal,
+      ),
     );
   }
   /**

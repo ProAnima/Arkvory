@@ -47,8 +47,9 @@ export type LicenceExchangeResult =
 
 /** How long the hub takes the previous secret again for a lost answer (its RETRY_WINDOW). */
 export const LICENCE_RETRY_WINDOW_MS = 10 * 60 * 1000;
-/** Repeats of a request whose answer was lost, inside the hub's window, with the same nonce. */
-const LOST_ANSWER_DELAYS_MS = [5_000, 30_000];
+/** Leave a transport-timeout margin before the hub's window ends. */
+const REPLAY_WINDOW_MS = LICENCE_RETRY_WINDOW_MS - 30_000;
+const RECOVERY_REQUIRED = 'activation_recovery_required';
 /** How long an operator's command waits for an exchange of the worker to finish. */
 export const LICENCE_LOCK_WAIT_MS = 120_000;
 const ISO_SECOND = 19;
@@ -142,17 +143,34 @@ export async function activateLicence(
 
 async function exchange(
   env: LicenceEnvironment,
+  row: StoredActivation,
   body: LicenceRefreshBody,
   signal?: LicenceSignal,
-): Promise<LicenceHubAnswer> {
-  let answer = await env.hub.refresh(body, signal);
-  // A lost answer may have retired the secret: only the same nonce and seq within the hub's
-  // window take it again, so repeat at once instead of after the usual pause of 15 minutes.
-  for (const delay of LOST_ANSWER_DELAYS_MS) {
-    if (answer.kind !== 'failed' || !answer.sent || signal?.aborted) break;
-    await env.sleep(delay, signal);
-    answer = await env.hub.refresh(body, signal);
+): Promise<LicenceHubAnswer | null> {
+  const pending = row.pendingNonce !== null && row.pendingSeq === body.seq;
+  if (!pending) {
+    await env.store.startAttempt(row.activationId, body.nonce, body.seq);
+    const answer = await env.hub.refresh(body, signal);
+    if (answer.kind !== 'failed' || !answer.sent) {
+      // No ambiguous earlier send exists. A definite refusal or unsent request is safe to retry.
+      if (answer.kind === 'refused' || answer.kind === 'failed')
+        await env.store.clearAttempt(row.activationId);
+      return answer;
+    }
+    await env.sleep(5_000, signal);
   }
+  // A pending record survives cancellation/crash. Never restart its budget or its clock.
+  if (signal?.aborted) return null;
+  const reserved = await env.store.reserveReplay(
+    row.activationId,
+    body.nonce,
+    body.seq,
+    REPLAY_WINDOW_MS,
+  );
+  if (!reserved) return null;
+  const answer = await env.hub.refresh(body, signal);
+  // Even an unsent replay cannot prove that the original request did not retire the secret.
+  if (answer.kind === 'failed' || answer.kind === 'refused') return null;
   return answer;
 }
 
@@ -189,14 +207,14 @@ async function accepted(
     token.nonce === sent.nonce &&
     token.licenceId === row.licenceId &&
     token.installation === row.installation &&
-    token.seq > row.seq;
-  // The answer came over verified TLS, so the hub has retired the secret that was sent: keep
-  // the new one even when the document is refused, or the next refresh would look like a clone.
+    token.seq > Math.max(row.seq, sent.seq);
+  // Without a verified token the new secret's sequence is unknown (a replay advances twice).
+  // Keep the old token and stop; guessing a sequence cannot safely recover the activation.
+  if (!valid) return failed(env, row, RECOVERY_REQUIRED, null);
   await env.secrets.write(row.activationId, {
     secret: answer.activationSecret,
-    seq: valid ? token.seq : sent.seq + 1,
+    seq: token.seq,
   });
-  if (!valid) return failed(env, row, 'answer_invalid', null);
   if ((await env.store.saveToken(tokenRecord(env, token, answer.token))) === 'stale')
     return failed(env, row, 'answer_invalid', null);
   return {
@@ -246,21 +264,18 @@ async function refreshRow(
 ): Promise<LicenceExchangeResult> {
   if (row.activation === 'offline') return refused('offline_activation', row.activationId);
   if (row.revocation !== null) return refused('license_revoked', row.activationId);
+  if (row.failure === RECOVERY_REQUIRED) return refused(RECOVERY_REQUIRED, row.activationId);
   const secret = await env.secrets.read(row.activationId);
   if (secret === null) return failed(env, row, 'secret_missing', null);
-  const now = await env.store.databaseNow();
-  // The nonce of an attempt for the same secret within the hub's window is sent again.
-  const pending = row.pendingNonce;
+  // A newer durable secret proves a verified answer was saved before a database-write crash.
+  // An older secret cannot authenticate safely, including after a stale filesystem restore.
+  if (secret.seq < row.seq || (row.pendingSeq !== null && secret.seq < row.pendingSeq))
+    return failed(env, row, RECOVERY_REQUIRED, null);
   const nonce =
-    pending !== null &&
-    row.pendingSeq === secret.seq &&
-    row.pendingSince !== null &&
-    now - row.pendingSince < LICENCE_RETRY_WINDOW_MS
-      ? pending
-      : env.nonce();
-  await env.store.startAttempt(row.activationId, nonce, secret.seq);
+    row.pendingNonce !== null && row.pendingSeq === secret.seq ? row.pendingNonce : env.nonce();
   const answer = await exchange(
     env,
+    row,
     {
       activationId: row.activationId,
       activationSecret: secret.secret,
@@ -271,6 +286,7 @@ async function refreshRow(
     },
     signal,
   );
+  if (answer === null) return failed(env, row, RECOVERY_REQUIRED, null);
   switch (answer.kind) {
     case 'issued':
       return accepted(env, row, answer, { nonce, seq: secret.seq });

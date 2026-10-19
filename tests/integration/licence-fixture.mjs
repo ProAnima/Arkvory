@@ -37,7 +37,7 @@ export async function licenceSetup(t, options = {}) {
     await admin.end();
     await removeTestDirectory(root);
   });
-  await migrate(pool);
+  await migrate(pool, options.upTo === undefined ? {} : { upTo: options.upTo });
   const configuration = {
     directory,
     hub: { url: hub.url, project: 'arkvory' },

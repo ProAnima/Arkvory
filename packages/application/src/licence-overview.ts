@@ -38,6 +38,8 @@ export interface LicenceSummary {
 }
 
 export interface LicenceOverview {
+  /** Exact root-signed list after verification, including global certificate revocations. */
+  readonly revocationList: string | null;
   /** The installation id the writer recorded; null before it did. */
   readonly installation: string | null;
   readonly effectiveTime: number;
@@ -141,8 +143,10 @@ export async function licenceOverview(reader: LicenceReader): Promise<LicenceOve
     reader.store.revocationList(),
     reader.store.pendingRequests(),
   ]);
-  const context = { list: listOf(reader, list?.text), installation: clock.installation, now };
+  const verifiedList = listOf(reader, list?.text);
+  const context = { list: verifiedList, installation: clock.installation, now };
   return {
+    revocationList: verifiedList === null ? null : (list?.text ?? null),
     installation: clock.installation,
     effectiveTime: now,
     clockRollback: licenceClockRolledBack(databaseNow, clock.maxSeen),

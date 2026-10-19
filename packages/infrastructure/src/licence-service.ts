@@ -77,7 +77,8 @@ export function createLicenseService(
     },
     async evidence(): Promise<readonly LicenseEvidence[]> {
       const encoder = new TextEncoder();
-      return (await overview()).licences.flatMap((licence) => {
+      const snapshot = await overview();
+      const evidence = snapshot.licences.flatMap((licence) => {
         const documents: LicenseEvidence[] = [
           {
             licenseId: licence.licenceId,
@@ -93,6 +94,13 @@ export function createLicenseService(
           });
         return documents;
       });
+      if (snapshot.revocationList !== null)
+        evidence.push({
+          licenseId: null,
+          kind: 'revocation-list',
+          document: encoder.encode(snapshot.revocationList),
+        });
+      return evidence;
     },
   };
 }

@@ -5,6 +5,8 @@ import type { HttpPort } from './http-transport.js';
 import { repositoryPath } from './http-transport.js';
 import type { transferPolicy } from './transfer.js';
 import type { UploadsApi } from './uploads-api.js';
+import { TransferExtensions } from './transfer-extensions.js';
+import { extensionUpload, publishedAsRequested } from './upload-extension.js';
 
 const MIN_PART_BYTES = 8 * 1024 ** 2;
 const MAX_PART_BYTES = 1024 ** 3;
@@ -16,6 +18,7 @@ export class UploadTransfer {
     private readonly http: HttpPort,
     private readonly policy: ReturnType<typeof transferPolicy>,
     private readonly uploads: Pick<UploadsApi, 'status' | 'parts' | 'complete' | 'enqueue' | 'job'>,
+    private readonly extensions: TransferExtensions = new TransferExtensions(http),
   ) {}
   async resume(
     repository: string,
@@ -50,6 +53,37 @@ export class UploadTransfer {
           ),
         );
       });
+    // A transfer extension may deliver the content first (ADR 0079, 5.2); the core way below
+    // then sends only what is missing and completes, and the server verifies the bytes.
+    if (
+      await extensionUpload(this.extensions, {
+        repository,
+        uploadId: id,
+        upload,
+        file,
+        signal: options.signal,
+      })
+    ) {
+      const current = await attempts.run((signal) => this.uploads.status(repository, id, signal));
+      if (current.status === 'available') return publishedAsRequested(current, upload);
+      if (current.status !== 'pending')
+        throw new ArkvoryClientError('upload_cancelled', 'Upload is cancelled');
+    }
+    await this.sendParts(repository, id, file, attempts, options);
+    // Assembly may be substantially slower than one bounded part transfer.
+    if (file.size < ASYNC_COMPLETION_BYTES)
+      return attempts.run((signal) => this.uploads.complete(repository, id, signal), 1_800_000);
+    return completeWithWorker(this.uploads, attempts, repository, id, options.signal);
+  }
+
+  /** Sends every part the server lacks; parts it holds must match the file. */
+  private async sendParts(
+    repository: string,
+    id: string,
+    file: Blob,
+    attempts: TransferAttempts,
+    options: TransferOptions & { onProgress?: (bytes: number) => void },
+  ) {
     const existing = await attempts.run((signal) => this.uploads.parts(repository, id, signal));
     const { partBytes } = existing;
     if (
@@ -97,10 +131,6 @@ export class UploadTransfer {
         });
       options.onProgress?.(Math.min(file.size, offset + existing.partBytes));
     }
-    // Assembly may be substantially slower than one bounded part transfer.
-    if (file.size < ASYNC_COMPLETION_BYTES)
-      return attempts.run((signal) => this.uploads.complete(repository, id, signal), 1_800_000);
-    return completeWithWorker(this.uploads, attempts, repository, id, options.signal);
   }
 }
 

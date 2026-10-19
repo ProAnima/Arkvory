@@ -18,6 +18,9 @@ const flags = new Set([
   'all',
   'write',
   'force',
+  'yes',
+  'allow-stale-revocations',
+  'compress',
 ]);
 const values = new Set([
   'lang',
@@ -58,6 +61,7 @@ const values = new Set([
   'max-output-bytes',
   'write-repositories',
   'target',
+  'transfer',
 ]);
 export function parseArguments(argv: readonly string[]): Arguments {
   const options = new Map<string, string>(),
@@ -126,6 +130,7 @@ export function validateCommand(args: Arguments, words: number, allowed: readonl
         'not-before',
         'not-after',
         'verbose',
+        'transfer',
         ...allowed,
       ].includes(key)
     )

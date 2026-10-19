@@ -1,11 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, open, link, unlink, stat, statfs, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdir, open, link, unlink, stat, readFile, readdir, rm } from 'node:fs/promises';
 import { join, resolve, dirname, relative } from 'node:path';
 import { ArkvoryError, MAX_PARTS, requireId } from '@proanima/arkvory-domain';
 import type { ArtifactDescriptor, UploadPart } from '@proanima/arkvory-domain';
 import type { BlobStore, Cancellation } from '@proanima/arkvory-application';
 import { hasCode, syncDirectory } from './fs-durability.js';
 import type { StorageLifecycle } from './storage-lifecycle.js';
+import { requireVolumeRoom } from './volume-space.js';
 import {
   adoptStagedFile,
   internalChunkBytes,
@@ -21,6 +22,16 @@ export function storageReserveBytes(raw: string | undefined): number {
   const value = Number(raw);
   if (!/^(0|[1-9][0-9]*)$/.test(raw) || !Number.isSafeInteger(value))
     throw new Error('Invalid ARKVORY_STORAGE_RESERVE_BYTES');
+  return value;
+}
+
+/** Free inodes kept on the volume (ADR 0083, N6); ARKVORY_STORAGE_RESERVE_INODES. */
+export const defaultStorageReserveInodes = 100_000;
+export function storageReserveInodes(raw: string | undefined): number {
+  if (raw === undefined) return defaultStorageReserveInodes;
+  const value = Number(raw);
+  if (!/^(0|[1-9][0-9]*)$/.test(raw) || !Number.isSafeInteger(value))
+    throw new Error('Invalid ARKVORY_STORAGE_RESERVE_INODES');
   return value;
 }
 
@@ -46,6 +57,35 @@ async function volumeFolder(path: string): Promise<void> {
   }
 }
 
+/** The storage's own id in `storage-id`, created durably on first use unless `readOnly`. */
+async function storageIdentity(root: string, readOnly: boolean): Promise<string> {
+  const path = join(root, 'storage-id');
+  try {
+    return requireId(await readFile(path, 'utf8'));
+  } catch (error) {
+    if (!hasCode(error, 'ENOENT') || readOnly) throw error;
+  }
+  const temporary = join(root, `.identity-${randomUUID()}`);
+  const handle = await open(temporary, 'wx', 0o600);
+  try {
+    try {
+      await handle.writeFile(randomUUID());
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    try {
+      await link(temporary, path);
+    } catch (error) {
+      if (!hasCode(error, 'EEXIST')) throw error;
+    }
+    await syncDirectory(root);
+  } finally {
+    await unlink(temporary);
+  }
+  return requireId(await readFile(path, 'utf8'));
+}
+
 export class LocalBlobStore implements BlobStore, StorageLifecycle {
   readonly root: string;
   private reservedBytes = 0;
@@ -55,9 +95,12 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
     /** Mode of a root that `initialize` creates; a restore target is private (0700). */
     private readonly rootMode?: number,
     private readonly volume?: VolumeLayout,
+    private readonly reserveInodes = defaultStorageReserveInodes,
   ) {
     if (!Number.isSafeInteger(reserveBytes) || reserveBytes < 0)
       throw new Error('Invalid storage reserve');
+    if (!Number.isSafeInteger(reserveInodes) || reserveInodes < 0)
+      throw new Error('Invalid storage inode reserve');
     this.root = resolve(root);
   }
 
@@ -77,31 +120,7 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
   }
 
   async identity(readOnly = false): Promise<string> {
-    const path = join(this.root, 'storage-id');
-    try {
-      return requireId(await readFile(path, 'utf8'));
-    } catch (error) {
-      if (!hasCode(error, 'ENOENT') || readOnly) throw error;
-    }
-    const temporary = join(this.root, `.identity-${randomUUID()}`);
-    const handle = await open(temporary, 'wx', 0o600);
-    try {
-      try {
-        await handle.writeFile(randomUUID());
-        await handle.sync();
-      } finally {
-        await handle.close();
-      }
-      try {
-        await link(temporary, path);
-      } catch (error) {
-        if (!hasCode(error, 'EEXIST')) throw error;
-      }
-      await syncDirectory(this.root);
-    } finally {
-      await unlink(temporary);
-    }
-    return requireId(await readFile(path, 'utf8'));
+    return storageIdentity(this.root, readOnly);
   }
 
   private blob(id: string): string {
@@ -115,12 +134,12 @@ export class LocalBlobStore implements BlobStore, StorageLifecycle {
     else await mkdir(path, { recursive: true });
   }
 
+  /** Bytes beside the reserve, and free inodes: each blob and part is a file (ADR 0083, N6). */
   async checkSpace(required: number): Promise<void> {
-    const volume = await statfs(this.root, { bigint: true });
-    if (volume.bavail * volume.bsize < BigInt(required) + BigInt(this.reserveBytes))
-      throw new ArkvoryError('capacity_exceeded', 'Insufficient storage capacity', {
-        reason: 'storage_full',
-      });
+    await requireVolumeRoom(this.root, required, {
+      bytes: this.reserveBytes,
+      inodes: this.reserveInodes,
+    });
   }
 
   async put(

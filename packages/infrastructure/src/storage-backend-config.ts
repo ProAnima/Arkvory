@@ -200,6 +200,8 @@ export interface StorageBackendOptions {
    * beneath its mount point (ADR 0083, N11).
    */
   readonly createVolumeRoots?: boolean;
+  /** Free inodes every volume keeps (ARKVORY_STORAGE_RESERVE_INODES, ADR 0083, N6). */
+  readonly reserveInodes?: number;
 }
 
 /**
@@ -212,9 +214,9 @@ export function localStorageBackends(
   configured: readonly LocalStorageSettings[],
   options: StorageBackendOptions = {},
 ): StorageBackends {
-  const { rootMode } = options;
+  const { rootMode, reserveInodes } = options;
   const volume = { createRoot: options.createVolumeRoots ?? false };
-  const core = new LocalBlobStore(dataDirectory, reserveBytes, rootMode);
+  const core = new LocalBlobStore(dataDirectory, reserveBytes, rootMode, undefined, reserveInodes);
   return new StorageBackends([
     {
       id: DEFAULT_STORAGE_BACKEND,
@@ -230,6 +232,7 @@ export function localStorageBackends(
         backend.reserveBytes ?? reserveBytes,
         rootMode,
         volume,
+        reserveInodes,
       );
       return {
         id: backend.id,

@@ -114,6 +114,13 @@ test('the decision for a verified package, row by row (ADR 0078, 3.3 and 3.4)', 
       null,
       'failed:routes_unsupported',
     ],
+    [
+      'routes through the host service',
+      signedOf({ routePrefixes: ['/api/ext/sample/v1/'], uses: ['routes'] }),
+      entryOf(),
+      null,
+      'loaded',
+    ],
   ];
   for (const [name, signed, entry, list, expected] of rows)
     assert.equal(
@@ -204,8 +211,8 @@ test('signed modules are planned beside the built-in ones, disabled until the op
 test('a refused provider refuses its consumers in turn; a signed id of a built-in module is refused', () => {
   const installed = {
     verified: [
-      verified('consumer', { requires: ['feed'], provides: ['digest'] }),
-      verified('reader-of-digest', { requires: ['digest'] }),
+      verified('consumer', { requires: ['feed@^1.0.0'], provides: ['digest@1.0.0'] }),
+      verified('reader-of-digest', { requires: ['digest@^1.0.0'] }),
       verified('upack'),
       verified('alone'),
     ],
@@ -454,7 +461,7 @@ test('the set file and the environment are read strictly', async (t) => {
   await host.install(modulePackage(host.keys.module, { id: 'sample' }));
   await writeFile(join(host.modules, 'installed.json'), '{"format":2}');
   await assert.rejects(
-    checkInstalledModules(host.source(), { coreVersion: '0.6.0', extensionApi: '0.2.0', now: 0 }),
+    checkInstalledModules(host.source(), { coreVersion: '0.6.0', extensionApi: '0.3.0', now: 0 }),
     /Invalid modules\/installed\.json/,
   );
   assert.equal(installedModulesFrom({}), undefined);

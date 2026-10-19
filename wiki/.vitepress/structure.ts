@@ -18,7 +18,7 @@ export const SECTIONS: readonly Section[] = [
   },
   {
     id: 'use',
-    pages: ['accounts', 'repositories', 'transfers', 'packages', 'files', 'promotion'],
+    pages: ['accounts', 'repositories', 'transfers', 'trees', 'packages', 'files', 'promotion'],
   },
   {
     id: 'protocols',

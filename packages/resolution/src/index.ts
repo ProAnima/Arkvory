@@ -154,3 +154,70 @@ export function confineEntry(moduleUrl: string): void {
   const release = releaseDirectoryOf(moduleUrl);
   if (release !== undefined) allowResolutionUnder(release);
 }
+
+/**
+ * What code of a confined package gets when it reaches outside its own directory: like
+ * `ResolutionRefusedError`, the code of a module that is not installed.
+ */
+export class PackageResolutionRefusedError extends Error {
+  override readonly name = 'PackageResolutionRefusedError';
+  constructor(
+    readonly code: 'MODULE_NOT_FOUND' | 'ERR_MODULE_NOT_FOUND',
+    specifier: string,
+  ) {
+    super(`Cannot find module '${specifier}': a module package resolves only its own files`);
+  }
+}
+
+/** Real package directories of this thread, comparable and ending in the separator. */
+const PACKAGES = Symbol.for('proanima.arkvory.package-confinement');
+
+function packageRoots(): Set<string> {
+  const value: unknown = Reflect.get(globalThis, PACKAGES);
+  if (value !== undefined) {
+    if (!isConfinement(value)) throw new Error('Package confinement state is invalid');
+    return value.roots;
+  }
+  const state: Confinement = { roots: new Set() };
+  const roots = state.roots;
+  Object.defineProperty(globalThis, PACKAGES, { value: state });
+  registerHooks({
+    resolve(specifier, context, nextResolve) {
+      const resolved = nextResolve(specifier, context);
+      const parent = context.parentURL?.startsWith('file:')
+        ? comparable(realFile(context.parentURL))
+        : undefined;
+      const root =
+        parent === undefined ? undefined : [...roots].find((dir) => parent.startsWith(dir));
+      if (root === undefined || resolved.url.startsWith('node:')) return resolved;
+      if (resolved.url.startsWith('file:') && comparable(realFile(resolved.url)).startsWith(root))
+        return resolved;
+      throw new PackageResolutionRefusedError(
+        context.conditions.includes('require') ? 'MODULE_NOT_FOUND' : 'ERR_MODULE_NOT_FOUND',
+        specifier,
+      );
+    },
+  });
+  return roots;
+}
+
+/**
+ * Confines the code of one verified module package (a client module of `arkvoryctl`, ADR 0079,
+ * 5.11) to its own directory: whatever a file under `directory` resolves — `import`, `import()`,
+ * `require`, `import.meta.resolve` — must be a Node built-in or a file under that same
+ * directory by its real path, or `PackageResolutionRefusedError` is thrown before anything is
+ * loaded. A bare name therefore never reaches `node_modules` of a parent directory, the home
+ * directory or `NODE_PATH`, and a package cannot load the client's own libraries. When the
+ * thread's resolution is confined (`confineResolution`), the directory also joins its roots,
+ * so the package's files may load at all. Call it after the package passed its checks and
+ * before importing its entry; like `confineResolution` it covers this thread only.
+ */
+export function confinePackage(directory: string): void {
+  if (!isAbsolute(directory)) throw new Error('A package directory must be an absolute path');
+  const roots = packageRoots();
+  for (const form of new Set([realpathSync(directory), realpathSync.native(directory)])) {
+    if (dirname(form) === form) throw new Error('A filesystem root cannot be a package directory');
+    roots.add(comparable(form.endsWith(sep) ? form : form + sep));
+  }
+  if (resolutionConfined()) allowResolutionUnder(directory);
+}

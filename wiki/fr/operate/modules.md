@@ -52,10 +52,11 @@ Un module installé reste désactivé jusqu’à ce que vous l’activiez. Les s
    { "format": 1, "modules": { "sample": { "enabled": true } } }
    ```
 
-2. Redémarrez les services, comme dans [Appliquer une modification](../install/configuration#apply-change).
-3. Vérifiez le module en tant qu’administrateur global : `GET /api/v1/system/modules` l’affiche avec `running: true` et `health.status` `ok` sur l’API et sur chaque passerelle de lecture.
+2. Si le module conserve des fichiers, approuvez la taille de son répertoire de données avec `resources`, par exemple `"resources": { "dataMiB": 512, "dataFiles": 10000 }` à côté de `enabled`. Elle remplace la taille demandée par le paquet. Voir [Répertoire de données d’un module](#data).
+3. Redémarrez les services, comme dans [Appliquer une modification](../install/configuration#apply-change).
+4. Vérifiez le module en tant qu’administrateur global : `GET /api/v1/system/modules` l’affiche avec `running: true` et `health.status` `ok` sur l’API et sur chaque passerelle de lecture.
 
-L’API et les passerelles de lecture exécutent les modules. Le worker vérifie les mêmes modules et n’en exécute aucun. Cette version refuse les modules qui s’exécutent dans le worker ou dans l’agent de sauvegarde (`role_unsupported`) et ceux qui déclarent leurs propres routes (`routes_unsupported`). Les installations Docker Compose ne chargent pas encore de modules.
+L’API et les passerelles de lecture exécutent les modules. Le worker vérifie les mêmes modules et n’en exécute aucun. Cette version refuse les modules qui s’exécutent dans le worker ou dans l’agent de sauvegarde (`role_unsupported`) et ceux qui déclarent des préfixes de routes sans servir de routes par Arkvory (`routes_unsupported`). Les installations Docker Compose ne chargent pas encore de modules.
 
 Avant qu’un service importe le moindre code d’un module, il vérifie de nouveau le paquet :
 
@@ -74,6 +75,43 @@ Un module qui échoue à une vérification n’est pas chargé ; les autres modu
 Un module en échec ne rend Arkvory non prêt (`/health/ready` répond 503 avec `module_failed`) que si un autre module activé en a besoin. Un module qui stocke les octets des fichiers publiés (données `layout`) ne le fait jamais : Arkvory continue de servir ses données et écrit les nouveaux envois dans son propre stockage au lieu de celui du module. Le journal enregistre `module.refused` et `module.failed` avec le code dans `errorCode`.
 
 Pour réparer un paquet modifié ou absent, installez-le de nouveau. Tous les services de l’installation doivent voir les mêmes modules, activés ou non : une passerelle de lecture ou un worker avec d’autres modules n’est pas prêt (`module_plan_mismatch`). Installez les mêmes paquets sur l’hôte de chaque passerelle de lecture.
+
+### Répertoire de données d’un module {#data}
+
+Un module qui conserve ses propres index, caches ou état obtient un répertoire sur le volume de données : `module-data/<id>/` dans le répertoire de stockage `default`. Sa partie `data` est destinée aux sauvegardes, sa partie `cache` ne l’est pas. Arkvory compte chaque écriture dans la taille approuvée, en Mio et en fichiers, pour les deux parties ensemble. Une écriture au-delà est refusée (`module_quota_exceeded`) et le module continue de fonctionner. Sans taille approuvée, le module peut seulement lire. La [réserve du volume](./storage#disk) s’applique aussi. Sur une passerelle de lecture, le module lit les mêmes fichiers et ne peut pas les modifier.
+
+La suppression d’un module conserve son répertoire. Supprimez `module-data/<id>/` vous-même lorsque vous n’avez plus besoin des données. Les sauvegardes n’incluent pas encore les répertoires des modules.
+
+## Routes des modules {#routes}
+
+Un module peut ajouter des routes HTTP sous son propre préfixe `/api/ext/<id>/v<major>/`, par exemple `/api/ext/sample/v1/`. Arkvory vérifie chaque requête avant que le code du module ne s’exécute :
+
+| Vérification     | Comme pour `/api/v1`                                                                                                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identifiants     | Les mêmes clés, sessions et jetons ; une route est ouverte à tout appelant connecté ou seulement à l’administrateur global                                                                      |
+| Permission       | La permission que la route nomme sur le dépôt de son chemin, comme `content.read` ou `upload.create` : une clé de service en a besoin, un compte a besoin de son droit de lecture ou d’écriture |
+| Corps de requête | La limite de taille de la route, les limites de téléversement, les délais et la bande passante du serveur                                                                                       |
+| Fichiers         | Envoyés par Arkvory lui-même : ETag, Range, `If-Range`, 304, la file de téléchargements et la bande passante de téléchargement                                                                  |
+
+Les erreurs ont le format d’erreur de l’API. Un module ne voit jamais les identifiants ni les autres en-têtes. Une passerelle de lecture sert les routes de lecture d’un module et répond `read_only` aux autres.
+
+Chaque module décrit ses routes dans un document OpenAPI, et Arkvory compare les deux au démarrage du module. Un module dont les routes enfreignent les règles ne démarre pas et ne sert rien ; Arkvory continue. `GET /api/v1/system/modules` l’affiche avec `running: false` et `health.status` `failed` :
+
+| Code                     | Signification                                                                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `routes_invalid`         | Une route enfreint les règles, par exemple un chemin hors du préfixe du module ou une modification ouverte à tout appelant connecté |
+| `openapi_invalid`        | Le document OpenAPI manque ou n’est pas valide                                                                                      |
+| `openapi_route_mismatch` | Une route n’a pas d’opération dans le document, ou une opération n’a pas de route                                                   |
+| `transfer_invalid`       | Le module propose un protocole de transfert qu’il ne peut pas proposer                                                              |
+
+Les documents des routes :
+
+| Adresse                                                                                     | Qui peut la lire        | Contenu                                                                                                |
+| ------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET /api/ext/openapi.json`                                                                 | Tout appelant connecté  | Les routes de tous les modules que ce service exécute, avec les opérations que l’appelant peut appeler |
+| [`GET /api/v1/system/modules/{id}/openapi`](../api/reference/system#getSystemModuleOpenApi) | L’administrateur global | Les routes d’un module                                                                                 |
+
+`/api/v1/openapi.json` ne liste jamais les routes des modules. Un module du type `transfer` peut proposer une autre façon de transférer les fichiers : `GET /api/v1/capabilities` la liste dans `transfer`. Un client ne l’utilise qu’avec une extension correspondante ; sinon, il transfère les fichiers comme d’habitude.
 
 ## Mettre à jour, épingler, revenir en arrière {#versions}
 

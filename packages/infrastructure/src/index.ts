@@ -90,6 +90,8 @@ export * from './metrics.js';
 export { PostgresCleanupSettings } from './cleanup-settings.js';
 export { PostgresOnlineCleanup } from './online-cleanup.js';
 export { PostgresContentPins } from './content-pins.js';
+export { ZipTreeBuilder } from './archive-tree.js';
+export { PostgresTreeIndexes, migrateTreeIndexes } from './tree-index-store.js';
 
 export { admitUnlink, finishUnlink } from './unlink-admission.js';
 export { FileVault, defaultFileVaultOptions } from './file-vault.js';
@@ -199,6 +201,24 @@ export type { InstallationPlan, LoadOptions } from './module-installation.js';
 export { parseModuleSelections, readModuleSelections } from './module-selection.js';
 export type { ModuleSelection, ModuleSelections } from './module-selection.js';
 export { PostgresModulePlan, type ModulePlanFingerprints } from './module-plan-store.js';
+// Host services of ADR 0083 (N1, N2, N4, N6, N13).
+export { CapabilityRegistry } from './module-capabilities.js';
+export { openModuleData } from './module-data.js';
+export type { ModuleData, ModuleDataOptions } from './module-data.js';
+export { requireVolumeRoom } from './volume-space.js';
+export type { VolumeProbe, VolumeReserve } from './volume-space.js';
+export { AccessScopes, moduleCatalog } from './module-catalog.js';
+export { ModuleHostServices, RECONCILE_INTERVAL_MS } from './module-host-services.js';
+export type { HostServiceSources } from './module-host-services.js';
+export { MOVE_LEASE_SECONDS, PostgresBlobMoves } from './blob-moves-store.js';
+export {
+  PostgresCopyRemoval,
+  PostgresUploadSwitch,
+  REHOME_LOCK,
+  pacedCopy,
+  takeRehomeSingleton,
+} from './blob-moves-steps.js';
+export type { RehomeSingleton } from './blob-moves-steps.js';
 export { LICENCE_EXCHANGE_LOCK, PostgresLicenceStore, migrateLicences } from './licence-store.js';
 export { licenceVerifier } from './licence-verifier.js';
 export {

@@ -4,7 +4,11 @@ import {
   readAttachmentRevision,
   readStoragePlacement,
 } from '@proanima/arkvory-contracts';
-import { connection, profiles, repositoryName } from './profiles.js';
+import { activeProfile, connection, profiles, repositoryName } from './profiles.js';
+import type { ConnectionExtras } from './profiles.js';
+import { moduleCommand } from './modules/module-command.js';
+import { loadClientModules } from './modules/module-loader.js';
+import { treeCommand } from './tree/tree-command.js';
 import { option, word, revision, validateCommand, numericOption } from './arguments.js';
 import type { Arguments } from './arguments.js';
 import type { ArkvoryClient, RepositoryClient } from '@proanima/arkvory-sdk';
@@ -41,7 +45,41 @@ const remoteCommands = [
   'promotions',
   'backup',
   'events',
+  'tree',
 ];
+
+/** Commands that move content: only they load client modules (ADR 0079, 5.11). */
+function movesContent(args: Arguments): boolean {
+  const command = args.words[0];
+  const sub = args.words[1];
+  return (
+    command === 'upload' ||
+    command === 'download' ||
+    command === 'put' ||
+    command === 'get' ||
+    command === 'tree' ||
+    (command === 'packages' && (sub === 'publish' || sub === 'download'))
+  );
+}
+
+/**
+ * `--transfer auto|strict|core`: the transfer extensions of the client modules enabled for the
+ * profile, used when the server offers them (`auto`, the default), required (`strict`), or not
+ * loaded at all (`core`). A module that is enabled but refused is reported on stderr and left
+ * out; the core transfer is always there in `auto`.
+ */
+async function transferExtras(args: Arguments, signal: AbortSignal): Promise<ConnectionExtras> {
+  const mode = args.options.get('transfer') ?? 'auto';
+  if (mode !== 'auto' && mode !== 'strict' && mode !== 'core')
+    throw new CliError('invalid_transfer');
+  if (mode === 'core' || !movesContent(args)) return {};
+  const modules = await loadClientModules(await activeProfile(args), signal);
+  for (const refused of modules.refused)
+    process.stderr.write(
+      `arkvoryctl: client module ${refused.id} ${refused.version} not loaded (${refused.code})\n`,
+    );
+  return { transferExtensions: modules.extensions, transferMode: mode };
+}
 
 export async function execute(
   args: Arguments,
@@ -51,12 +89,14 @@ export async function execute(
   const command = word(args, 0);
   if (command === 'profile') return profiles(args);
   if (command === 'skill') return skillCommand(args);
+  if (command === 'module') return moduleCommand(args);
   if (!remoteCommands.includes(command)) throw new CliError('unknown_command');
-  const connected = await connection(args, signal);
+  const connected = await connection(args, signal, await transferExtras(args, signal));
   if (command === 'backup') return backupCommand(args, connected, timed(args, signal));
   // A tail with --follow runs until Ctrl+C: each request keeps the client's own deadline.
   if (command === 'events') return eventsCommand(args, connected, signal);
   if (isPromotionCommand(args)) return promotionCommand(args, connected, signal, progress);
+  if (command === 'tree') return treeCommand(args, connected, signal, progress);
   const { client, server, repository } = connected;
   if (
     command === 'upload' ||

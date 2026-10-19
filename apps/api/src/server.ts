@@ -43,6 +43,8 @@ import { collectTopology, registerTopologyRoutes, type TopologyParts } from './t
 import { FleetOverviewSource } from './fleet-overview.js';
 import { registerFleetRoutes } from './fleet-routes.js';
 import { registerModuleRoutes } from './module-routes.js';
+import { registerExtensionDocuments } from './extension-documents.js';
+import { declaredRoutes } from './extension-routes.js';
 import { registerLicenseRoutes } from './license-routes.js';
 import { moduleMetrics } from './module-metrics.js';
 import { RecentLog } from './recent-log.js';
@@ -335,6 +337,12 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
   registerTopologyRoutes(app, context.principal, topologyParts(parts));
   registerEventRoutes(app, services.events, context, config.siteName ?? 'arkvory');
   registerModuleRoutes(app, context.principal, runtime.modules);
+  const { sets } = runtime.extensions();
+  registerExtensionDocuments(app, context.principal, {
+    role: runtime.role,
+    fingerprint: runtime.modules.plan.fingerprint,
+    sets,
+  });
   registerLicenseRoutes(app, context.principal, runtime.licences);
   registerFeedback(app, context.principal, {
     hub: config.hub ?? null,
@@ -357,6 +365,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
       .states()
       .filter(({ running, module }) => running && module.manifest.kind !== 'storage-backend')
       .map(({ module }) => ({ id: module.manifest.id, kind: module.manifest.kind })),
+    extensions: sets,
   });
   if (runtime.role === 'api') registerConsole(app, config.webDirectory ?? 'apps/web/public');
 }
@@ -403,7 +412,8 @@ export async function createServer(config: ServerConfig, lifecycle: ServerLifecy
     const fleetOverview = fleetOverviewFor(fleet);
     const responses = new ResponseDiagnostics(diagnostics, services.storagePolicies, context);
     // Guard registration precedes feature routes and background startup.
-    registerContractGuard(app, runtime.modules.planned());
+    const extensions = runtime.extensions();
+    registerContractGuard(app, extensions.modules, declaredRoutes(extensions.sets));
     // Collects routes like the guard does, for the 405 Allow answer of unmatched requests.
     registerNotFound(app, context, runtime.role);
     registerObservation(app, {

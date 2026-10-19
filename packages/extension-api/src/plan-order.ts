@@ -1,36 +1,46 @@
+import { checkUse, optional, provided, required } from './plan-capabilities.js';
 import type { ReadModule, RuleProblem } from './plan-rules.js';
 
-/** Capability → providing module among enabled modules; a second provider is a problem. */
+/** Capability name → providing module among enabled modules; a second provider is a problem. */
 function providers(enabled: readonly ReadModule[], problems: RuleProblem[]) {
   const result = new Map<string, ReadModule>();
   for (const m of enabled)
-    for (const capability of m.manifest.provides) {
-      if (result.has(capability))
-        problems.push({ code: 'duplicate_provider', module: m.manifest.id, subject: capability });
-      else result.set(capability, m);
+    for (const { name } of provided(m)) {
+      if (result.has(name))
+        problems.push({ code: 'duplicate_provider', module: m.manifest.id, subject: name });
+      else result.set(name, m);
     }
   return result;
 }
 
 /**
- * Edges provider → consumer for every requirement of an enabled module. The provider must run in
- * every process the consumer runs in, or the consumer would start without it somewhere.
+ * Edges provider → consumer for every requirement of an enabled module and every optional
+ * capability that has a provider. A required provider must run in every process the consumer
+ * runs in, or the consumer would start without it somewhere; an optional one may not, the
+ * consumer then gets null there. Versions and exposure are checked for both (ADR 0083, N13).
  */
 function dependents(enabled: readonly ReadModule[], problems: RuleProblem[]) {
-  const byCapability = providers(enabled, problems);
+  const byName = providers(enabled, problems);
   const edges = new Map<string, Set<string>>(enabled.map((m) => [m.manifest.id, new Set()]));
-  for (const m of enabled)
-    for (const capability of m.manifest.requires) {
-      const provider = byCapability.get(capability);
-      const id = m.manifest.id;
-      if (provider === undefined)
-        problems.push({ code: 'missing_requirement', module: id, subject: capability });
-      else if (provider !== m) {
-        if (m.manifest.roles.some((role) => !provider.manifest.roles.includes(role)))
-          problems.push({ code: 'requirement_role_mismatch', module: id, subject: capability });
-        edges.get(provider.manifest.id)?.add(id);
+  for (const m of enabled) {
+    const id = m.manifest.id;
+    const wanted = [
+      ...required(m).map((entry) => ({ entry, needed: true })),
+      ...optional(m).map((entry) => ({ entry, needed: false })),
+    ];
+    for (const { entry, needed } of wanted) {
+      const provider = byName.get(entry.name);
+      if (provider === undefined) {
+        if (needed) problems.push({ code: 'missing_requirement', module: id, subject: entry.name });
+        continue;
       }
+      if (provider === m) continue;
+      checkUse(m, provider, entry, problems);
+      if (needed && m.manifest.roles.some((role) => !provider.manifest.roles.includes(role)))
+        problems.push({ code: 'requirement_role_mismatch', module: id, subject: entry.name });
+      edges.get(provider.manifest.id)?.add(id);
     }
+  }
   return edges;
 }
 

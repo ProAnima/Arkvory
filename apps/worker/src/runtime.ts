@@ -10,6 +10,7 @@ import {
   readLocalStorageSettings,
   WorkerSingletonBusy,
   storageReserveBytes,
+  storageReserveInodes,
 } from '@proanima/arkvory-infrastructure';
 /** Capacity matters only for uploads the worker creates itself (mirror copies, ADR 0058). */
 export function capacityBytes(value: string | undefined): number {
@@ -29,6 +30,7 @@ export async function resources(role: 'worker' | 'maintenance', capacity = 0, wr
     root,
     storageReserveBytes(process.env['ARKVORY_STORAGE_RESERVE_BYTES']),
     await readLocalStorageSettings(process.env['ARKVORY_MODULES_FILE'], root),
+    { reserveInodes: storageReserveInodes(process.env['ARKVORY_STORAGE_RESERVE_INODES']) },
   );
   const core = blobs.core.lifecycle;
   const catalog = new PostgresCatalog(databaseUrl, capacity, writers);

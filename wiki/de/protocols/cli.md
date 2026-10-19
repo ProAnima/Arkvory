@@ -72,6 +72,7 @@ Die Server-URL muss HTTPS verwenden. Unverschlüsseltes HTTP ist nur für `local
 | `--not-before T`             |                | Einen Download nicht vor T beginnen: RFC 3339 oder `HH:MM`, der nächste solche Zeitpunkt                                                        |
 | `--not-after T`              |                | Mit Exit-Code 4 aufgeben, wenn die Warteschlange den Download erst nach T beginnen würde                                                        |
 | `--verbose`                  | aus            | Eine stderr-Zeile pro HTTP-Anfrage: Methode, Pfad, Status, Zeit, Anfrage-ID. Keine Header und keine Schlüssel.                                  |
+| `--transfer MODE`            | `auto`         | Übertragungserweiterungen von [Client-Modulen](#client-modules): `auto`, `strict` oder `core` (keine)                                           |
 | `--help`, `--version`        |                | Hilfe; Client-Version als JSON                                                                                                                  |
 | `--`                         |                | Beendet die Optionen, für Dateinamen, die mit `-` beginnen                                                                                      |
 
@@ -115,6 +116,17 @@ arkvoryctl link 00000000-0000-4000-8000-000000000001 --ttl 900
 ```
 
 Ein Download-Link ist ein Geheimnis. Er kann nicht vor Ablauf widerrufen werden.
+
+### Verzeichnisbäume {#directory-trees}
+
+| Befehl                                                                              | Ergebnis                                                                               |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Veröffentlicht den Ordner als ein ZIP-Artefakt, fortsetzbar                            |
+| `tree pull ID DIR`                                                                  | Macht den Ordner zum Baum: ganzes Archiv oder nur die abweichenden Dateien             |
+| `tree verify ID DIR`                                                                | Listet fehlende, abweichende und zusätzliche Dateien; Exit-Code 5 bei jeder Abweichung |
+| `tree repair ID DIR`                                                                | Schreibt fehlende und abweichende Dateien neu; behält zusätzliche Dateien              |
+
+Siehe [Verzeichnisbäume](../use/trees).
 
 ### Pakete und Hochstufung {#packages-and-promotion}
 
@@ -256,6 +268,25 @@ claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 - **Daten.** Namen, Labels und Metadaten in Ergebnissen stammen von anderen Personen. Der Agent muss sie als Daten behandeln, nicht als Anweisungen.
 - Der Client muss MCP 2025-06-18 oder neuer unterstützen.
 
+## Client-Module {#client-modules}
+
+Ein Client-Modul ist ein signiertes Paket von ProAnimaStudio, das `arkvoryctl` selbst erweitert, zum Beispiel um einen schnelleren Weg, Bytes zu übertragen (eine Übertragungserweiterung). Der kostenlose Client enthält kein solches Modul; ohne Modul funktioniert jeder Befehl so, wie auf dieser Seite beschrieben.
+
+| Befehl                                                    | Ergebnis                                                                       |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `module install FILE [--yes] [--allow-stale-revocations]` | Prüft das Paket und zeigt es mit seinen Bedingungen; installiert mit `--yes`   |
+| `module list`                                             | Installierte Module, wo sie aktiviert sind, und der Zustand der Widerrufsliste |
+| `module enable ID [--profile NAME]`                       | Aktiviert das Modul für alle Profile oder für eines                            |
+| `module disable ID [--profile NAME]`                      | Deaktiviert es überall oder für ein Profil                                     |
+| `module remove ID`                                        | Entfernt das Modul                                                             |
+| `module revocations FILE`                                 | Speichert eine signierte Widerrufsliste, für Rechner ohne Internetzugang       |
+
+- **Wo.** Module werden für Ihren Benutzer im Ordner `modules` des CLI-Ordners installiert (`ARKVORY_CLI_HOME`, standardmäßig `~/.config/arkvory`). Ein neues Modul ist deaktiviert, bis Sie es aktivieren.
+- **Prüfungen.** Angenommen werden nur Pakete, die mit dem Modulschlüssel von ProAnimaStudio signiert und für den Client gebaut sind. Bevor ein Befehl ein Modul verwendet, prüft `arkvoryctl` erneut die Signatur und jede Datei sowie, dass kein anderer Benutzer die Dateien ändern kann (unter Linux und macOS: Sie sind Besitzer, keine Schreibrechte für andere, keine Links; unter Windows: keine Links oder Junctions, und Besitzer und Zugriffsregeln erlauben Änderungen nur Ihnen und den Administratoren, sonst `module_access`). Eine widerrufene Version wird nie geladen. Ein Modul, das eine Prüfung nicht besteht, wird auf stderr gemeldet (`client module ID VERSION not loaded (code)`) und ausgelassen; der Befehl läuft ohne es weiter.
+- **Widerrufe.** `module install` braucht eine aktuelle Widerrufsliste. Ein Paket kann eine neuere mitbringen; andernfalls speichern Sie eine mit `module revocations`. `--allow-stale-revocations` installiert trotzdem; das Ergebnis weist darauf hin.
+- **Code.** Der Code eines Moduls darf nur seine eigenen Dateien und die eingebauten Module von Node laden. Nur Befehle, die Inhalte übertragen, laden Module: `upload`, `download`, `put`, `get`, `packages publish`, `packages download` und `tree`.
+- **Übertragungserweiterungen.** Die Erweiterung eines Moduls wird nur verwendet, wenn der Server dieselbe in `transfer` von `GET /api/v1/capabilities` anbietet. Der Client prüft das Ergebnis selbst: Größe und SHA-256 jedes Downloads und die veröffentlichte Prüfsumme jedes Uploads. Mit `--transfer auto` fällt der Client auf seine eigene Übertragung zurück, wenn die Erweiterung ablehnt oder fehlschlägt; `--transfer strict` schlägt stattdessen fehl (`transfer_unavailable`, Exit-Code 4); `--transfer core` lädt kein Modul. `--verbose` zeigt, welchen Weg jede Übertragung genommen hat.
+
 ## Ausgabe {#output}
 
 - Ergebnisse sind JSON auf stdout. Ohne `--json` ist das JSON eingerückt. Backup-Befehle geben lesbare Zeilen aus, sofern Sie nicht `--json` angeben.
@@ -281,19 +312,22 @@ Der Client wiederholt nur bei Netzwerkfehlern und den HTTP-Statuscodes 408, 429,
 
 ## Fehlerbehebung {#troubleshooting}
 
-| Meldung                                | Ursache und Lösung                                                                                                                                   |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `credential_required` (Exit 3)         | Kein Schlüssel gefunden. Prüfen Sie `--token-file`, `ARKVORY_TOKEN_FILE` oder setzen Sie den Schlüssel, wenn `ARKVORY_BASE_URL` verwendet wird.      |
-| `forbidden` (Exit 3)                   | Dem Schlüssel fehlt die Berechtigung. Führen Sie `doctor` aus, um die Berechtigungen zu sehen.                                                       |
-| `checkpoint_mismatch` (Exit 6)         | Datei, Server, Repository oder Optionen weichen vom gespeicherten Checkpoint ab. Verwenden Sie die ursprünglichen Optionen oder ein neues `--state`. |
-| `state_locked` (Exit 6)                | Ein anderer Prozess verwendet den Checkpoint, oder nach einem Absturz ist eine alte `.lock`-Datei zurückgeblieben.                                   |
-| `destination_exists` (Exit 6)          | Die Ausgabedatei existiert bereits. Wählen Sie einen anderen Namen.                                                                                  |
-| `revision_mismatch` bei `put` (Exit 6) | Jemand hat den Pfad inzwischen geändert. Prüfen Sie den Verlauf des Pfads und entscheiden Sie dann.                                                  |
-| Exit 8                                 | Kontingent oder Datenträger ist voll. Wenden Sie sich an den Administrator.                                                                          |
+| Meldung                                | Ursache und Lösung                                                                                                                                             |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `credential_required` (Exit 3)         | Kein Schlüssel gefunden. Prüfen Sie `--token-file`, `ARKVORY_TOKEN_FILE` oder setzen Sie den Schlüssel, wenn `ARKVORY_BASE_URL` verwendet wird.                |
+| `forbidden` (Exit 3)                   | Dem Schlüssel fehlt die Berechtigung. Führen Sie `doctor` aus, um die Berechtigungen zu sehen.                                                                 |
+| `checkpoint_mismatch` (Exit 6)         | Datei, Server, Repository oder Optionen weichen vom gespeicherten Checkpoint ab. Verwenden Sie die ursprünglichen Optionen oder ein neues `--state`.           |
+| `state_locked` (Exit 6)                | Ein anderer Prozess verwendet den Checkpoint, oder nach einem Absturz ist eine alte `.lock`-Datei zurückgeblieben.                                             |
+| `destination_exists` (Exit 6)          | Die Ausgabedatei existiert bereits. Wählen Sie einen anderen Namen.                                                                                            |
+| `revision_mismatch` bei `put` (Exit 6) | Jemand hat den Pfad inzwischen geändert. Prüfen Sie den Verlauf des Pfads und entscheiden Sie dann.                                                            |
+| Exit 8                                 | Kontingent oder Datenträger ist voll. Wenden Sie sich an den Administrator.                                                                                    |
+| `checksum_mismatch` (Exit 5)           | Eine Datei eines Baums stimmte nicht mit der veröffentlichten überein; die Datei im Ordner blieb unverändert. Wiederholen Sie den Befehl.                      |
+| `path_outside_root`, `unsafe_name`     | Ein Archiv oder ein Inhaltsverzeichnis nennt einen Pfad außerhalb des Ordners oder einen Namen, den Windows nicht speichern kann. Es wurde nichts geschrieben. |
+| `stale_revocations` (Exit 6)           | Keine aktuelle Widerrufsliste für `module install`. Speichern Sie eine mit `module revocations FILE`.                                                          |
 
 ## Verwandte Seiten {#related-pages}
 
 - [Clients und Protokolle](./index)
-- [Übertragungen](../use/transfers) und [Dateien nach Pfad](../use/files)
+- [Übertragungen](../use/transfers), [Verzeichnisbäume](../use/trees) und [Dateien nach Pfad](../use/files)
 - [TypeScript-SDK](./sdk)
 - [Fehler](../api/errors)

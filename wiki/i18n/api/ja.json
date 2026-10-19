@@ -11,10 +11,10 @@
     "getCapabilities": {
       "en": {
         "summary": "Get server capabilities and limits",
-        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed."
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed. `transfer` lists the transfer protocols of the modules this gateway runs, each with its `name`, the `versions` it speaks, the `module` and the `prefix` of its routes; a client uses one only with an extension of the same name and a common version, and otherwise transfers as usual."
       },
       "summary": "サーバーの機能と制限の取得",
-      "description": "APIバージョン、ゲートウェイのロール、機能フラグ（たとえば`selfRegistration`や`mirrorFeed`）、およびクライアントが合わせるべき制限を返します。制限には、最大オブジェクトサイズ（`maxObjectBytes`、10進数の文字列）、マルチパートのセグメントの最小サイズと最大サイズ、パート数の上限、ページサイズの上限が含まれます。クライアントの起動時に一度読み取ってください。リソースの一覧は含まれません。 `modules`は、このゲートウェイが提供する有効なモジュールを`id`と拡張ポイント（`kind`）とともに列挙します。`ARKVORY_MODULES_FILE`で無効にしたプロトコルは含まれません。"
+      "description": "APIバージョン、ゲートウェイのロール、機能フラグ（たとえば`selfRegistration`や`mirrorFeed`）、およびクライアントが合わせるべき制限を返します。制限には、最大オブジェクトサイズ（`maxObjectBytes`、10進数の文字列）、マルチパートのセグメントの最小サイズと最大サイズ、パート数の上限、ページサイズの上限が含まれます。クライアントの起動時に一度読み取ってください。リソースの一覧は含まれません。 `modules`は、このゲートウェイが提供する有効なモジュールを`id`と拡張ポイント（`kind`）とともに列挙します。`ARKVORY_MODULES_FILE`で無効にしたプロトコルは含まれません。 `transfer` は、このゲートウェイが実行するモジュールの転送プロトコルを、それぞれの `name`、対応する `versions`、`module`、ルートの `prefix` とともに列挙します。クライアントは同じ名前の拡張機能と共通のバージョンがある場合にだけそれを使い、ない場合は通常どおり転送します。"
     },
     "getReadinessStatus": {
       "en": {
@@ -239,6 +239,14 @@
       },
       "summary": "アーティファクトのダウンロード",
       "description": "元のバイト列を、`Content-Length`、`Content-Disposition`（アーティファクト名）、強い`ETag`（`\"sha256:<hex>\"`）とともにストリームで返します。単一の`Range`には206で応答し（満たせない場合は416）、ETagを指定した`If-Range`で安全に再開でき、`If-None-Match`には304で応答します。HEADは本文なしで同じヘッダーを返し、`Range`は無視します。`Authorization`ヘッダーの代わりに、`createDownloadLink`で作成したダウンロードリンクを`token`として付けることもできます。ダウンロードは、サーバーのダウンロード受け入れ枠に空きが出るまで待機します。"
+    },
+    "getArtifactTree": {
+      "en": {
+        "summary": "Read the table of contents of an archive",
+        "description": "For a `.zip` or `.upack` artifact, lists its file entries in archive order: `ordinal`, `path`, `size`, the `sha256` of the content as computed by the server, `method` (`stored` or `deflate`) and the data range `dataOffset`/`dataLength` inside the archive; that byte range of `downloadArtifact` is the entry's data (for `stored`, the file itself). `status` is `ready`, `pending` while the server has not read the archive yet (ask again later) or `unavailable` with a `reason`: `not_archive`, `invalid_archive`, `unsafe_entry` (a path outside the root, a link or a special file), `encrypted_entry`, `too_many_entries` (over 100 000), `too_large` (over 100 GiB of content), `unsupported_method`, `crc_mismatch` or `duplicate_entry` (also paths that differ only in case). A page holds up to `limit` entries (1–1000, default 1000); pass `next` as `after` for the following page, null marks the end. `archiveSha256` is the artifact's SHA-256 and `entries` the number of file entries. Needs `content.read`; a missing or forbidden artifact answers as `downloadArtifact` does."
+      },
+      "summary": "アーカイブの目次の取得",
+      "description": "`.zip`または`.upack`のアーティファクトについて、そのファイルエントリーをアーカイブ内の順序で一覧表示します。各エントリーには`ordinal`、`path`、`size`、サーバーが計算した内容の`sha256`、`method`（`stored`または`deflate`）、アーカイブ内のデータ範囲`dataOffset`/`dataLength`が含まれます。`downloadArtifact`のこのバイト範囲がエントリーのデータです（`stored`の場合はファイルそのもの）。`status`は`ready`、サーバーがまだアーカイブを読み取っていない間は`pending`（後でもう一度問い合わせてください）、または`reason`を伴う`unavailable`です。`reason`は`not_archive`、`invalid_archive`、`unsafe_entry`（ルート外のパス、リンク、特殊ファイル）、`encrypted_entry`、`too_many_entries`（100 000件超）、`too_large`（内容が100 GiB超）、`unsupported_method`、`crc_mismatch`、`duplicate_entry`（大文字と小文字だけが異なるパスを含む）のいずれかです。1ページには最大`limit`件（1〜1000、既定は1000）のエントリーが含まれます。次のページを取得するには`next`を`after`として渡します。nullは終わりを示します。`archiveSha256`はアーティファクトのSHA-256、`entries`はファイルエントリーの数です。`content.read`が必要です。存在しないアーティファクトや権限のないアーティファクトには`downloadArtifact`と同じ応答を返します。"
     },
     "listCatalogChanges": {
       "en": {
@@ -1000,6 +1008,14 @@
       "summary": "このインストールのモジュールを一覧表示",
       "description": "このインストールが計画しているすべてのモジュールを `id` 順に返します：`id`、`version`、拡張ポイント（`kind`）、`source`（コアのモジュールは `builtin`）、無料コアの一部か（`core`、無効化不可）と有効か（`enabled`）、動作するプロセス（`roles`）、応答したプロセスで動作しているか（`running`）とそこでの状態（`health`：`ok`、`degraded`、またはコード付きの `failed`。そこで動作していなければ null）。`compatibilityFingerprint` は、インストールのすべてのプロセスが一致させるべき内容（モジュールとそのソース、拡張ポイント、有効化の選択、設定。リリースのバージョンは含みません）の SHA-256 です。読み取りゲートウェイとワーカーは、書き込みプロセスと同じ値のときだけ準備完了になります。`fingerprint` はすべてのバージョンを含む正確な計画の SHA-256 で、リリースごとに変わります。`extensionApi` はこのコアのモジュール契約のバージョンです。設定、パス、シークレットは返しません。グローバル管理者だけが読めます。 ローダーが拒否したインストール済みの署名付きモジュールも、`running` が false、`health` が `failed`、`revoked`、`unavailable` のいずれかとコード付きで一覧に含まれます。そのプロセスで実行されるはずが読み込みまたは起動に失敗した署名付きモジュールは、コード付きの `failed` と表示されます。"
     },
+    "getSystemModuleOpenApi": {
+      "en": {
+        "summary": "Get the API document of one module",
+        "description": "Returns the OpenAPI 3.1 document of the routes the module `id` serves under `/api/ext/<id>/v<major>/` in the answering process: the paths and schemas the module documents, checked by the server against its routes, and for each operation what the server checks before the module runs (`x-arkvory-access`, `x-arkvory-action` with the path parameter that names the repository, `x-arkvory-effect`). `info.version` is the `fingerprint` of the module plan. A read gateway returns only the reads it serves. A module that serves no routes in the answering process, is disabled or did not start is `not_found`. Only the global administrator may read it; every authenticated caller reads the combined document of all modules at `/api/ext/openapi.json`, with the operations it may call."
+      },
+      "summary": "モジュール 1 つの API ドキュメントを取得",
+      "description": "応答したプロセスでモジュール `id` が `/api/ext/<id>/v<major>/` の下で提供するルートの OpenAPI 3.1 ドキュメントを返します。モジュールが記述し、サーバーがそのルートと照合したパスとスキーマに加え、各操作について、モジュールを実行する前にサーバーが確認する内容（`x-arkvory-access`、リポジトリを示すパスパラメーター付きの `x-arkvory-action`、`x-arkvory-effect`）を含みます。`info.version` はモジュール計画の `fingerprint` です。読み取りゲートウェイは自身が提供する読み取りだけを返します。応答したプロセスでルートを提供していない、無効化されている、または起動しなかったモジュールは `not_found` になります。グローバル管理者だけが読めます。認証済みの呼び出し元は誰でも、呼び出せる操作だけを含む全モジュールの統合ドキュメントを `/api/ext/openapi.json` で読めます。"
+    },
     "getSystemLicense": {
       "en": {
         "summary": "Show the licences of this installation",
@@ -1253,6 +1269,7 @@
     "Event id, `<epoch>:<position>`; deduplicate by it": "イベント ID、`<epoch>:<position>`。これで重複を除きます",
     "Artifact id, or the path of a file event": "アーティファクト ID、ファイルのイベントではパス",
     "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`。同じパーティションのイベントはコミット順を保ちます",
-    "Data of the type; its JSON Schema is in the type list": "タイプのデータ。その JSON Schema はタイプ一覧にあります"
+    "Data of the type; its JSON Schema is in the type list": "タイプのデータ。その JSON Schema はタイプ一覧にあります",
+    "Transfer protocols of the enabled modules this gateway runs; a client uses one only with an extension of the same name and a common version.": "このゲートウェイが実行する有効なモジュールの転送プロトコル。クライアントは同じ名前の拡張機能と共通のバージョンがある場合にだけ使います。"
   }
 }

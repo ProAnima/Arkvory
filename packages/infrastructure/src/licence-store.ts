@@ -11,14 +11,14 @@ import type {
 export const LICENCE_EXCHANGE_LOCK = 30;
 
 /**
- * Version 45 (ADR 0078, R2), expand-only. Activations keep the exact documents the core
+ * Version 47 (ADR 0078, R2), expand-only. Activations keep the exact documents the core
  * accepted; the other columns schedule refreshes and are never trusted for a licence decision
  * (readers verify the token text again). The activation secret is not here: it is a file of the
  * service account, outside the database and its backups. Requests of offline activation are
  * pending state of this installation and stay out of backups.
  */
 export async function migrateLicences(client: PoolClient): Promise<void> {
-  if ((await client.query('SELECT version FROM arkvory_migrations WHERE version=45')).rowCount)
+  if ((await client.query('SELECT version FROM arkvory_migrations WHERE version=47')).rowCount)
     return;
   await client.query(`
     CREATE TABLE IF NOT EXISTS arkvory_license_activations (
@@ -35,6 +35,7 @@ export async function migrateLicences(client: PoolClient): Promise<void> {
       pending_nonce text,
       pending_seq bigint,
       pending_since timestamptz,
+      pending_sends smallint NOT NULL DEFAULT 2 CHECK (pending_sends BETWEEN 0 AND 2),
       last_refresh_at timestamptz,
       failure text,
       failures integer NOT NULL DEFAULT 0 CHECK (failures >= 0),
@@ -61,7 +62,7 @@ export async function migrateLicences(client: PoolClient): Promise<void> {
       key_sha256 char(64) NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now()
     );
-    INSERT INTO arkvory_migrations(version) VALUES(45);
+    INSERT INTO arkvory_migrations(version) VALUES(47);
   `);
 }
 
@@ -76,6 +77,7 @@ interface ActivationRow {
   pending_nonce: string | null;
   pending_seq: string | null;
   pending_since: Date | null;
+  pending_sends: number;
   last_refresh_at: Date | null;
   failure: string | null;
   failures: number;
@@ -84,7 +86,7 @@ interface ActivationRow {
 }
 
 const COLUMNS = `activation_id, licence_id, installation, activation, token, seq::text AS seq, revocation,
-  pending_nonce, pending_seq::text AS pending_seq, pending_since, last_refresh_at, failure, failures,
+  pending_nonce, pending_seq::text AS pending_seq, pending_since, pending_sends, last_refresh_at, failure, failures,
   next_attempt_at, mismatch_since`;
 const time = (value: Date | null) => (value === null ? null : value.getTime());
 const date = (value: number | null) => (value === null ? null : new Date(value));
@@ -101,6 +103,7 @@ function activationOf(row: ActivationRow): StoredActivation {
     pendingNonce: row.pending_nonce,
     pendingSeq: row.pending_seq === null ? null : Number(row.pending_seq),
     pendingSince: time(row.pending_since),
+    pendingSends: row.pending_sends,
     lastRefreshAt: time(row.last_refresh_at),
     failure: row.failure,
     failures: row.failures,
@@ -183,7 +186,7 @@ export class PostgresLicenceStore implements LicenceStore {
          installation=EXCLUDED.installation, activation=EXCLUDED.activation, token=EXCLUDED.token,
          seq=EXCLUDED.seq, issued_at=EXCLUDED.issued_at, refresh_after=EXCLUDED.refresh_after,
          not_after=EXCLUDED.not_after, next_attempt_at=EXCLUDED.next_attempt_at, revocation=NULL,
-         pending_nonce=NULL, pending_seq=NULL, pending_since=NULL, failure=NULL, failures=0,
+         pending_nonce=NULL, pending_seq=NULL, pending_since=NULL, pending_sends=0, failure=NULL, failures=0,
          last_refresh_at=now(), updated_at=now()
        WHERE arkvory_license_activations.seq < EXCLUDED.seq`,
       [
@@ -206,7 +209,7 @@ export class PostgresLicenceStore implements LicenceStore {
     const result = await this.pool.query(
       `UPDATE arkvory_license_activations SET revocation=$2, seq=$3,
          issued_at=GREATEST(issued_at, $4), next_attempt_at=NULL, failure=NULL, failures=0,
-         pending_nonce=NULL, pending_seq=NULL, pending_since=NULL, last_refresh_at=now(), updated_at=now()
+         pending_nonce=NULL, pending_seq=NULL, pending_since=NULL, pending_sends=0, last_refresh_at=now(), updated_at=now()
        WHERE activation_id=$1 AND seq < $3`,
       [activationId, text, seq, new Date(issuedAt)],
     );
@@ -216,10 +219,29 @@ export class PostgresLicenceStore implements LicenceStore {
   async startAttempt(activationId: string, nonce: string, seq: number): Promise<void> {
     await this.pool.query(
       `UPDATE arkvory_license_activations SET pending_nonce=$2, pending_seq=$3,
-         pending_since=CASE WHEN pending_nonce IS DISTINCT FROM $2 THEN now() ELSE pending_since END,
+         pending_since=now(), pending_sends=1,
          updated_at=now()
        WHERE activation_id=$1`,
       [activationId, nonce, seq],
+    );
+  }
+
+  async reserveReplay(activationId: string, nonce: string, seq: number, windowMs: number) {
+    // Commit the budget before HTTP. A crash may waste the replay but can never duplicate it.
+    const result = await this.pool.query(
+      `UPDATE arkvory_license_activations SET pending_sends=2, updated_at=now()
+       WHERE activation_id=$1 AND pending_nonce=$2 AND pending_seq=$3 AND pending_sends=1
+         AND pending_since <= now() AND now() < pending_since + $4 * interval '1 millisecond'`,
+      [activationId, nonce, seq, windowMs],
+    );
+    return result.rowCount === 1;
+  }
+
+  async clearAttempt(activationId: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE arkvory_license_activations SET pending_nonce=NULL, pending_seq=NULL,
+         pending_since=NULL, pending_sends=0, updated_at=now() WHERE activation_id=$1`,
+      [activationId],
     );
   }
 

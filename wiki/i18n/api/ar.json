@@ -11,10 +11,10 @@
     "getCapabilities": {
       "en": {
         "summary": "Get server capabilities and limits",
-        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed."
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed. `transfer` lists the transfer protocols of the modules this gateway runs, each with its `name`, the `versions` it speaks, the `module` and the `prefix` of its routes; a client uses one only with an extension of the same name and a common version, and otherwise transfers as usual."
       },
       "summary": "الحصول على إمكانات الخادم وحدوده",
-      "description": "يعيد إصدارات واجهة API، ودور البوابة، وأعلام الميزات (مثل `selfRegistration` أو `mirrorFeed`)، والحدود التي يتكيّف معها العميل: أكبر كائن (`maxObjectBytes`، سلسلة نصية عشرية)، وأصغر جزء وأكبر جزء في الرفع متعدد الأجزاء، وأكبر عدد من الأجزاء، وأكبر حجم للصفحة. اقرأه مرة واحدة عند بدء تشغيل العميل؛ فهو لا يسرد أي موارد. يسرد `modules` الوحدات المفعّلة التي تخدمها هذه البوابة، ولكل منها `id` ونقطة التوسعة (`kind`)؛ ولا يظهر فيه بروتوكول أُطفئ في `ARKVORY_MODULES_FILE`."
+      "description": "يعيد إصدارات واجهة API، ودور البوابة، وأعلام الميزات (مثل `selfRegistration` أو `mirrorFeed`)، والحدود التي يتكيّف معها العميل: أكبر كائن (`maxObjectBytes`، سلسلة نصية عشرية)، وأصغر جزء وأكبر جزء في الرفع متعدد الأجزاء، وأكبر عدد من الأجزاء، وأكبر حجم للصفحة. اقرأه مرة واحدة عند بدء تشغيل العميل؛ فهو لا يسرد أي موارد. يسرد `modules` الوحدات المفعّلة التي تخدمها هذه البوابة، ولكل منها `id` ونقطة التوسعة (`kind`)؛ ولا يظهر فيه بروتوكول أُطفئ في `ARKVORY_MODULES_FILE`. يسرد `transfer` بروتوكولات النقل للوحدات التي تشغّلها هذه البوابة، ولكل منها `name` و`versions` التي يدعمها و`module` و`prefix` مساراته؛ ولا يستخدم العميل بروتوكولًا إلا إذا كان لديه امتداد بالاسم نفسه وإصدار مشترك، وإلا فإنه ينقل كالمعتاد."
     },
     "getReadinessStatus": {
       "en": {
@@ -239,6 +239,14 @@
       },
       "summary": "تنزيل مُخرَج",
       "description": "يبثّ البايتات الأصلية مع `Content-Length` و`Content-Disposition` (اسم المُخرَج) و`ETag` قوي (`\"sha256:<hex>\"`). يعطي `Range` واحد النتيجة 206 (ونطاق لا يمكن تلبيته يعطي 416)؛ ويستأنف `If-Range` مع ETag التنزيل بأمان، ويردّ `If-None-Match` بـ 304. ويعيد HEAD الترويسات نفسها دون متن ويتجاهل `Range`. وبدلًا من ترويسة `Authorization` يجوز أن يحمل الطلب رابط تنزيل من `createDownloadLink` بوصفه `token`؛ وتنتظر التنزيلات خانة شاغرة في قبول التنزيلات بالخادم."
+    },
+    "getArtifactTree": {
+      "en": {
+        "summary": "Read the table of contents of an archive",
+        "description": "For a `.zip` or `.upack` artifact, lists its file entries in archive order: `ordinal`, `path`, `size`, the `sha256` of the content as computed by the server, `method` (`stored` or `deflate`) and the data range `dataOffset`/`dataLength` inside the archive; that byte range of `downloadArtifact` is the entry's data (for `stored`, the file itself). `status` is `ready`, `pending` while the server has not read the archive yet (ask again later) or `unavailable` with a `reason`: `not_archive`, `invalid_archive`, `unsafe_entry` (a path outside the root, a link or a special file), `encrypted_entry`, `too_many_entries` (over 100 000), `too_large` (over 100 GiB of content), `unsupported_method`, `crc_mismatch` or `duplicate_entry` (also paths that differ only in case). A page holds up to `limit` entries (1–1000, default 1000); pass `next` as `after` for the following page, null marks the end. `archiveSha256` is the artifact's SHA-256 and `entries` the number of file entries. Needs `content.read`; a missing or forbidden artifact answers as `downloadArtifact` does."
+      },
+      "summary": "قراءة فهرس محتويات أرشيف",
+      "description": "يسرد، لمُخرَج `.zip` أو `.upack`، إدخالات الملفات فيه بترتيب الأرشيف: `ordinal` و`path` و`size` و`sha256` للمحتوى كما حسبه الخادم و`method` (`stored` أو `deflate`) ونطاق البيانات `dataOffset`/`dataLength` داخل الأرشيف؛ وهذا النطاق من بايتات `downloadArtifact` هو بيانات الإدخال (وفي حالة `stored` هو الملف نفسه). تكون `status` إما `ready`، أو `pending` ما دام الخادم لم يقرأ الأرشيف بعد (أعد الطلب لاحقًا)، أو `unavailable` مع `reason`: `not_archive` أو `invalid_archive` أو `unsafe_entry` (مسار خارج الجذر أو رابط أو ملف خاص) أو `encrypted_entry` أو `too_many_entries` (أكثر من 100 000) أو `too_large` (أكثر من 100 GiB من المحتوى) أو `unsupported_method` أو `crc_mismatch` أو `duplicate_entry` (بما في ذلك المسارات التي لا تختلف إلا في حالة الأحرف). تحتوي الصفحة على ما يصل إلى `limit` إدخالًا (من 1 إلى 1000، والافتراضي 1000)؛ مرّر `next` بوصفه `after` للحصول على الصفحة التالية، وتعني null النهاية. `archiveSha256` هو SHA-256 الخاص بالمُخرَج و`entries` عدد إدخالات الملفات. يتطلب `content.read`؛ ويكون الرد على مُخرَج غير موجود أو محظور كالرد في `downloadArtifact`."
     },
     "listCatalogChanges": {
       "en": {
@@ -1000,6 +1008,14 @@
       "summary": "سرد وحدات هذا التثبيت",
       "description": "يعيد كل وحدة يخطط لها هذا التثبيت مرتبة حسب `id`: `id` و`version` ونقطة التوسعة (`kind`) و`source` (`builtin` لوحدات النواة)، وهل هي جزء من النواة المجانية (`core`، لا تُعطَّل أبدًا) وهل هي مفعّلة (`enabled`)، والعمليات التي تعمل فيها (`roles`)، وهل تشغّلها العملية التي أجابت (`running`) وحالتها هناك (`health`: `ok` أو `degraded` أو `failed` مع رمز؛ null إذا لم تعمل هناك). `compatibilityFingerprint` هو SHA-256 لما يجب أن تتفق عليه كل عمليات التثبيت: الوحدات مع مصدرها ونقطة توسعتها واختيار تفعيلها وإعداداتها، دون إصدارات النواة؛ ولا تكون بوابة القراءة أو العامل (worker) جاهزة إلا بالقيمة نفسها التي لدى عملية الكتابة. و`fingerprint` هو SHA-256 للخطة الدقيقة بكل الإصدارات، لذا يتغير مع كل إصدار؛ و`extensionApi` هو إصدار عقد الوحدات لهذه النواة. لا تُعاد الإعدادات والمسارات والأسرار أبدًا. لا يقرؤها إلا المسؤول العام. تُدرج أيضًا الوحدات الموقّعة المثبّتة التي رفضها المحمّل، مع `running` بقيمة false و`health` بقيمة `failed` أو `revoked` أو `unavailable` مع رمز؛ والوحدة الموقّعة التي يجب أن تعمل هناك لكنها لم تُحمّل أو لم تبدأ تظهر `failed` مع رمزها."
     },
+    "getSystemModuleOpenApi": {
+      "en": {
+        "summary": "Get the API document of one module",
+        "description": "Returns the OpenAPI 3.1 document of the routes the module `id` serves under `/api/ext/<id>/v<major>/` in the answering process: the paths and schemas the module documents, checked by the server against its routes, and for each operation what the server checks before the module runs (`x-arkvory-access`, `x-arkvory-action` with the path parameter that names the repository, `x-arkvory-effect`). `info.version` is the `fingerprint` of the module plan. A read gateway returns only the reads it serves. A module that serves no routes in the answering process, is disabled or did not start is `not_found`. Only the global administrator may read it; every authenticated caller reads the combined document of all modules at `/api/ext/openapi.json`, with the operations it may call."
+      },
+      "summary": "الحصول على مستند API لوحدة واحدة",
+      "description": "يعيد مستند OpenAPI 3.1 للمسارات التي تقدّمها الوحدة `id` تحت `/api/ext/<id>/v<major>/` في العملية التي أجابت: المسارات والمخططات التي توثّقها الوحدة بعد أن طابقها الخادم مع مساراتها، ولكل عملية ما يتحقق منه الخادم قبل تشغيل الوحدة (`x-arkvory-access`، و`x-arkvory-action` مع معامل المسار الذي يسمّي المستودع، و`x-arkvory-effect`). `info.version` هو `fingerprint` خطة الوحدات. لا تعيد بوابة القراءة إلا عمليات القراءة التي تخدمها. الوحدة التي لا تقدّم مسارات في العملية التي أجابت، أو المعطّلة، أو التي لم تبدأ، تعطي `not_found`. لا يقرؤه إلا المسؤول العام؛ ويقرأ أي مستدعٍ مصادق عليه المستند المجمّع لكل الوحدات على `/api/ext/openapi.json`، مع العمليات التي يمكنه استدعاؤها."
+    },
     "getSystemLicense": {
       "en": {
         "summary": "Show the licences of this installation",
@@ -1253,6 +1269,7 @@
     "Event id, `<epoch>:<position>`; deduplicate by it": "معرّف الحدث، `<epoch>:<position>`؛ أزل التكرار به",
     "Artifact id, or the path of a file event": "معرّف المُخرَج، أو المسار في أحداث الملفات",
     "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`؛ تحافظ أحداث القسم الواحد على ترتيب تثبيتها",
-    "Data of the type; its JSON Schema is in the type list": "بيانات النوع؛ مخطط JSON Schema الخاص بها في قائمة الأنواع"
+    "Data of the type; its JSON Schema is in the type list": "بيانات النوع؛ مخطط JSON Schema الخاص بها في قائمة الأنواع",
+    "Transfer protocols of the enabled modules this gateway runs; a client uses one only with an extension of the same name and a common version.": "بروتوكولات النقل للوحدات المفعّلة التي تشغّلها هذه البوابة؛ ولا يستخدم العميل أحدها إلا إذا كان لديه امتداد بالاسم نفسه وإصدار مشترك."
   }
 }

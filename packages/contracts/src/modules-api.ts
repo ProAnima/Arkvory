@@ -3,6 +3,7 @@ import { items, record, text } from './wire-values.js';
 /** Modules of the installation (ADR 0078, 8; ADR 0079, 9): [path, method, operationId, access, retry]. */
 export const moduleOperations = [
   ['/system/modules', 'get', 'getSystemModules', 'administrator', 'read'],
+  ['/system/modules/{id}/openapi', 'get', 'getSystemModuleOpenApi', 'administrator', 'read'],
 ] as const;
 
 export interface SystemModuleHealth {
@@ -88,6 +89,26 @@ export const systemModulesSchema = object({
   },
 });
 
+/**
+ * The OpenAPI 3.1 document of one module's routes as the core serves them (ADR 0083, N12): the
+ * module's fragment with what the core checks per operation (`x-arkvory-*`) and the core's
+ * security scheme. Its paths and schemas belong to the module, so only the frame is fixed here.
+ */
+export const moduleDocumentSchema = {
+  type: 'object',
+  required: ['openapi', 'info', 'paths', 'components'],
+  properties: {
+    openapi: { type: 'string', pattern: '^3\\.1\\.' },
+    info: {
+      type: 'object',
+      required: ['title', 'version'],
+      properties: { title: { type: 'string' }, version: sha256 },
+    },
+    paths: { type: 'object' },
+    components: { type: 'object' },
+  },
+};
+
 export const modulePaths = {
   '/api/v1/system/modules': {
     get: {
@@ -98,6 +119,27 @@ export const modulePaths = {
           description:
             'Every planned module and every installed signed module the loader refused, in id order; no settings, paths or secrets',
           content: { 'application/json': { schema: systemModulesSchema } },
+        },
+      },
+    },
+  },
+  '/api/v1/system/modules/{id}/openapi': {
+    parameters: [
+      {
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: { type: 'string', pattern: '^[a-z][a-z0-9-]{1,31}$' },
+      },
+    ],
+    get: {
+      summary:
+        'Get the OpenAPI document of the routes one module serves under /api/ext/ in the answering process',
+      responses: {
+        200: {
+          description:
+            'The module fragment, checked against its routes, with the access checks of the core per operation; info.version is the plan fingerprint. A module that serves no routes in the answering process is not_found',
+          content: { 'application/json': { schema: moduleDocumentSchema } },
         },
       },
     },
@@ -146,4 +188,52 @@ export function readSystemModules(value: unknown): SystemModules {
     ...(compatibility === undefined ? {} : { compatibilityFingerprint: digest(compatibility) }),
     modules: items(row['modules']).map(readModule),
   };
+}
+
+/** One transfer protocol a module serves (ADR 0079, 5.2), from `capabilities.transfer`. */
+export interface TransferCapability {
+  /** Matched with the name of a client's transfer extension. */
+  readonly name: string;
+  /** Semver versions the server speaks; a client picks the highest one it shares. */
+  readonly versions: readonly string[];
+  /** The module serving it. */
+  readonly module: string;
+  /** Path prefix of its routes, `/api/ext/<module>/v<major>/`. */
+  readonly prefix: string;
+}
+
+/**
+ * Validates one list of capability offers (`capabilities.transfer`, `capabilities.tree`):
+ * one strict reader for both, a malformed entry fails the whole list. Fields a newer server
+ * adds are left out. `prefixes` says which module prefixes the list may name.
+ */
+export function readCapabilityOffers(
+  value: unknown,
+  prefixes: RegExp,
+  kind: string,
+): readonly TransferCapability[] {
+  return items(value).map((entry) => {
+    const row = record(entry);
+    const versions = items(row['versions']).map(text);
+    const prefix = text(row['prefix']);
+    if (versions.length === 0 || !prefixes.test(prefix))
+      throw new Error(`Invalid server ${kind} capability`);
+    return { name: text(row['name']), versions, module: text(row['module']), prefix };
+  });
+}
+
+/** Validates `capabilities.transfer`; fields a newer server adds are left out. */
+export function readTransferCapabilities(value: unknown): readonly TransferCapability[] {
+  return readCapabilityOffers(value, /^\/api\/ext\//, 'transfer');
+}
+
+/** `GET /api/v1/system/modules/{id}/openapi`: the frame is checked, the module's paths are not. */
+export function readModuleDocument(value: unknown): Readonly<Record<string, unknown>> {
+  const row = record(value);
+  const openapi = text(row['openapi']);
+  const version = text(record(row['info'])['version']);
+  record(row['paths']);
+  if (!openapi.startsWith('3.1.') || !/^[0-9a-f]{64}$/.test(version))
+    throw new Error('Invalid server module document');
+  return row;
 }

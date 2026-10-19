@@ -46,10 +46,15 @@ export {
   type RevocationList,
 } from './revocations.js';
 export {
+  CLIENT_ENTRY,
   DATA_CLASSES,
   PACKAGE_LIMITS,
+  PACKAGE_SIDES,
   checkCompatibility,
+  parseModuleFields,
   parsePackageManifest,
+  type PackageEntryRole,
+  type PackageSide,
   type CompatibilityHost,
   type DataClass,
   type PackageFields,
@@ -74,6 +79,16 @@ export {
   type ModuleSet,
   type RetainedPackage,
 } from './module-set.js';
+export {
+  ModuleAccessError,
+  aclProblem,
+  packageTree,
+  unsafeAcl,
+  unsafeEntries,
+  unsafeForUser,
+  type AclEntry,
+  type ModuleAccessProblem,
+} from './package-access.js';
 export {
   LICENCE_FORMAT,
   LICENCE_PRODUCT,

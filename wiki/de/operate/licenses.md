@@ -18,7 +18,7 @@ Die Befehle dieser Seite laufen auf dem Host der Installation, unter Linux als r
    sudo arkvory license activate --key-file /root/arkvory.key --root /opt/proanima-arkvory
    ```
 
-3. Löschen Sie die Schlüsseldatei. Arkvory behält den Schlüssel nicht und braucht ihn nicht wieder.
+3. Löschen Sie die lokale Schlüsseldatei nach der Aktivierung. Bewahren Sie den Zugriff auf den Schlüssel in Ihrem Konto: Zur Wiederherstellung kann er erneut nötig sein.
 
 Arkvory sendet die Anfrage an den Hub der Installation (die Adresse in `config/hub.json`, dieselbe wie für Updates) über HTTPS mit Zertifikatsprüfung. Die Antwort wird nur angenommen, wenn der Lizenzschlüssel von ProAnimaStudio sie signiert hat, für diese Installation und für diese Anfrage. Ein Schlüssel mit Tippfehler wird abgelehnt, bevor etwas gesendet wird. Dieselbe Installation mit demselben Schlüssel erneut zu aktivieren belegt keinen neuen Platz der Lizenz.
 
@@ -68,6 +68,8 @@ sudo arkvory license refresh --root /opt/proanima-arkvory
 ```
 
 Die Uhr zurückzustellen verlängert nichts: Arkvory urteilt nach der spätesten Zeit, die es gesehen hat. Liegt die Datenbankuhr mehr als einen Tag dahinter, erscheint `clockRollback`.
+
+Wenn eine Erneuerung den Hub erreicht haben könnte, aber die Antwort verloren ging, erlaubt Arkvory nur eine Wiederholung innerhalb des 10-Minuten-Fensters, auch nach einem Neustart. Bleibt der Ausgang unbekannt, ist die Wiederholung verbraucht, endet das Fenster oder ist das erhaltene Token ungültig, stoppt `activation_recovery_required` weitere Erneuerungen. Das bisherige Token gilt bis zu seinem Ablauf. Rufen Sie den Schlüssel ab und wiederholen Sie `license activate --key-file <file>`; `license refresh` behebt diesen Zustand nicht.
 
 ### Kopien und Wiederherstellungen {#copies}
 

@@ -18,6 +18,7 @@ import {
   EventFeed,
   PlacementControl,
   PolicyPlacement,
+  ArtifactTrees,
 } from '@proanima/arkvory-application';
 import type { MirrorConfiguration } from '@proanima/arkvory-application';
 import {
@@ -46,6 +47,7 @@ import {
   PostgresTransferLinks,
   PostgresEventLog,
   PostgresPlacementPolicies,
+  PostgresTreeIndexes,
 } from '@proanima/arkvory-infrastructure';
 import { AuthThrottle } from './auth-throttle.js';
 import { BackupMetrics } from './backup-metrics.js';
@@ -60,6 +62,44 @@ import type {
   StagingArea,
   StorageBackends,
 } from '@proanima/arkvory-infrastructure';
+
+function backupControl(
+  catalog: PostgresCatalog,
+  status: PostgresBackupStatus,
+  requests: PostgresBackupRequests,
+) {
+  return new BackupControl({
+    status,
+    plans: new PostgresBackupPlan(catalog.pool),
+    requests,
+    jobs: requests,
+    catalog: new PostgresBackupCatalog(catalog.pool),
+    next: randomUUID,
+  });
+}
+
+/** Uploads go where placement decides; a storage may assemble them from parts (ADR 0083). */
+function storageService(
+  catalog: PostgresCatalog,
+  blobs: StorageBackends,
+  placements: PostgresPlacementPolicies,
+  metrics: StorageMetrics,
+  maxObjectBytes: number | undefined,
+): StorageService {
+  return new StorageService(
+    catalog,
+    blobs,
+    { next: randomUUID, now: () => new Date().toISOString() },
+    {
+      placement: new PolicyPlacement(placements, blobs, (decision) => {
+        metrics.fellBack(decision);
+      }),
+      // Storages that assemble objects from their accepted parts (N1).
+      staged: blobs,
+      ...(maxObjectBytes === undefined ? {} : { maxObjectBytes }),
+    },
+  );
+}
 
 /** Composition only: each registrar receives just the services it consumes. */
 export function createApiServices(
@@ -78,17 +118,7 @@ export function createApiServices(
   const now = () => new Date().toISOString();
   const placements = new PostgresPlacementPolicies(catalog.pool);
   const storageMetrics = new StorageMetrics(blobs);
-  const service = new StorageService(
-    catalog,
-    blobs,
-    { next: randomUUID, now },
-    {
-      placement: new PolicyPlacement(placements, blobs, (decision) => {
-        storageMetrics.fellBack(decision);
-      }),
-      ...(maxObjectBytes === undefined ? {} : { maxObjectBytes }),
-    },
-  );
+  const service = storageService(catalog, blobs, placements, storageMetrics, maxObjectBytes);
   const serviceAccounts = new PostgresServices(catalog.pool);
   const storagePolicies = new PostgresStoragePolicy(catalog.pool);
   const securityAudit = new PostgresSecurityAudit(catalog.pool);
@@ -123,14 +153,7 @@ export function createApiServices(
         ? { mirrors: new MirrorMetrics(mirrors, () => performance.now()) }
         : {}),
     },
-    backup: new BackupControl({
-      status: backupStatus,
-      plans: new PostgresBackupPlan(catalog.pool),
-      requests: backupRequests,
-      jobs: backupRequests,
-      catalog: new PostgresBackupCatalog(catalog.pool),
-      next: randomUUID,
-    }),
+    backup: backupControl(catalog, backupStatus, backupRequests),
     promotion: new ArtifactPromotion(
       service,
       stages,
@@ -147,6 +170,7 @@ export function createApiServices(
     placement: new PlacementControl(placements, blobs),
     storageMetrics,
     browse,
+    trees: new ArtifactTrees(service, new PostgresTreeIndexes(catalog.pool)),
     search: new GlobalSearch(new PostgresGlobalSearch(catalog.pool)),
     securityAudit,
     authThrottle: new AuthThrottle(() => Date.now()),

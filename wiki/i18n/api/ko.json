@@ -11,10 +11,10 @@
     "getCapabilities": {
       "en": {
         "summary": "Get server capabilities and limits",
-        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed."
+        "description": "Returns the API versions, the gateway role, feature flags (for example `selfRegistration` or `mirrorFeed`) and the limits a client adapts to: the largest object (`maxObjectBytes`, a decimal string), the smallest and largest multipart segment, the largest number of parts and the largest page size. Read it once when a client starts; it lists no resources. `modules` lists the enabled modules this gateway serves, each with its `id` and extension point (`kind`); a protocol switched off in `ARKVORY_MODULES_FILE` is not listed. `transfer` lists the transfer protocols of the modules this gateway runs, each with its `name`, the `versions` it speaks, the `module` and the `prefix` of its routes; a client uses one only with an extension of the same name and a common version, and otherwise transfers as usual."
       },
       "summary": "서버 기능과 제한 조회",
-      "description": "API 버전, 게이트웨이 역할, 기능 플래그(예: `selfRegistration`, `mirrorFeed`)와 클라이언트가 맞춰야 하는 제한을 반환합니다. 제한에는 가장 큰 객체(`maxObjectBytes`, 10진 문자열), 최소·최대 멀티파트 세그먼트 크기, 최대 파트 수, 최대 페이지 크기가 있습니다. 클라이언트를 시작할 때 한 번 읽으며, 리소스 목록은 포함하지 않습니다. `modules`는 이 게이트웨이가 제공하는 활성화된 모듈을 `id`와 확장 지점(`kind`)과 함께 나열합니다. `ARKVORY_MODULES_FILE`에서 끈 프로토콜은 목록에 없습니다."
+      "description": "API 버전, 게이트웨이 역할, 기능 플래그(예: `selfRegistration`, `mirrorFeed`)와 클라이언트가 맞춰야 하는 제한을 반환합니다. 제한에는 가장 큰 객체(`maxObjectBytes`, 10진 문자열), 최소·최대 멀티파트 세그먼트 크기, 최대 파트 수, 최대 페이지 크기가 있습니다. 클라이언트를 시작할 때 한 번 읽으며, 리소스 목록은 포함하지 않습니다. `modules`는 이 게이트웨이가 제공하는 활성화된 모듈을 `id`와 확장 지점(`kind`)과 함께 나열합니다. `ARKVORY_MODULES_FILE`에서 끈 프로토콜은 목록에 없습니다. `transfer`는 이 게이트웨이가 실행하는 모듈의 전송 프로토콜을 `name`, 지원하는 `versions`, `module`, 라우트의 `prefix`와 함께 나열합니다. 클라이언트는 같은 이름의 확장과 공통 버전이 있을 때만 이를 사용하고, 그렇지 않으면 평소처럼 전송합니다."
     },
     "getReadinessStatus": {
       "en": {
@@ -239,6 +239,14 @@
       },
       "summary": "아티팩트 다운로드",
       "description": "원본 바이트를 `Content-Length`, `Content-Disposition`(아티팩트 이름), 강한 `ETag`(`\"sha256:<hex>\"`)와 함께 스트리밍합니다. `Range`를 하나 지정하면 206이고(만족할 수 없는 범위는 416), ETag와 함께 `If-Range`를 보내면 안전하게 재개되며, `If-None-Match`에는 304로 응답합니다. HEAD는 본문 없이 같은 헤더를 반환하며 `Range`는 무시합니다. `Authorization` 헤더 대신 `createDownloadLink`로 만든 다운로드 링크를 `token`으로 전달할 수도 있습니다. 다운로드는 서버의 다운로드 수용 제어에서 빈 슬롯이 생길 때까지 대기합니다."
+    },
+    "getArtifactTree": {
+      "en": {
+        "summary": "Read the table of contents of an archive",
+        "description": "For a `.zip` or `.upack` artifact, lists its file entries in archive order: `ordinal`, `path`, `size`, the `sha256` of the content as computed by the server, `method` (`stored` or `deflate`) and the data range `dataOffset`/`dataLength` inside the archive; that byte range of `downloadArtifact` is the entry's data (for `stored`, the file itself). `status` is `ready`, `pending` while the server has not read the archive yet (ask again later) or `unavailable` with a `reason`: `not_archive`, `invalid_archive`, `unsafe_entry` (a path outside the root, a link or a special file), `encrypted_entry`, `too_many_entries` (over 100 000), `too_large` (over 100 GiB of content), `unsupported_method`, `crc_mismatch` or `duplicate_entry` (also paths that differ only in case). A page holds up to `limit` entries (1–1000, default 1000); pass `next` as `after` for the following page, null marks the end. `archiveSha256` is the artifact's SHA-256 and `entries` the number of file entries. Needs `content.read`; a missing or forbidden artifact answers as `downloadArtifact` does."
+      },
+      "summary": "아카이브 목차 읽기",
+      "description": "`.zip` 또는 `.upack` 아티팩트의 파일 항목을 아카이브 순서대로 나열합니다. 각 항목에는 `ordinal`, `path`, `size`, 서버가 계산한 내용의 `sha256`, `method`(`stored` 또는 `deflate`), 아카이브 안의 데이터 범위 `dataOffset`/`dataLength`가 있습니다. `downloadArtifact`의 이 바이트 범위가 항목의 데이터입니다(`stored`이면 파일 자체). `status`는 `ready`, 서버가 아직 아카이브를 읽지 않았으면 `pending`(나중에 다시 요청하세요), 또는 `reason`과 함께 `unavailable`입니다. `reason`은 `not_archive`, `invalid_archive`, `unsafe_entry`(루트 밖의 경로, 링크 또는 특수 파일), `encrypted_entry`, `too_many_entries`(100 000개 초과), `too_large`(내용이 100 GiB 초과), `unsupported_method`, `crc_mismatch`, `duplicate_entry`(대소문자만 다른 경로 포함) 중 하나입니다. 한 페이지에는 최대 `limit`개(1–1000, 기본 1000)의 항목이 담깁니다. 다음 페이지는 `next`를 `after`로 전달해 받으며, null은 끝을 뜻합니다. `archiveSha256`은 아티팩트의 SHA-256이고 `entries`는 파일 항목 수입니다. `content.read`가 필요하며, 없거나 금지된 아티팩트에는 `downloadArtifact`와 같은 응답을 합니다."
     },
     "listCatalogChanges": {
       "en": {
@@ -1000,6 +1008,14 @@
       "summary": "이 설치의 모듈 목록 조회",
       "description": "이 설치가 계획한 모든 모듈을 `id` 순서로 반환합니다: `id`, `version`, 확장 지점(`kind`), `source`(코어 모듈은 `builtin`), 무료 코어에 속하는지(`core`, 비활성화 불가)와 활성화 여부(`enabled`), 실행되는 프로세스(`roles`), 응답한 프로세스가 실행하는지(`running`)와 그 프로세스에서의 상태(`health`: `ok`, `degraded` 또는 코드가 있는 `failed`, 그곳에서 실행되지 않으면 null). `compatibilityFingerprint`는 설치의 모든 프로세스가 일치해야 하는 내용(모듈과 그 소스, 확장 지점, 활성화 선택, 설정, 릴리스 버전 제외)의 SHA-256입니다. 읽기 게이트웨이와 워커는 쓰기 프로세스와 값이 같을 때만 준비됩니다. `fingerprint`는 모든 버전을 포함한 정확한 계획의 SHA-256이며 릴리스마다 바뀝니다. `extensionApi`는 이 코어의 모듈 계약 버전입니다. 설정, 경로, 비밀은 반환하지 않습니다. 전역 관리자만 읽을 수 있습니다. 로더가 거부한 설치된 서명 모듈도 `running`이 false이고 `health`가 코드와 함께 `failed`, `revoked`, `unavailable` 중 하나인 상태로 나열됩니다. 그 프로세스에서 실행되어야 하지만 로드나 시작에 실패한 서명 모듈은 코드와 함께 `failed`로 표시됩니다."
     },
+    "getSystemModuleOpenApi": {
+      "en": {
+        "summary": "Get the API document of one module",
+        "description": "Returns the OpenAPI 3.1 document of the routes the module `id` serves under `/api/ext/<id>/v<major>/` in the answering process: the paths and schemas the module documents, checked by the server against its routes, and for each operation what the server checks before the module runs (`x-arkvory-access`, `x-arkvory-action` with the path parameter that names the repository, `x-arkvory-effect`). `info.version` is the `fingerprint` of the module plan. A read gateway returns only the reads it serves. A module that serves no routes in the answering process, is disabled or did not start is `not_found`. Only the global administrator may read it; every authenticated caller reads the combined document of all modules at `/api/ext/openapi.json`, with the operations it may call."
+      },
+      "summary": "모듈 하나의 API 문서 가져오기",
+      "description": "응답한 프로세스에서 모듈 `id`가 `/api/ext/<id>/v<major>/` 아래에서 제공하는 라우트의 OpenAPI 3.1 문서를 반환합니다. 모듈이 기술하고 서버가 해당 라우트와 대조한 경로와 스키마, 그리고 작업마다 모듈을 실행하기 전에 서버가 확인하는 내용(`x-arkvory-access`, 리포지토리를 가리키는 경로 매개변수가 있는 `x-arkvory-action`, `x-arkvory-effect`)이 들어 있습니다. `info.version`은 모듈 계획의 `fingerprint`입니다. 읽기 게이트웨이는 자신이 제공하는 읽기 작업만 반환합니다. 응답한 프로세스에서 라우트를 제공하지 않거나, 비활성화되었거나, 시작하지 않은 모듈은 `not_found`입니다. 전역 관리자만 읽을 수 있으며, 인증된 호출자는 누구나 호출할 수 있는 작업만 담긴 모든 모듈의 통합 문서를 `/api/ext/openapi.json`에서 읽습니다."
+    },
     "getSystemLicense": {
       "en": {
         "summary": "Show the licences of this installation",
@@ -1253,6 +1269,7 @@
     "Event id, `<epoch>:<position>`; deduplicate by it": "이벤트 ID, `<epoch>:<position>`. 이것으로 중복을 제거합니다",
     "Artifact id, or the path of a file event": "아티팩트 ID, 파일 이벤트에서는 경로",
     "`repository:<repository>`; events of one partition keep their commit order": "`repository:<repository>`. 한 파티션의 이벤트는 커밋 순서를 유지합니다",
-    "Data of the type; its JSON Schema is in the type list": "유형의 데이터. JSON Schema는 유형 목록에 있습니다"
+    "Data of the type; its JSON Schema is in the type list": "유형의 데이터. JSON Schema는 유형 목록에 있습니다",
+    "Transfer protocols of the enabled modules this gateway runs; a client uses one only with an extension of the same name and a common version.": "이 게이트웨이가 실행하는 활성화된 모듈의 전송 프로토콜입니다. 클라이언트는 같은 이름의 확장과 공통 버전이 있을 때만 사용합니다."
   }
 }

@@ -116,6 +116,7 @@ test('retries: 15 minutes doubling to 6 hours, spread, Retry-After; 4xx waits fo
   for (const code of [
     'licence_expired',
     'activation_secret_reused',
+    'activation_recovery_required',
     'activation_lapsed',
     'secret_missing',
   ])

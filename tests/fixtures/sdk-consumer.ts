@@ -93,6 +93,9 @@ export type UnchangedKeys = Assert<
       // ADR 0083 (N11): where new uploads of a repository are stored.
       | 'storagePlacement'
       | 'setStoragePlacement'
+      // ADR 0083 (N8): verified ranges of one artifact and the table of contents of an archive.
+      | 'downloadRangeVerified'
+      | 'artifactTree'
     >,
     keyof LegacyClient
   >
@@ -149,6 +152,8 @@ export type ClientErrorCodes = Assert<
     | 'completion_failed'
     // ADR 0076: a download the server's queue would start after the caller's notAfter.
     | 'queue_deadline'
+    // ADR 0079 (5.2): strict transfer mode without an agreed transfer extension.
+    | 'transfer_unavailable'
   >
 >;
 export function legacyHttpError(): Error {

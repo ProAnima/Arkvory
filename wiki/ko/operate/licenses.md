@@ -18,7 +18,7 @@ Arkvory의 무료 코어에는 라이선스가 필요 없습니다. 이 문서�
    sudo arkvory license activate --key-file /root/arkvory.key --root /opt/proanima-arkvory
    ```
 
-3. 키 파일을 삭제합니다. Arkvory는 키를 보관하지 않으며 다시 필요로 하지도 않습니다.
+3. 활성화 후 로컬 키 파일을 삭제하세요. 복구 시 키가 다시 필요할 수 있으므로 계정에서 라이선스 키에 접근할 수 있어야 합니다.
 
 Arkvory는 인증서를 검증하는 HTTPS로 설치의 허브(`config/hub.json`의 주소, 업데이트와 같은 주소)에 요청을 보냅니다. 응답은 ProAnimaStudio의 라이선스 키가 이 설치와 이 요청에 대해 서명한 경우에만 받아들입니다. 오타가 있는 키는 아무것도 보내기 전에 거부됩니다. 같은 설치를 같은 키로 다시 활성화해도 라이선스의 새 자리를 차지하지 않습니다.
 
@@ -68,6 +68,8 @@ sudo arkvory license refresh --root /opt/proanima-arkvory
 ```
 
 시계를 되돌려도 아무것도 연장되지 않습니다. Arkvory는 지금까지 본 가장 늦은 시각을 기준으로 판단합니다. 데이터베이스 시계가 그 시각보다 하루 넘게 늦으면 `clockRollback`이 표시됩니다.
+
+갱신 요청이 허브에 도달했을 수 있지만 응답을 잃은 경우 Arkvory는 10분 안에 한 번만 재전송합니다. 재시작해도 횟수는 초기화되지 않습니다. 결과를 여전히 알 수 없거나 재전송 기회를 소진했거나 시간이 지났거나 받은 토큰이 유효하지 않으면 `activation_recovery_required`로 갱신을 중단합니다. 현재 토큰은 만료될 때까지 유효합니다. 키를 가져와 `license activate --key-file <file>`을 다시 실행하세요. `license refresh`로는 이 상태를 해제할 수 없습니다.
 
 ### 복사본과 복원 {#copies}
 

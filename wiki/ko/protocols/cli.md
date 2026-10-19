@@ -72,6 +72,7 @@ arkvoryctl doctor
 | `--not-before T`             |                 | T 이전에는 다운로드를 시작하지 않음: RFC 3339 또는 `HH:MM`(다음에 오는 그 시각)                                   |
 | `--not-after T`              |                 | 대기열이 T 이후에 다운로드를 시작한다면 종료 코드 4로 포기                                                        |
 | `--verbose`                  | 꺼짐            | HTTP 요청마다 stderr에 한 줄을 출력합니다: 메서드, 경로, 상태, 소요 시간, 요청 ID. 헤더와 키는 포함되지 않습니다. |
+| `--transfer MODE`            | `auto`          | [클라이언트 모듈](#client-modules)의 전송 확장: `auto`, `strict` 또는 `core`(사용 안 함)                          |
 | `--help`, `--version`        |                 | 도움말. 클라이언트 버전을 JSON으로 출력합니다                                                                     |
 | `--`                         |                 | 옵션의 끝을 표시합니다. `-`로 시작하는 파일 이름에 사용합니다                                                     |
 
@@ -115,6 +116,17 @@ arkvoryctl link 00000000-0000-4000-8000-000000000001 --ttl 900
 ```
 
 다운로드 링크는 시크릿입니다. 만료되기 전에는 폐기할 수 없습니다.
+
+### 디렉터리 트리 {#directory-trees}
+
+| 명령                                                                                | 결과                                                                    |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | 폴더를 하나의 ZIP 아티팩트로 게시합니다(재개 가능)                      |
+| `tree pull ID DIR`                                                                  | 폴더를 트리와 같게 만듭니다: 아카이브 전체 또는 다른 파일만             |
+| `tree verify ID DIR`                                                                | 없는 파일, 다른 파일, 추가 파일을 나열합니다. 차이가 있으면 종료 코드 5 |
+| `tree repair ID DIR`                                                                | 없는 파일과 다른 파일을 다시 씁니다. 추가 파일은 유지합니다             |
+
+[디렉터리 트리](../use/trees)를 참조하세요.
 
 ### 패키지와 승격 {#packages-and-promotion}
 
@@ -256,6 +268,25 @@ claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 - **데이터.** 결과의 이름, 레이블, 메타데이터는 다른 사람이 작성한 것입니다. 에이전트는 이를 지시가 아닌 데이터로 다루어야 합니다.
 - 클라이언트는 MCP 2025-06-18 이상을 지원해야 합니다.
 
+## 클라이언트 모듈 {#client-modules}
+
+클라이언트 모듈은 ProAnimaStudio가 서명한 패키지로, `arkvoryctl` 자체에 기능을 추가합니다. 예를 들어 바이트를 더 빠르게 옮기는 방법(전송 확장)입니다. 무료 클라이언트에는 이러한 모듈이 없으며, 모듈이 없어도 모든 명령은 이 페이지에서 설명한 대로 동작합니다.
+
+| 명령                                                      | 결과                                                                      |
+| --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `module install FILE [--yes] [--allow-stale-revocations]` | 패키지를 확인하고 내용과 약관을 표시합니다. `--yes`를 지정하면 설치합니다 |
+| `module list`                                             | 설치된 모듈, 활성화된 위치, 폐기 목록 상태                                |
+| `module enable ID [--profile NAME]`                       | 모든 프로필 또는 한 프로필에 대해 모듈을 활성화합니다                     |
+| `module disable ID [--profile NAME]`                      | 모든 곳 또는 한 프로필에서 모듈을 비활성화합니다                          |
+| `module remove ID`                                        | 모듈을 제거합니다                                                         |
+| `module revocations FILE`                                 | 서명된 폐기 목록을 저장합니다(인터넷에 연결되지 않은 컴퓨터용)            |
+
+- **위치.** 모듈은 CLI 폴더(`ARKVORY_CLI_HOME`, 기본값 `~/.config/arkvory`)의 `modules` 폴더에 사용자별로 설치됩니다. 새 모듈은 활성화하기 전까지 비활성 상태입니다.
+- **확인.** ProAnimaStudio 모듈 키로 서명되고 이 클라이언트용으로 빌드된 패키지만 허용됩니다. 명령이 모듈을 사용하기 전에 `arkvoryctl`은 서명과 모든 파일을 다시 확인하고, 다른 사용자가 파일을 변경할 수 없는지도 확인합니다(Linux와 macOS: 본인 소유, 다른 사용자가 쓸 수 없음, 링크 없음; Windows: 링크나 정션 없음, 소유자와 액세스 규칙이 본인과 관리자만 변경을 허용함, 아니면 `module_access`). 폐기된 버전은 절대 로드되지 않습니다. 확인에 실패한 모듈은 stderr에 보고되고(`client module ID VERSION not loaded (code)`) 제외되며, 명령은 그 모듈 없이 계속 진행됩니다.
+- **폐기.** `module install`에는 최신 폐기 목록이 필요합니다. 패키지에 더 새로운 목록이 들어 있을 수 있으며, 그렇지 않으면 `module revocations`로 저장하세요. `--allow-stale-revocations`를 지정하면 그래도 설치하며, 결과에 그 사실이 표시됩니다.
+- **코드.** 모듈의 코드는 자체 파일과 Node 내장 모듈만 로드할 수 있습니다. 콘텐츠를 옮기는 명령만 모듈을 로드합니다: `upload`, `download`, `put`, `get`, `packages publish`, `packages download`, `tree`.
+- **전송 확장.** 모듈의 확장은 서버가 `GET /api/v1/capabilities`의 `transfer`에서 같은 확장을 제공할 때만 사용됩니다. 클라이언트는 결과를 직접 확인합니다: 모든 다운로드의 크기와 SHA-256, 모든 업로드의 게시된 체크섬. `--transfer auto`에서는 확장이 거절하거나 실패하면 클라이언트가 자체 전송으로 전환합니다. `--transfer strict`에서는 대신 실패합니다(`transfer_unavailable`, 종료 코드 4). `--transfer core`는 모듈을 로드하지 않습니다. `--verbose`는 각 전송이 어떤 방식으로 진행되었는지 보여 줍니다.
+
 ## 출력 {#output}
 
 - 결과는 stdout에 JSON으로 출력됩니다. `--json`을 지정하지 않으면 JSON이 들여쓰기되어 출력됩니다. 백업 명령은 `--json`을 추가하지 않는 한 읽기 쉬운 줄로 출력합니다.
@@ -290,10 +321,13 @@ claude mcp add arkvory -- arkvoryctl mcp --profile production --root ~/work
 | `destination_exists` (종료 코드 6)        | 출력 파일이 이미 있습니다. 다른 이름을 선택하세요.                                                                            |
 | `put`의 `revision_mismatch` (종료 코드 6) | 그사이 다른 사람이 경로를 변경했습니다. 경로의 기록을 확인한 다음 결정하세요.                                                 |
 | 종료 코드 8                               | 할당량이나 디스크가 가득 찼습니다. 관리자에게 문의하세요.                                                                     |
+| `checksum_mismatch` (종료 코드 5)         | 트리의 파일이 게시된 파일과 일치하지 않았습니다. 폴더의 파일은 그대로 남아 있습니다. 명령을 다시 실행하세요.                  |
+| `path_outside_root`, `unsafe_name`        | 아카이브나 목차가 폴더 밖의 경로 또는 Windows에서 사용할 수 없는 이름을 지정합니다. 아무것도 쓰지 않았습니다.                 |
+| `stale_revocations` (종료 코드 6)         | `module install`에 사용할 최신 폐기 목록이 없습니다. `module revocations FILE`로 저장하세요.                                  |
 
 ## 관련 페이지 {#related-pages}
 
 - [클라이언트 및 프로토콜](./index)
-- [전송](../use/transfers) 및 [경로 기반 파일](../use/files)
+- [전송](../use/transfers), [디렉터리 트리](../use/trees) 및 [경로 기반 파일](../use/files)
 - [TypeScript SDK](./sdk)
 - [오류](../api/errors)

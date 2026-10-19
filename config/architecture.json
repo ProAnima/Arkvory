@@ -27,6 +27,10 @@
       "allowed": ["packages/extension-api"]
     },
     {
+      "path": "packages/extension-testkit",
+      "allowed": ["packages/extension-api"]
+    },
+    {
       "path": "packages/application",
       "allowed": ["packages/domain"]
     },
@@ -41,11 +45,17 @@
     },
     {
       "path": "packages/sdk",
-      "allowed": ["packages/contracts"]
+      "allowed": ["packages/contracts", "packages/extension-api"]
     },
     {
       "path": "apps/cli",
-      "allowed": ["packages/sdk", "packages/contracts", "packages/resolution"]
+      "allowed": [
+        "packages/sdk",
+        "packages/contracts",
+        "packages/resolution",
+        "packages/extension-api",
+        "packages/signing"
+      ]
     },
     {
       "path": "apps/api",

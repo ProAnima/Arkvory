@@ -18,7 +18,7 @@ Os comandos desta página rodam no host da instalação, como root no Linux ou c
    sudo arkvory license activate --key-file /root/arkvory.key --root /opt/proanima-arkvory
    ```
 
-3. Apague o arquivo da chave. O Arkvory não guarda a chave e não precisa dela de novo.
+3. Apague o arquivo local da chave após a ativação. Mantenha acesso à chave na sua conta: a recuperação pode exigir a chave novamente.
 
 O Arkvory envia o pedido ao hub da instalação (o endereço de `config/hub.json`, o mesmo das atualizações) por HTTPS com verificação do certificado. Ele aceita a resposta só se a chave de licenças da ProAnimaStudio a assinou, para esta instalação e para este pedido. Uma chave com erro de digitação é recusada antes de qualquer envio. Ativar de novo a mesma instalação com a mesma chave não ocupa uma vaga nova da licença.
 
@@ -68,6 +68,8 @@ sudo arkvory license refresh --root /opt/proanima-arkvory
 ```
 
 Atrasar o relógio não prolonga nada: o Arkvory julga pelo horário mais tardio que já viu. Um relógio do banco de dados mais de um dia atrás desse horário mostra `clockRollback`.
+
+Se uma renovação pode ter chegado ao hub, mas a resposta foi perdida, o Arkvory permite apenas uma repetição na janela de 10 minutos, inclusive após reiniciar. Se o resultado continuar desconhecido, a repetição for consumida, a janela terminar ou o token recebido for inválido, `activation_recovery_required` interrompe as renovações. O token atual continua válido até expirar. Obtenha a chave e repita `license activate --key-file <file>`; `license refresh` não resolve esse estado.
 
 ### Cópias e restaurações {#copies}
 
