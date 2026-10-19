@@ -27,7 +27,14 @@ export function computeMessage(value: unknown): ComputeMessage {
     if (typeof item !== 'object' || seen.has(item)) throw new ModuleServiceError('invalid_input');
     seen.add(item);
     try {
-      if (Array.isArray(item)) return item.map((v: unknown) => walk(v, depth + 1));
+      if (Array.isArray(item)) {
+        // Check before allocation/traversal: map skips holes and copies arbitrary sparse lengths.
+        if (item.length > 100_000 - entries) throw new ModuleServiceError('invalid_input');
+        return Array.from({ length: item.length }, (_, index) => {
+          const child: unknown = item[index];
+          return walk(child, depth + 1);
+        });
+      }
       if (Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null)
         throw new ModuleServiceError('invalid_input');
       return Object.fromEntries(

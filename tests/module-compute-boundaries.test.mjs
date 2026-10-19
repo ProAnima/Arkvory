@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { ModuleCompute } from '@proanima/arkvory-infrastructure';
+import { computeMessage } from '../packages/infrastructure/dist/module-compute-message.js';
 import { removeTestDirectory } from './helpers.mjs';
 
 async function fixture(t, code) {
@@ -140,4 +141,41 @@ test('compute workers do not inherit NODE_PATH or NODE_OPTIONS injections', asyn
     if (priorOptions === undefined) delete process.env.NODE_OPTIONS;
     else process.env.NODE_OPTIONS = priorOptions;
   }
+});
+
+test('compute rejects oversized sparse arrays before reading or copying any element', () => {
+  for (const length of [100001, 2 ** 32 - 1]) {
+    const sparse = new Array(length);
+    let read = false;
+    Object.defineProperty(sparse, 0, {
+      get() {
+        read = true;
+        return null;
+      },
+    });
+    assert.throws(() => computeMessage(sparse), { code: 'invalid_input' });
+    assert.equal(read, false, 'length must be refused before reading the first element');
+  }
+});
+
+test('compute visits every nested array position and refuses holes as undefined', () => {
+  for (const value of [new Array(1), [new Array(3)], { nested: [[null, , true]] }])
+    assert.throws(() => computeMessage(value), { code: 'invalid_input' });
+  assert.deepEqual(computeMessage([[null, false, 1]]), [[null, false, 1]]);
+});
+
+test('compute checks array length against the aggregate remaining entry budget', () => {
+  const first = new Array(49999).fill(null);
+  const fitting = new Array(49998).fill(null);
+  assert.deepEqual(computeMessage([first, fitting]), [first, fitting]);
+  const excess = new Array(49999);
+  let read = false;
+  Object.defineProperty(excess, 0, {
+    get() {
+      read = true;
+      return null;
+    },
+  });
+  assert.throws(() => computeMessage([first, excess]), { code: 'invalid_input' });
+  assert.equal(read, false, 'earlier siblings consume the budget before the next allocation');
 });
