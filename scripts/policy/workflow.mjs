@@ -14,11 +14,7 @@ export function inspectWorkflow(text, registry) {
     errors.push('CI must not execute untrusted changes with pull_request_target');
   if (workflow.permissions?.contents !== 'read' || Object.keys(workflow.permissions).length !== 1)
     errors.push('CI default token must be contents:read only');
-  if (
-    JSON.stringify(jobs.check?.strategy?.matrix?.os) !==
-    JSON.stringify(['ubuntu-22.04', 'ubuntu-24.04', 'windows-2022', 'windows-2025'])
-  )
-    errors.push('CI must cover all supported native platforms');
+  errors.push(...inspectNativeMatrices(jobs));
   for (const [name, job] of Object.entries(jobs)) {
     if (
       job.permissions &&
@@ -60,6 +56,8 @@ export function inspectWorkflow(text, registry) {
     errors.push('Aggregate verdict must always inspect every lane');
   for (const [name, profile] of [
     ['check', 'quick'],
+    ['deployment', 'deployment'],
+    ['deployment-services', 'deployment-services'],
     ['integration', 'integration'],
     ['browser', 'browser'],
     ['security', 'security'],
@@ -92,6 +90,22 @@ export function inspectWorkflow(text, registry) {
   errors.push(...inspectVerdictWiring(jobs));
   errors.push(...inspectLargeMatrix(jobs.large));
   if (registry) errors.push(...inspectCoverage(jobs, registry));
+  return errors;
+}
+
+function inspectNativeMatrices(jobs) {
+  const errors = [];
+  const matrix = { os: ['ubuntu-22.04', 'ubuntu-24.04', 'windows-2022', 'windows-2025'] };
+  for (const name of ['check', 'deployment', 'deployment-services']) {
+    const job = jobs[name];
+    // Exact axes reject include/exclude that could silently remove a required OS.
+    if (
+      JSON.stringify(job?.strategy?.matrix) !== JSON.stringify(matrix) ||
+      job?.strategy?.['fail-fast'] !== false ||
+      job?.['runs-on'] !== '${{ matrix.os }}'
+    )
+      errors.push(`CI ${name} must cover all supported native platforms independently`);
+  }
   return errors;
 }
 

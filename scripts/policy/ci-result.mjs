@@ -2,6 +2,8 @@ export function ciVerdict(needs, releaseRequired) {
   const required = [
     ...new Set([
       'check',
+      'deployment',
+      'deployment-services',
       'integration',
       'browser',
       'security',
