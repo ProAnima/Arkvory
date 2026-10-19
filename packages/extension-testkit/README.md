@@ -17,3 +17,12 @@
 сообщения и отмену; `changeFeedContract` — лимиты подписок и уникальность consumer.
 Проверки потоков, startup confinement, core placement, durable cursor CAS и
 backup/read admission находятся также в unit/integration тестах ядра.
+
+`derivedCacheContract` (ADR 0084) проверяет атомарность группы, закреплённое старое
+поколение при замене, точные байты/диапазоны и постраничный список без manifest,
+идемпотентность commit/abort/release, отмену, read-only reader, общий резерв,
+недопустимые имена и лимиты. Factory `(t, quota)` создаёт свежие writer/peer/gateway
+одного namespace и регистрирует cleanup. Ядро запускает suite на реальном PG/FS
+в `tests/integration/derived-cache-publication.test.mjs`; fault injection остаётся
+в integration. `assertDerivedCacheGroup` проверяется unit-контрпримерами,
+которые намеренно повреждают metadata, листинг, bytes и range.

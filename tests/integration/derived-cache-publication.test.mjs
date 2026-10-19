@@ -1,3 +1,4 @@
+import { derivedCacheContract } from '@proanima/arkvory-extension-testkit';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { open } from 'node:fs/promises';
@@ -168,4 +169,9 @@ test('derived cache: delayed native write cannot publish after session loss; dra
   assert.equal(published.fence, next.fence);
   assert.equal(published.current_id, next.id);
   await completeRead(survivor, 'late-owner', expected);
+});
+
+derivedCacheContract('PG derived-cache public contract', async (t, quota) => {
+  const f = await cacheFixture(t, quota);
+  return { writer: f.create().cache, peer: f.create().cache, gateway: f.create(true).cache };
 });
