@@ -2,7 +2,7 @@ import type { Pool, PoolClient } from 'pg';
 
 export async function migrateModuleCursors(client: PoolClient): Promise<void> {
   if ((await client.query('SELECT 1 FROM arkvory_migrations WHERE version=48')).rowCount) return;
-  await client.query(`CREATE TABLE arkvory_module_cursors (
+  await client.query(`CREATE TABLE IF NOT EXISTS arkvory_module_cursors (
     module_id varchar(32) NOT NULL, consumer varchar(32) NOT NULL,
     epoch uuid, position bigint NOT NULL DEFAULT 0 CHECK(position>=0),
     revision bigint NOT NULL DEFAULT 0 CHECK(revision>=0), PRIMARY KEY(module_id,consumer));
