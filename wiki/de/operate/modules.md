@@ -190,3 +190,7 @@ Diese Version führt die Vertrauensliste; Plugins installiert eine spätere Vers
 ## Nach einer Unterbrechung {#recover}
 
 Jede Änderung der Modulmenge wird im Aktualisierungsjournal festgehalten. Bricht ein Befehl auf halbem Weg ab, lehnt der nächste Bereitstellungsbefehl mit `Interrupted deployment` ab. Führen Sie `sudo arkvory recover --root …` aus: Es stellt die vorherige Modulmenge wieder her. Bis dahin lehnt jeder Modulbefehl ab, der etwas ändert, auch `module trust` und `module revocations`.
+
+## Lebensdauer der Modulanfrage {#request-scope}
+
+Die Route verwendet die Rechte des Aufrufers bis zum Ende der Antwort, auch beim Streaming. Abbruch oder Abschluss widerruft die Rechte und schließt Leseressourcen. `upload-read` liest bestätigte Teile unvollständiger Uploads und prüft Eigentümer, `upload.read`, Bereich und Abbruch. Module können Transferangebote im Betrieb zurückziehen. Spätere Fähigkeitsabfragen lassen sie weg; Routen und aktive Transfers bleiben erhalten. Clients können alte Angebote zwischenspeichern, deshalb muss die Route jede Operation prüfen.

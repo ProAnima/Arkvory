@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import Fastify from 'fastify';
 import { downloadSchedulePolicy } from '@proanima/arkvory-domain';
 import {
+  AccessScopes,
+  moduleCatalog,
   AdmissionQueue,
   BandwidthGovernor,
   DownloadScheduler,
@@ -426,7 +428,7 @@ const fleet = {
   permissions: ['read', 'write'],
 };
 
-async function server(t, routes, { role = 'api' } = {}) {
+async function server(t, routes, { role = 'api', cancel } = {}) {
   const app = Fastify();
   const context = createRequestContext();
   let principal = fleet;
@@ -461,13 +463,17 @@ async function server(t, routes, { role = 'api' } = {}) {
     pins: { acquire: async () => ({ check() {}, async release() {} }) },
   });
   const log = [];
+  const scopes = new AccessScopes();
   registerHttpErrors(app, context);
   registerExtensionRoutes(
     app,
     routes.map((entry, index) => checkRoute(entry, manifest(), index)),
     {
       principal: context.principal,
-      signal: context.signal,
+      signal: (request, reply) =>
+        cancel
+          ? AbortSignal.any([context.signal(request, reply), cancel.signal])
+          : context.signal(request, reply),
       context,
       modifying: createUploadAdmission(uploadGate, context, () => true),
       sendContent,
@@ -478,6 +484,7 @@ async function server(t, routes, { role = 'api' } = {}) {
       downloadGate,
       downloadBandwidth: governor,
       maxObjectBytes: 1024 * 1024,
+      scopes: () => scopes,
     },
   );
   t.after(async () => {
@@ -490,6 +497,7 @@ async function server(t, routes, { role = 'api' } = {}) {
   return {
     app,
     scheduler,
+    scopes,
     log,
     as(next) {
       principal = next;
@@ -751,4 +759,130 @@ test('the combined document shows a caller only what it may call', () => {
   assert.deepEqual(Object.keys(reads.paths), [`${prefix}items/{id}`]);
   // The shapes of operations a caller may not call are not disclosed either.
   assert.deepEqual(Object.keys(reads.components.schemas).sort(), ['NativeError', 'ext_echo_Item']);
+});
+
+for (const mode of [
+  'json',
+  'stream',
+  'head',
+  'cached',
+  'error',
+  'invalid',
+  'throw',
+  'timeout',
+  'abort',
+]) {
+  test(`request scope and its intersections release content pins on ${mode}`, async (t) => {
+    let held,
+      child,
+      releases = 0;
+    const cancel = new AbortController();
+    const s = await server(
+      t,
+      [
+        route({
+          timeoutMs: 20,
+          handle: async (request) => {
+            assert.equal(s.scopes.principalsOf(request.scope)[0].id, fleet.id);
+            child = s.scopes.intersect(request.scope, s.scopes.of([fleet]));
+            child = s.scopes.intersect(child, request.scope);
+            const { content: reader } = moduleCatalog(
+              {
+                content: async () => ({
+                  upload: { descriptor: { size: 1, sha256: 'a'.repeat(64) } },
+                  pin: {
+                    check() {},
+                    async release() {
+                      releases++;
+                    },
+                  },
+                  async *read() {
+                    yield new Uint8Array([42]);
+                  },
+                }),
+              },
+              s.scopes,
+            );
+            held = await reader.open(child, { repository: 'releases', id: 'item' });
+            if (mode === 'timeout') {
+              await new Promise((resolve) => setTimeout(resolve, 60));
+              return json({});
+            }
+            if (mode === 'abort') {
+              cancel.abort();
+              return json({});
+            }
+            if (mode === 'throw') throw new Error('broken');
+            if (mode === 'invalid') return { kind: 'bogus' };
+            if (mode === 'error') return { kind: 'error', code: 'conflict' };
+            if (mode === 'json') return json({});
+            return {
+              kind: 'stream',
+              contentType: 'application/octet-stream',
+              length: 1,
+              etag: '"one"',
+              body: {
+                async *[Symbol.asyncIterator]() {
+                  assert.equal(
+                    s.scopes.principalsOf(child).length,
+                    3,
+                    'scope lives during lazy response',
+                  );
+                  yield* held.read();
+                },
+              },
+            };
+          },
+        }),
+      ],
+      { cancel },
+    );
+    const response = await s.app.inject({
+      url: prefix + 'items/id',
+      method: mode === 'head' ? 'HEAD' : 'GET',
+      headers: mode === 'cached' ? { 'if-none-match': '"one"' } : {},
+    });
+    assert.equal(
+      response.statusCode,
+      { error: 409, invalid: 500, throw: 500, timeout: 503, abort: 503, cached: 304 }[mode] ?? 200,
+      response.body,
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(releases, 1);
+    assert.deepEqual(s.scopes.principalsOf(child), []);
+    await assert.rejects(
+      async () => {
+        for await (const chunk of held.read()) void chunk;
+      },
+      { code: 'unavailable' },
+    );
+    await held.release();
+    assert.equal(releases, 1);
+  });
+}
+
+test('withdrawal updates an existing route set without releasing the name or deleting routes', () => {
+  const registry = new ModuleRouteRegistry();
+  const own = manifest();
+  const service = registry.service(own);
+  service.add(route());
+  service.document(fragment([route()]));
+  service.offerTransfer({ name: 'echo', versions: ['1.0.0'], prefix });
+  registry.seal(own);
+  const [set] = registry.of(['echo']);
+  assert.equal(set.offers.length, 1);
+  service.withdrawTransfer('foreign');
+  assert.equal(set.offers.length, 1);
+  service.withdrawTransfer('echo');
+  service.withdrawTransfer('echo');
+  assert.equal(set.offers.length, 0);
+  assert.equal(set.routes.length, 1);
+  assert.throws(() => service.offerTransfer({ name: 'echo', versions: ['1.0.0'], prefix }));
+  const other = manifest({ id: 'other', routePrefixes: ['/api/ext/other/v1/'] });
+  const registrar = registry.service(other);
+  const otherRoute = route({ path: '/api/ext/other/v1/items/:id', operationId: 'other.item' });
+  registrar.add(otherRoute);
+  registrar.document({ openapi: '3.1.0', paths: fragment([otherRoute]).paths });
+  registrar.offerTransfer({ name: 'echo', versions: ['1.0.0'], prefix: '/api/ext/other/v1/' });
+  assert.throws(() => registry.seal(other), refusal('transfer_invalid', '/offers/0/name'));
 });

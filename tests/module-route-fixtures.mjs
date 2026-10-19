@@ -42,6 +42,7 @@ async function* bytes(count) {
     yield new Uint8Array(size).fill(101);
   }
 }
+let retained;
 function routes(context) {
   const list = [
     route('GET', 'info/:word', 'info', async (request) =>
@@ -78,6 +79,31 @@ function routes(context) {
     route('GET', 'bad', 'bad', async () => ({ kind: 'stream', contentType: 'text/html',
       length: null, etag: null, body: bytes(4) })),
   ];
+  if (options.scope) list.push(
+    route('GET', 'uploads/:repository/:id', 'uploadRead', async (request, signal) => {
+      const scope = context.services['catalog-read'].intersect(request.scope, request.scope);
+      const ref = { repository: request.params.repository, id: request.params.id };
+      const reader = context.services['upload-read'];
+      if (request.query.retained) return json({ upload: retained ? await reader.upload(retained, ref.repository, ref.id) : null });
+      retained = scope;
+      const upload = await reader.upload(scope, ref.repository, ref.id);
+      if (!upload) return { kind: 'error', code: 'not_found' };
+      if (request.query.view) return json(upload);
+      const range = { start: Number(request.query.start), end: Number(request.query.end) };
+      const source = reader.read(scope, ref, range, signal);
+      if (request.query.eager) {
+        const iterator = source[Symbol.asyncIterator]();
+        const first = await iterator.next();
+        return { kind: 'stream', contentType: 'application/octet-stream', length: range.end - range.start + 1, etag: '"upload"',
+          body: { async *[Symbol.asyncIterator]() { if (!first.done) yield first.value; yield* source; } } };
+      }
+      return { kind: 'stream', contentType: 'application/octet-stream', length: range.end - range.start + 1, etag: null, body: source };
+    }),
+    route('POST', 'withdraw', 'withdraw', async () => {
+      context.services.routes.withdrawTransfer(manifest.id);
+      return json({ withdrawn: true });
+    }, { effect: 'write', access: 'administrator' }),
+  );
   if (options.outside) list.push(route('GET', '../v2/info', 'outside', async () => json({})));
   return list;
 }

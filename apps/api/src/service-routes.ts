@@ -31,7 +31,7 @@ export function registerServiceRoutes(
     /** Enabled modules this gateway runs (ADR 0079, section 9), in id order. */
     modules: readonly { readonly id: string; readonly kind: string }[];
     /** Transfer protocols of the running modules (ADR 0079, 5.2), in module order. */
-    transfer: readonly {
+    transfer: () => readonly {
       readonly name: string;
       readonly versions: readonly string[];
       readonly module: string;
@@ -74,7 +74,7 @@ export function registerServiceRoutes(
         maxPageSize: 100,
       },
       modules: modules.map(({ id, kind }) => ({ id, kind })),
-      transfer: transfer.map(({ name, versions, module, prefix }) => ({
+      transfer: transfer().map(({ name, versions, module, prefix }) => ({
         name,
         versions,
         module,

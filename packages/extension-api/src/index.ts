@@ -127,3 +127,5 @@ export {
   type TransferResponse,
   type TransferUpload,
 } from './client.js';
+
+export type { UploadRead, UploadView } from './upload-read.js';

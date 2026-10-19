@@ -3,6 +3,7 @@ import {
   ArtifactCatalog,
   GlobalSearch,
   ScopedCatalog,
+  ScopedUploads,
   StorageService,
 } from '@proanima/arkvory-application';
 import {
@@ -32,6 +33,7 @@ export function apiHostServices(
     readonly catalog: PostgresCatalog;
     readonly blobs: StorageBackends;
     readonly pins: PostgresContentPins;
+    readonly uploadPins: PostgresContentPins;
   },
 ): ModuleHostServices {
   const { catalog, blobs, pins } = resources;
@@ -42,6 +44,8 @@ export function apiHostServices(
       inodes: config.storageReserveInodes ?? defaultStorageReserveInodes,
     },
     readOnly: role === 'reader',
+    uploads: () =>
+      new ScopedUploads(catalog, blobs, resources.uploadPins, () => new Date().toISOString()),
     catalog: () => {
       // Reads only: no upload is created through this service, so placement is not needed.
       const storage = new StorageService(catalog, blobs, {

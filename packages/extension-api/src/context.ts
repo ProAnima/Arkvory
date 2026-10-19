@@ -12,6 +12,7 @@ export const HOST_SERVICES = [
   'staged-completion',
   'catalog-read',
   'content-read',
+  'upload-read',
   'change-feed',
   'data-directory',
   'routes',

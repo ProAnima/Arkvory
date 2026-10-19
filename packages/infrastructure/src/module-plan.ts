@@ -99,6 +99,7 @@ export const PROVIDED_HOST_SERVICES: readonly HostService[] = [
   'routes',
   'catalog-read',
   'content-read',
+  'upload-read',
   'data-directory',
 ];
 

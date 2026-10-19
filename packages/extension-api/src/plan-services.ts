@@ -23,6 +23,7 @@ const AVAILABILITY: Readonly<Record<HostService, Availability>> = {
   'blob-store': { roles: servers, plugins: false },
   'staged-completion': { roles: ['api', 'worker'], plugins: false },
   'catalog-read': { roles: ['api', 'reader', 'worker'], plugins: true },
+  'upload-read': { roles: ['api', 'reader'], plugins: true },
   'content-read': { roles: ['api', 'reader', 'worker'], plugins: true },
   'change-feed': { roles: ['worker'], plugins: true },
   // A read gateway gets its data directory read-only.

@@ -1,3 +1,4 @@
+import type { AccessScope } from './catalog-read.js';
 import type { ModuleSignal } from './descriptor.js';
 import type { ModuleJson } from './json.js';
 
@@ -66,6 +67,8 @@ export type ModuleRequestBody =
  * cookies and other headers never reach the module.
  */
 export interface ModuleRequest {
+  /** Caller rights, revoked on failure, cancellation or response completion, including intersections. */
+  readonly scope: AccessScope;
   readonly method: ModuleRouteMethod | 'HEAD';
   /** Path parameters by name, decoded. */
   readonly params: Readonly<Record<string, string>>;
@@ -186,8 +189,8 @@ export interface ModuleTransferOffer {
 
 /**
  * The host service `routes` (ADR 0083, section 2.4), for modules that declare it in `uses`.
- * Every call belongs in `create`: the core checks the declaration right after `create` returns
- * and refuses later calls. A module whose routes, fragment or offers break the contract does not
+ * Declarations belong in `create`: the core checks them right after `create` returns
+ * and refuses later declarations. `withdrawTransfer` may be called throughout the lifecycle. A module whose routes, fragment or offers break the contract does not
  * start (`routes_invalid`, `openapi_invalid`, `openapi_route_mismatch`, `transfer_invalid`).
  */
 export interface ModuleRoutes {
@@ -202,4 +205,9 @@ export interface ModuleRoutes {
   document(fragment: ModuleJson): void;
   /** Advertises a transfer protocol; only modules of kind `transfer`. */
   offerTransfer(offer: ModuleTransferOffer): void;
+  /** Withdraws this module's declared offer immediately; idempotent, also after create.
+   * Routes and in-flight transfers remain; handlers must enforce their current policy.
+   * A withdrawn name stays reserved and cannot be advertised again until restart.
+   */
+  withdrawTransfer(name: string): void;
 }

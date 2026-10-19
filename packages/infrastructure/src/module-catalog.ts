@@ -29,26 +29,48 @@ function sealed<T>(value: T): T {
  * (through a capability value, say) reads nothing there.
  */
 export class AccessScopes {
-  private readonly principals = new WeakMap<object, readonly Principal[]>();
+  constructor(private readonly lifetime: AbortSignal = new AbortController().signal) {}
+  private readonly entries = new WeakMap<
+    object,
+    {
+      principals: readonly Principal[];
+      controller: AbortController;
+      signal: AbortSignal;
+    }
+  >();
 
-  /** The scope of a request's or a module's principal, or of all of them at once. */
-  of(principals: readonly Principal[]): AccessScope {
+  of(principals: readonly Principal[], parents: readonly AbortSignal[] = []): AccessScope {
     const token: object = Object.freeze({});
-    this.principals.set(token, sealed(principals.map((principal) => structuredClone(principal))));
-    // The brand exists only in types: this module is the one place that makes scopes.
+    const controller = new AbortController();
+    this.entries.set(token, {
+      principals: sealed(principals.map((principal) => structuredClone(principal))),
+      controller,
+      signal: AbortSignal.any([this.lifetime, controller.signal, ...parents]),
+    });
+    // Only the host creates branded scopes; modules see an opaque frozen token.
     return token as AccessScope;
   }
 
   principalsOf(scope: AccessScope): readonly Principal[] {
-    return this.principals.get(scope) ?? [];
+    const entry = this.entries.get(scope);
+    return entry && !entry.signal.aborted ? entry.principals : [];
+  }
+
+  signal(scope: AccessScope): AbortSignal {
+    return this.entries.get(scope)?.signal ?? AbortSignal.abort();
+  }
+
+  revoke(scope: AccessScope): void {
+    this.entries.get(scope)?.controller.abort();
   }
 
   intersect(first: AccessScope, second: AccessScope): AccessScope {
-    const both = [...this.principalsOf(first), ...this.principalsOf(second)];
-    // A side without principals has no rights: the intersection has none either.
-    if (this.principalsOf(first).length === 0 || this.principalsOf(second).length === 0)
-      return this.of([]);
-    return this.of(both);
+    const a = this.principalsOf(first),
+      b = this.principalsOf(second);
+    return this.of(a.length && b.length ? [...a, ...b] : [], [
+      this.signal(first),
+      this.signal(second),
+    ]);
   }
 }
 
@@ -77,9 +99,24 @@ function pageLimit(limit: number): string {
  * whole blob without one), and every range is checked against the size before any byte is
  * asked of the storage, so a storage only ever sees exact ranges inside its object.
  */
-function handle(content: ScopedContent, opened: ByteRange | undefined): ContentHandle {
+function handle(
+  content: ScopedContent,
+  opened: ByteRange | undefined,
+  signal: AbortSignal,
+): ContentHandle {
   let released = false;
   const { size, sha256 } = content.upload.descriptor;
+  const release = async () => {
+    if (released) return;
+    released = true;
+    signal.removeEventListener('abort', onAbort);
+    await content.pin.release();
+  };
+  const onAbort = () => {
+    void release().catch(() => undefined);
+  };
+  signal.addEventListener('abort', onAbort, { once: true });
+  if (signal.aborted) onAbort();
   return {
     descriptor: { size, sha256 },
     async *read(given?: ByteRange) {
@@ -88,22 +125,22 @@ function handle(content: ScopedContent, opened: ByteRange | undefined): ContentH
       if (range !== undefined && !inside(range, size))
         throw new ModuleServiceError('invalid_input', 'Range outside the content');
       try {
+        signal.throwIfAborted();
         content.pin.check();
         for await (const chunk of content.read(range)) {
           // The protection is checked between chunks: a lost pin ends the read.
+          signal.throwIfAborted();
           content.pin.check();
           yield chunk;
+          signal.throwIfAborted();
+          content.pin.check();
         }
       } catch (error) {
         if (error instanceof ModuleServiceError) throw error;
         throw new ModuleServiceError('unavailable', 'Content read failed');
       }
     },
-    async release() {
-      if (released) return;
-      released = true;
-      await content.pin.release();
-    },
+    release,
   };
 }
 
@@ -144,36 +181,44 @@ export function moduleCatalog(
   scopes: AccessScopes,
 ): { readonly catalog: CatalogRead; readonly content: ContentRead } {
   const of = (scope: AccessScope) => scopes.principalsOf(scope);
+  const scopeCall = <T>(scope: AccessScope, work: () => Promise<T>) =>
+    serviceCall(async () => {
+      const active = !scopes.signal(scope).aborted;
+      const value = await work();
+      if (active && scopes.signal(scope).aborted)
+        throw new ModuleServiceError('unavailable', 'Scope revoked');
+      return value;
+    });
   const catalog: CatalogRead = {
     artifact: (scope, repository, id) =>
-      serviceCall(async () => {
+      scopeCall(scope, async () => {
         const found = await scoped.artifact(of(scope), repository, id);
         return found ? view(found) : null;
       }),
     artifacts: (scope, repository, page: PageRequest) =>
-      serviceCall(async () => {
+      scopeCall(scope, async () => {
         const found = await scoped.artifacts(of(scope), repository, page.after, page.limit);
         return { items: found.items.map(view), next: found.next };
       }),
     batch: (scope, repository, ids) =>
-      serviceCall(async () => {
+      scopeCall(scope, async () => {
         const found = await scoped.batch(of(scope), repository, ids);
         return { found: found.found.map(view), missing: found.missing };
       }),
     resolvePackage: (scope, repository, query) =>
-      serviceCall(async () => {
+      scopeCall(scope, async () => {
         const found = await scoped.resolvePackage(of(scope), repository, query);
         return found ? { group: query.group, name: query.name, artifact: view(found) } : null;
       }),
     asset: (scope, repository, path) =>
-      serviceCall(async () => {
+      scopeCall(scope, async () => {
         const entry = await scoped.asset(of(scope), repository, path);
         return entry
           ? { path: entry.path, revision: entry.revision, artifactId: entry.artifactId }
           : null;
       }),
     search: (scope, query: SearchQuery) =>
-      serviceCall(async () => {
+      scopeCall(scope, async () => {
         const found = await scoped.search(of(scope), {
           q: query.text,
           repositories: query.repositories.join(','),
@@ -207,7 +252,11 @@ export function moduleCatalog(
           await opened.pin.release();
           throw new ModuleServiceError('invalid_input', 'Range outside the content');
         }
-        return handle(opened, requested);
+        if (scopes.signal(scope).aborted) {
+          await opened.pin.release();
+          return null;
+        }
+        return handle(opened, requested, scopes.signal(scope));
       }),
   };
   return { catalog, content };

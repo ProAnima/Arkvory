@@ -51,3 +51,5 @@ export * from './fleet-control.js';
 export * from './download-settings.js';
 export * from './events.js';
 export * from './artifact-tree.js';
+
+export * from './upload-read.js';

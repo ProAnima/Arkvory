@@ -125,3 +125,24 @@ test('a search with several principals intersects their repositories before the 
   await search.searchAll([second, first], {});
   assert.deepEqual(searched, [['shared'], ['shared']]);
 });
+
+test('revocation follows intersections and closes handles opened before or during revocation', async () => {
+  const scopes = new AccessScopes();
+  const root = scopes.of([reader]);
+  const child = scopes.intersect(scopes.of([reader]), root);
+  const grandchild = scopes.intersect(child, child);
+  const log = [];
+  let resolve;
+  const pending = new Promise((r) => {
+    resolve = r;
+  });
+  const { content } = moduleCatalog({ content: () => pending }, scopes);
+  const opening = content.open(grandchild, { repository: 'releases', id });
+  scopes.revoke(root);
+  assert.deepEqual(scopes.principalsOf(grandchild), []);
+  assert.deepEqual(scopes.principalsOf(scopes.intersect(child, scopes.of([reader]))), []);
+  resolve(opened(log));
+  assert.equal(await opening, null);
+  assert.deepEqual(log, ['released']);
+  assert.deepEqual(new AccessScopes().principalsOf(child), []);
+});

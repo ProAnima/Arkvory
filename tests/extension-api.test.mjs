@@ -457,6 +457,7 @@ test('sources and host services are published as lists of known values', () => {
     'staged-completion',
     'catalog-read',
     'content-read',
+    'upload-read',
     'change-feed',
     'data-directory',
     'routes',

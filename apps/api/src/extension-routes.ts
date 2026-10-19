@@ -1,3 +1,5 @@
+import type { AccessScopes } from '@proanima/arkvory-infrastructure';
+import { requestScope } from './extension-request-scope.js';
 import { Readable } from 'node:stream';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ArkvoryError, authorizeAction, requireAdministrator } from '@proanima/arkvory-domain';
@@ -19,6 +21,7 @@ import { UploadReceiver } from './upload-lifetime.js';
 /** What module routes share with the core's own transfers. */
 export interface ExtensionServices extends ProtocolTransfers, ResponseServices {
   readonly role: 'api' | 'reader';
+  scopes(module: string): AccessScopes;
   /** The largest object of this server; a stream body never exceeds it. */
   readonly maxObjectBytes: number;
 }
@@ -118,14 +121,26 @@ async function invoke(
   let timer: ReturnType<typeof setTimeout> | undefined;
   const expired = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
+      services.scopes(route.module).revoke(request.scope);
       deadline.abort();
       reject(new ArkvoryError('unavailable', 'The module did not answer in time'));
     }, route.timeoutMs);
   });
-  const answer = route.handle(request, signal);
+  let abort: () => void = () => undefined;
+  const cancelled = new Promise<never>((_resolve, reject) => {
+    abort = () => {
+      reject(new ArkvoryError('unavailable', 'Module request cancelled'));
+    };
+    external.addEventListener('abort', abort, { once: true });
+    if (external.aborted) abort();
+  });
+  const answer = Promise.resolve().then(() => {
+    signal.throwIfAborted();
+    return route.handle(request, signal);
+  });
   let returned = false;
   try {
-    const value = await Promise.race([answer, expired]);
+    const value = await Promise.race([answer, expired, cancelled]);
     returned = true;
     return value;
   } catch (error) {
@@ -142,6 +157,7 @@ async function invoke(
     throw new ModuleRouteFailure('Module route failed');
   } finally {
     clearTimeout(timer);
+    external.removeEventListener('abort', abort);
     // Only an answer the race did not return is closed here; a returned one belongs to the caller.
     if (!returned) void answer.then(closeBody, () => undefined);
   }
@@ -162,12 +178,19 @@ async function handleRoute(
   const principal = services.principal(request);
   const params = textRecord(request.params, 'path parameters');
   authorizeRoute(route, principal, params);
-  const external = services.signal(request, reply);
+  const lifetime = requestScope(
+    services.scopes(route.module),
+    principal,
+    services.signal(request, reply),
+    reply,
+  );
+  const external = lifetime.signal;
   const base = {
     method: request.method === 'HEAD' ? ('HEAD' as const) : route.method,
     params,
     query: textRecord(request.query, 'query'),
     requestId: request.id,
+    scope: lifetime.scope,
   };
   const run = async (): Promise<unknown> => {
     if (route.body.kind !== 'stream')
@@ -187,25 +210,36 @@ async function handleRoute(
     });
   };
   // Writes take a place of the upload admission, as every change of the core does.
-  const value = route.effect === 'write' ? await services.modifying(request, run) : await run();
-  let answer;
   try {
-    answer = answerOf(value, route);
-  } catch (error) {
-    closeBody(value);
-    if (!(error instanceof ModuleResponseError)) throw error;
-    services.diagnostics.write({
-      level: 'error',
-      component: 'module',
-      code: 'module.response_invalid',
-      module: route.module,
-      requestId: request.id,
-      route: route.path,
-      method: request.method,
+    const value = route.effect === 'write' ? await services.modifying(request, run) : await run();
+    let answer;
+    try {
+      answer = answerOf(value, route);
+    } catch (error) {
+      closeBody(value);
+      if (!(error instanceof ModuleResponseError)) throw error;
+      services.diagnostics.write({
+        level: 'error',
+        component: 'module',
+        code: 'module.response_invalid',
+        module: route.module,
+        requestId: request.id,
+        route: route.path,
+        method: request.method,
+      });
+      throw new ModuleRouteFailure('Module answer outside the contract');
+    }
+    return await sendAnswer(answer, route, {
+      request,
+      reply,
+      services,
+      principal,
+      signal: external,
     });
-    throw new ModuleRouteFailure('Module answer outside the contract');
+  } catch (error) {
+    lifetime.revoke();
+    throw error;
   }
-  return sendAnswer(answer, route, { request, reply, services, principal, signal: external });
 }
 
 /**

@@ -20,7 +20,10 @@ export class PostgresContentPins {
   private readonly counts = new Map<string, number>();
   private lost = false;
   private closed = false;
-  constructor(private readonly pool: Pool) {}
+  constructor(
+    private readonly pool: Pool,
+    private readonly lock: 'content' | 'upload' = 'content',
+  ) {}
   private serial<T>(action: () => Promise<T> | T): Promise<T> {
     const next = this.tail.then(action);
     this.tail = next.catch(() => undefined);
@@ -48,7 +51,7 @@ export class PostgresContentPins {
           throw error;
         }
       }
-      const key = contentLockKey(id),
+      const key = this.lock === 'upload' ? uploadLockKey(id) : contentLockKey(id),
         count = this.counts.get(key) ?? 0;
       if (count === 0) {
         try {

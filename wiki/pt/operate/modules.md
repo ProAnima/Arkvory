@@ -190,3 +190,7 @@ Esta versão mantém a lista de confiança; os plugins são instalados por uma v
 ## Depois de uma interrupção {#recover}
 
 Cada mudança do conjunto de módulos é registrada no diário de atualizações. Se um comando parar no meio, o próximo comando de implantação recusa com `Interrupted deployment`. Execute `sudo arkvory recover --root …`: ele restaura o conjunto de módulos anterior. Até lá, todo comando de módulos que muda algo é recusado, inclusive `module trust` e `module revocations`.
+
+## Duração da solicitação do módulo {#request-scope}
+
+A rota usa as permissões do solicitante até o fim da resposta, inclusive em fluxo. O cancelamento ou a conclusão revoga as permissões e fecha os recursos de leitura. `upload-read` lê partes aceitas de envios incompletos e verifica o proprietário, `upload.read`, o intervalo e o cancelamento. Módulos podem retirar ofertas de transferência durante a execução. As próximas consultas de recursos as omitem; rotas e transferências ativas permanecem. O cliente pode manter ofertas antigas em cache, portanto a rota deve verificar cada operação.

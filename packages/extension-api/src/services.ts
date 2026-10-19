@@ -1,3 +1,4 @@
+import type { UploadRead } from './upload-read.js';
 import type { CatalogRead, ContentRead } from './catalog-read.js';
 import type { ModuleDataDirectory } from './module-files.js';
 import type { ModuleRoutes } from './routes.js';
@@ -11,6 +12,7 @@ export interface HostServiceTypes {
   readonly routes: ModuleRoutes;
   readonly 'catalog-read': CatalogRead;
   readonly 'content-read': ContentRead;
+  readonly 'upload-read': UploadRead;
   readonly 'data-directory': ModuleDataDirectory;
 }
 

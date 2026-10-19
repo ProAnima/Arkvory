@@ -126,3 +126,5 @@ Readiness дополнен параметрами admission waitingCapacity, per
 Логическое удаление и retention preview/apply реализованы в [ARTIFACT_RETENTION](ARTIFACT_RETENTION.md): managed-only artifact.delete, CAS аннотаций, пины истории и receipts. Миграции 13/14. Реестр репозиториев, SDK distribution, identity delegation/SSO и глобальное управление очередями остаются отдельными этапами.
 
 Хранение расширено `/storage/{policy,usage,preview,run,events}`: last-N scheduler, квоты резервирования, CAS и diagnostics. Миграция 15; явные managed storage/diagnostics actions. [STORAGE_POLICIES](STORAGE_POLICIES.md).
+
+Маршрут получает `ModuleRequest.scope` до конца ответа, включая поток. Отмена, ошибка и завершение отзывают также пересечения и закрывают pins. Служба `upload-read` читает подтверждённые части pending-upload владельца с `upload.read`, проверками диапазона и отмены. `routes.withdrawTransfer` снимает предложение из следующих ответов capabilities; маршруты и начатые передачи сохраняются. Клиент может кешировать старое предложение, поэтому обработчик проверяет допустимость операции. См. дополнение 2026-10-19 к [ADR 0083](adr/0083-core-extension-points.md).

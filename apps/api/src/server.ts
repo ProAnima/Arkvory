@@ -364,6 +364,7 @@ function registerRoutes(app: FastifyInstance, parts: RouteParts) {
       .filter(({ running, module }) => running && module.manifest.kind !== 'storage-backend')
       .map(({ module }) => ({ id: module.manifest.id, kind: module.manifest.kind })),
     extensions: sets,
+    scopes: (module) => runtime.hostServices.scopes(module),
   });
   if (runtime.role === 'api') registerConsole(app, config.webDirectory ?? 'apps/web/public');
 }

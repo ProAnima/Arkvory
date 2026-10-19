@@ -35,5 +35,8 @@ export const CONTRACT_SUITES = {
   'staged-completion': 'stagedCompletionContract',
   'catalog-read': 'catalogReadContract',
   'content-read': 'catalogReadContract',
+  'upload-read': 'uploadReadContract',
   'data-directory': 'dataDirectoryContract',
 } as const;
+
+export { uploadReadContract, type UploadReadHarness } from './upload-read.js';
