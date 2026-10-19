@@ -370,12 +370,18 @@ test('capture refuses unknown tables, legacy writers and a lost snapshot with ma
       vault: override(deps.vault, {
         async stage(pointId, attempt) {
           const staged = await deps.vault.stage(pointId, attempt);
+          let interrupted = false;
           return override(staged, {
             async write(name, lines, cancellation) {
-              if (name === 'tables/arkvory_users.ndjson')
-                await f.catalog.pool.query(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+              // Interrupt before the first table, independent of schema export order.
+              if (!interrupted && name.startsWith('tables/')) {
+                interrupted = true;
+                const killed = await f.catalog.pool
+                  .query(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity
                   WHERE datname=current_database() AND state='idle in transaction'
                   AND query LIKE '%descriptor->>%'`);
+                assert.equal(killed.rowCount, 1, 'the snapshot session must actually be killed');
+              }
               return staged.write(name, lines, cancellation);
             },
           });
