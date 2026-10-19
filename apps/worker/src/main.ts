@@ -8,6 +8,9 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
   ModuleStorages,
+  createLicenseService,
+  PostgresLicenceStore,
+  licenceVerifier,
   storageReserveBytes,
   storageReserveInodes,
   ModuleUnlinkAdmission,
@@ -180,10 +183,15 @@ try {
   if (!acquired) throw new StoppedOnStandby();
   const { catalog, blobs, staging, placement } = acquired;
   const pins = new PostgresContentPins(catalog.sessions);
+  const license = createLicenseService({
+    store: new PostgresLicenceStore(catalog.pool),
+    verifier: licenceVerifier(),
+  });
   const moduleHost = processModules(
     'worker',
     installation,
     {
+      license: () => license,
       dataDirectory: acquired.dataDirectory,
       dataPool: catalog.sessions,
       reserve: {

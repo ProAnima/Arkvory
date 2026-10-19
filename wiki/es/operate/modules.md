@@ -84,6 +84,8 @@ Un módulo que guarda índices, cachés o un estado propios obtiene un directori
 
 Eliminar un módulo conserva su directorio. Elimine `module-data/<id>/` usted mismo cuando ya no necesite los datos. Las copias de seguridad todavía no incluyen los directorios de los módulos.
 
+Antes de actualizar a extension API 0.7.0, detenga todos los procesos API y worker antiguos que escriban datos de módulos. Los nuevos escritores comparten el control de cuota mediante el coordinador PostgreSQL de la instalación; los archivos temporales también cuentan. No se admite escribir simultáneamente con procesos antiguos y nuevos. Tras un fallo, Arkvory reconstruye el recuento cuando hace falta y elimina directorios temporales del nuevo protocolo solo después de adquirir el bloqueo del propietario anterior en la base de datos. Los temporales antiguos no se eliminan automáticamente y siguen contando para la cuota; revíselos por separado con los escritores detenidos. Los procesos backup solo tienen acceso de lectura.
+
 ## Rutas de los módulos {#routes}
 
 Un módulo puede añadir rutas HTTP bajo su propio prefijo `/api/ext/<id>/v<major>/`, por ejemplo `/api/ext/sample/v1/`. Arkvory comprueba cada solicitud antes de que se ejecute código del módulo:

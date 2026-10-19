@@ -250,9 +250,9 @@ export class ModuleHostServices {
     ]);
     // Release the owner lock only after all sinks have relinquished their OS handles.
     await this.coordinator?.close();
-    const errors = [...computeResults, ...results].flatMap((result) =>
-      result.status === 'rejected' ? [result.reason] : [],
-    );
+    const errors: unknown[] = [];
+    for (const result of [...computeResults, ...results])
+      if (result.status === 'rejected') errors.push(result.reason);
     if (errors.length) throw new AggregateError(errors, 'Module host close failed');
   }
 }

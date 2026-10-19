@@ -9,10 +9,7 @@ export type ComputeMessage =
   | Uint8Array
   | readonly ComputeMessage[]
   | { readonly [key: string]: ComputeMessage };
-export interface ComputeTask {
-  readonly name: string;
-  readonly entry: string;
-}
+export type { ComputeTask } from './manifest.js';
 /** Declared signed entries only. One task at a time, at most 64 queued; timeout 60 seconds. */
 export interface ComputePool {
   run(task: string, input: ComputeMessage, signal: ModuleSignal): Promise<ComputeMessage>;

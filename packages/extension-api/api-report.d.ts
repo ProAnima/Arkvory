@@ -141,6 +141,21 @@ export {
   type LicenseState,
   type LicenseView,
 } from './license.js';
+export { hostServiceAvailable } from './plan-services.js';
+export type {
+  ModuleStorageBlobs,
+  ModuleStorageLifecycle,
+  ModuleStorageInstance,
+  ModuleStorageRegistry,
+  StagedCompletionRegistry,
+} from './storage-backend.js';
+export type {
+  ChangeEvent,
+  ChangeSubscription,
+  ChangeFeed,
+  FeedSubscription,
+} from './change-feed.js';
+export type { ComputeMessage, ComputePool, ComputeTask } from './compute.js';
 
 // capabilities.d.ts
 /**
@@ -307,6 +322,30 @@ export interface ContentRead {
   open(scope: AccessScope, ref: ContentRef, range?: ByteRange): Promise<ContentHandle | null>;
 }
 
+// change-feed.d.ts
+/** A sequenced catalog event. Security events never enter this service. */
+export interface ChangeEvent {
+  readonly id: string;
+  readonly type: string;
+  readonly repository: string | null;
+  readonly subject: string;
+  readonly data: Readonly<Record<string, ModuleJson>>;
+}
+export interface FeedSubscription {
+  close(): Promise<void>;
+}
+export interface ChangeSubscription {
+  readonly consumer: string;
+  readonly types: readonly string[];
+  readonly batch: number;
+  /** At least once: acknowledge only after all effects are durable. */
+  handle(events: readonly ChangeEvent[], signal: ModuleSignal): Promise<void>;
+  resync(reason: 'epoch_changed' | 'cursor_expired', signal: ModuleSignal): Promise<void>;
+}
+export interface ChangeFeed {
+  subscribe(spec: ChangeSubscription): FeedSubscription;
+}
+
 // client.d.ts
 /** Pattern of the name of a transfer or tree capability. */
 export declare const TRANSFER_NAME_PATTERN: RegExp;
@@ -425,6 +464,28 @@ export type ClientModuleManifest = Omit<ModuleManifest, 'roles'>;
 export interface ClientModuleDescriptor {
   readonly manifest: ClientModuleManifest;
   create(context: ClientModuleContext): ClientModule;
+}
+
+// compute.d.ts
+/** Structured data copied into an isolated compute thread; shared memory is refused. */
+export type ComputeMessage =
+  | null
+  | boolean
+  | number
+  | string
+  | ArrayBuffer
+  | Uint8Array
+  | readonly ComputeMessage[]
+  | {
+      readonly [key: string]: ComputeMessage;
+    };
+export interface ComputeTask {
+  readonly name: string;
+  readonly entry: string;
+}
+/** Declared signed entries only. One task at a time, at most 64 queued; timeout 60 seconds. */
+export interface ComputePool {
+  run(task: string, input: ComputeMessage, signal: ModuleSignal): Promise<ComputeMessage>;
 }
 
 // context.d.ts
@@ -731,6 +792,7 @@ export interface ModuleManifest {
    * Absent in a manifest means none.
    */
   readonly uses: readonly string[];
+  readonly compute?: readonly ComputeTask[];
   /**
    * Capabilities the module needs from other enabled modules: `name@^1.2.0`, a caret range of the
    * value's contract (ADR 0083, N13). A bare `name` means `@^0.0.0`, for built-in modules only.
@@ -881,6 +943,14 @@ export type ModulePlanRuleCode =
   | 'capability_unversioned'
   | 'capability_not_exposed'
   | 'requirement_cycle';
+
+// plan-services.d.ts
+/** A role receives only its declared services; other roles of the same module receive none. */
+export declare function hostServiceAvailable(
+  name: string,
+  role: ModuleRole,
+  source: ModuleSource,
+): boolean;
 
 // plan.d.ts
 /** One module offered to the plan, with the operator's choice and its normalized settings. */
@@ -1263,6 +1333,10 @@ export interface ModuleRoutes {
  * a module that declares one this host or the module's roles and source do not offer.
  */
 export interface HostServiceTypes {
+  readonly compute: ComputePool;
+  readonly 'change-feed': ChangeFeed;
+  readonly 'blob-store': ModuleStorageRegistry;
+  readonly 'staged-completion': StagedCompletionRegistry;
   readonly routes: ModuleRoutes;
   readonly 'catalog-read': CatalogRead;
   readonly 'content-read': ContentRead;
@@ -1271,7 +1345,7 @@ export interface HostServiceTypes {
   /** Read-only licence view (ADR 0078, R2): signed ProAnimaStudio modules only (ADR 0082, 18). */
   readonly license: LicenseService;
 }
-/** The services a module of the API process may receive; each is present only when declared. */
+/** Services available to a server module: filtered by declaration, process role and source. */
 export type HostServices = {
   readonly [K in keyof HostServiceTypes]?: HostServiceTypes[K];
 };
@@ -1322,6 +1396,57 @@ export interface StagedObject {
    * failed commit, and nothing at all after a successful one (a committed object is immutable).
    */
   discard(): Promise<void>;
+}
+
+// storage-backend.d.ts
+/** Portable bytes of one storage. Published blobs are immutable and verified on repeated put. */
+export interface ModuleStorageBlobs {
+  putPart(
+    id: string,
+    part: PartRef,
+    source: AsyncIterable<Uint8Array>,
+    signal: ModuleSignal,
+  ): Promise<void>;
+  readParts(id: string, parts: readonly PartRef[]): AsyncIterable<Uint8Array>;
+  put(
+    id: string,
+    expected: BlobDescriptor,
+    source: AsyncIterable<Uint8Array>,
+    signal: ModuleSignal,
+  ): Promise<void>;
+  verify(id: string, expected: BlobDescriptor, signal: ModuleSignal): Promise<void>;
+  read(id: string, size: number, range?: ByteRange): AsyncIterable<Uint8Array>;
+  exists(id: string, size: number): Promise<void>;
+  duplicate(
+    sourceId: string,
+    targetId: string,
+    expected: BlobDescriptor,
+    signal: ModuleSignal,
+  ): Promise<void>;
+  /** Called only under core cleanup locks, content pins and backup unlink admission. */
+  collect(id: string, removeContent: boolean, signal: ModuleSignal): Promise<void>;
+}
+export interface ModuleStorageLifecycle {
+  initialize(): Promise<void>;
+  identity(readOnly?: boolean): Promise<string>;
+  ready(): Promise<void>;
+  checkSpace(bytes: number): Promise<void>;
+  requireEmpty(): Promise<void>;
+}
+/** One instance owned by a signed storage module. The host prefixes its name with the module id. */
+export interface ModuleStorageInstance {
+  readonly blobs: ModuleStorageBlobs;
+  readonly lifecycle: ModuleStorageLifecycle;
+  readonly mode: 'full' | 'read-only';
+  acceptsWrites(): boolean;
+}
+/** Registration during create only; available instances activate after successful start. */
+export interface ModuleStorageRegistry {
+  add(name: string, instance: ModuleStorageInstance): void;
+}
+/** Optional completion for a registered storage name, declared during create only. */
+export interface StagedCompletionRegistry {
+  add(name: string, completion: StagedCompletion): void;
 }
 
 // upload-read.d.ts

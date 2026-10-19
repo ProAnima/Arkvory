@@ -1,4 +1,3 @@
-import type { ComputeTask } from './compute.js';
 import { parseProvidedCapability, parseRequiredCapability } from './capabilities.js';
 import { MODULE_SOURCES, type ModuleSource } from './sources.js';
 import { parseCaretRange, parseSemanticVersion } from './version.js';
@@ -330,4 +329,10 @@ function computeTasks(value: unknown): readonly ComputeTask[] {
     names.add(name);
     return { name, entry };
   });
+}
+
+/** A declared entry in the signed package, executed by the host compute pool. */
+export interface ComputeTask {
+  readonly name: string;
+  readonly entry: string;
 }
