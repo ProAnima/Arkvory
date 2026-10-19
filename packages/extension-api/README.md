@@ -43,3 +43,11 @@ API/worker модуль получает `routes` только в API и `change
 а не sandbox. Feed допускает повторную доставку: обработчик идемпотентен,
 подтверждение происходит после успешного завершения; отмена кооперативная.
 Отдельные метрики ошибок compute/feed пока не предоставляются.
+
+## Поколения производного кеша (0.9.0)
+
+`derived-cache`: DerivedCache, CacheBuild, CacheRead; signed API/worker строят
+и читают, reader читает, backup и плагины службу не получают. Пространство
+изолировано от ModuleFiles, поколения публикуются атомарно, quota общая с
+legacy data/cache. Потеря PG-сессии не доказывает quiescence файлового I/O.
+Контракт и доверенная процедура recovery: [ADR 0084](../../docs/adr/0084-derived-cache-generations.md).

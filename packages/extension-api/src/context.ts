@@ -15,6 +15,7 @@ export const HOST_SERVICES = [
   'upload-read',
   'change-feed',
   'data-directory',
+  'derived-cache',
   'routes',
   'compute',
   'license',

@@ -222,6 +222,7 @@
   },
   "spawnedHelpers": [
     "tests/integration/api-child.mjs",
+    "tests/integration/derived-cache-child.mjs",
     "tests/deployment/service-child.mjs",
     "tests/deployment/execution-probe.mjs",
     "tests/deployment/process-child.mjs",

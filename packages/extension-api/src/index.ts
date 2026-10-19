@@ -152,3 +152,5 @@ export type {
   FeedSubscription,
 } from './change-feed.js';
 export type { ComputeMessage, ComputePool, ComputeTask } from './compute.js';
+
+export type { DerivedCache, CacheBuild, CacheRead } from './derived-cache.js';

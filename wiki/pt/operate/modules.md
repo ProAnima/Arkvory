@@ -198,3 +198,15 @@ Cada mudança do conjunto de módulos é registrada no diário de atualizações
 ## Duração da solicitação do módulo {#request-scope}
 
 A rota usa as permissões do solicitante até o fim da resposta, inclusive em fluxo. O cancelamento ou a conclusão revoga as permissões e fecha os recursos de leitura. `upload-read` lê partes aceitas de envios incompletos e verifica o proprietário, `upload.read`, o intervalo e o cancelamento. Módulos podem retirar ofertas de transferência durante a execução. As próximas consultas de recursos as omitem; rotas e transferências ativas permanecem. O cliente pode manter ofertas antigas em cache, portanto a rota deve verificar cada operação.
+
+## Recuperação do cache derivado {#derived-cache}
+
+Módulos assinados podem declarar `derived-cache` (extension API 0.9.0). API e worker criam e leem gerações imutáveis; reader apenas lê e backup não recebe o serviço. As permissões da origem são verificadas em cada pedido. O orçamento inclui dados/cache antigos e gerações retidas. Uma falta no cache exige regeneração ou fallback.
+
+A perda de uma sessão PostgreSQL não prova que a E/S de arquivos terminou. Reservas de proprietários incertos e referências persistentes de leitores continuam contabilizadas. Primeiro aplique as migrações desta versão do núcleo. Antes da recuperação, pare todos os hosts participantes e confirme o fim dos processos e da E/S, ou prove o fim da instância exata do processo proprietário e que não pode retomar; use fencing nos hosts inacessíveis. Obtenha o UUID exato nos diagnósticos e registe a prova. PID, timeout ou ausência de bloqueio SQL não bastam.
+
+No host de confiança, com `ARKVORY_DATABASE_URL` configurado, execute o comando abaixo com os pacotes compilados desta versão. A opção confirma a paragem física; um bloqueio ativo do proprietário continua a impedir a recuperação. Sem confirmação não há ação. Depois retome a reconciliação e verifique a limpeza: confirmar não liberta a quota imediatamente. É manutenção do host, não uma permissão do módulo ou do CLI remoto.
+
+```sh
+node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
+```

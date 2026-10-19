@@ -1,3 +1,4 @@
+import type { DerivedCache } from './derived-cache.js';
 import type { UploadRead } from './upload-read.js';
 
 import type { ComputePool } from './compute.js';
@@ -14,6 +15,7 @@ import type { ModuleRoutes } from './routes.js';
  * a module that declares one this host or the module's roles and source do not offer.
  */
 export interface HostServiceTypes {
+  readonly 'derived-cache': DerivedCache;
   readonly compute: ComputePool;
   readonly 'change-feed': ChangeFeed;
   readonly 'blob-store': ModuleStorageRegistry;
