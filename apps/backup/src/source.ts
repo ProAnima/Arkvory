@@ -1,9 +1,19 @@
+import { allowResolutionUnder, resolutionConfined } from '@proanima/arkvory-resolution';
 import { randomUUID } from 'node:crypto';
 import { BackupFailure } from '@proanima/arkvory-domain';
 import { defaultCaptureLimits } from '@proanima/arkvory-application';
 import type { CaptureDependencies, CaptureEvent } from '@proanima/arkvory-application';
 import {
   FileVault,
+  ModuleStorages,
+  createLicenseService,
+  PostgresLicenceStore,
+  licenceVerifier,
+  processModules,
+  loadInstallation,
+  readModuleSelections,
+  readReleaseVersion,
+  PostgresModulePlan,
   LocalContentSource,
   PacedContentSource,
   PostgresBackupJobs,
@@ -19,7 +29,12 @@ import {
   PostgresStorageIdentities,
   probeStorageBackends,
 } from '@proanima/arkvory-infrastructure';
-import type { BackupPool, StorageBackends, VaultKeySource } from '@proanima/arkvory-infrastructure';
+import type {
+  HostedModuleContext,
+  BackupPool,
+  StorageBackends,
+  VaultKeySource,
+} from '@proanima/arkvory-infrastructure';
 import type { SourceConfig } from './config.js';
 import { requireVaultApart, sourceVolumes } from './storage-roots.js';
 
@@ -38,6 +53,16 @@ export interface CaptureSource {
  * the schema must be this release's. The capture session holds 18471/4 shared and 18471/19.
  */
 export async function openCaptureSource(config: SourceConfig): Promise<CaptureSource> {
+  const installation = await loadInstallation<HostedModuleContext>({
+    role: 'backup',
+    coreVersion: await readReleaseVersion(new URL('../../../release.json', import.meta.url)),
+    selections: await readModuleSelections(config.modulesFile),
+    installed: config.installedModules,
+    now: Date.now(),
+    admit: (directory) => {
+      if (resolutionConfined()) allowResolutionUnder(directory);
+    },
+  });
   const blobs = localStorageBackends(
     config.dataDirectory,
     config.reserveBytes,
@@ -57,19 +82,64 @@ export async function openCaptureSource(config: SourceConfig): Promise<CaptureSo
     if ((await appliedSchemaVersion(pool)) !== SCHEMA_VERSION)
       throw new BackupFailure('schema_mismatch', 'Source schema differs from this release');
     const session = await claimBackupSource(pool, storageId);
-    // Read-only: a storage the writer has not recorded yet holds nothing to copy. Content of a
-    // storage that is not available fails the capture as missing content, never silently.
-    await probeStorageBackends(blobs, new PostgresStorageIdentities(pool), { create: false });
-    return {
-      pool,
-      blobs,
-      storageId,
-      active: () => session.active,
-      close: async () => {
-        await session.close();
-        await pool.end();
-      },
-    };
+    try {
+      const license = createLicenseService({
+        store: new PostgresLicenceStore(pool),
+        verifier: licenceVerifier(),
+      });
+      const host = processModules(
+        'backup',
+        installation,
+        {
+          license: () => license,
+          dataDirectory: config.dataDirectory,
+          reserve: { bytes: config.reserveBytes, inodes: 0 },
+          readOnly: true,
+          storage: new ModuleStorages(blobs, true),
+          catalog: () => {
+            throw new Error('Catalog service is not available in backup');
+          },
+          compute: (id) => installation.prepared.get(id)?.compute?.(),
+        },
+        { write: () => undefined },
+      );
+      try {
+        const recorded = await new PostgresModulePlan(pool).read();
+        if (
+          config.installedModules &&
+          recorded?.compatibilityFingerprint !== installation.plan.compatibilityFingerprint
+        )
+          throw new BackupFailure('busy', 'module_plan_mismatch');
+        await host.runtime.start();
+        if (host.runtime.blockingFailure()) throw new BackupFailure('busy', 'module_failed');
+        await probeStorageBackends(blobs, new PostgresStorageIdentities(pool), { create: false });
+      } catch (error) {
+        await host.close();
+        throw error;
+      }
+      // Read-only: a storage the writer has not recorded yet holds nothing to copy. Content of a
+      // storage that is not available fails the capture as missing content, never silently.
+      return {
+        pool,
+        blobs,
+        storageId,
+        active: () => session.active,
+        close: async () => {
+          try {
+            await host.close();
+          } finally {
+            try {
+              await session.close();
+            } finally {
+              await pool.end();
+            }
+          }
+        },
+      };
+    } catch (error) {
+      await session.close();
+      throw error;
+    }
   } catch (error) {
     await pool.end();
     throw error;

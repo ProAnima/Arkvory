@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, statfs, symlink, writeFile } from 'node:fs/promises';
@@ -6,7 +7,7 @@ import { join } from 'node:path';
 import { dataDirectoryContract } from '../packages/extension-testkit/dist/index.js';
 import {
   LocalBlobStore,
-  openModuleData,
+  openModuleData as openCoordinatedData,
   requireVolumeRoom,
 } from '@proanima/arkvory-infrastructure';
 import { removeTestDirectory } from './helpers.mjs';
@@ -89,7 +90,7 @@ test('the accounting is reconciled with files written behind the port', async (t
     quotaBytes: 1000,
     quotaFiles: 10,
   });
-  // A crash left a file being written: the next writer drops it and counts the rest.
+  // Legacy tmp has no provable owner: keep it charged rather than infer that it is abandoned.
   await writeFile(join(dataDirectory, 'module-data', 'op-index', 'tmp', 'left'), 'abc');
   const reopened = await openModuleData(options);
   assert.equal(reopened.directory.cache.usage().bytes, 7);
@@ -119,3 +120,18 @@ test('a storage refuses writes when the volume runs short of inodes', async (t) 
   await assert.rejects(store.checkSpace(1), { code: 'capacity_exceeded', reason: 'storage_full' });
   await new LocalBlobStore(root, 0, undefined, undefined, 0).checkSpace(1);
 });
+
+// Single-process contract fixture only. PostgreSQL ownership is covered by integration tests.
+function openModuleData(options) {
+  return openCoordinatedData({
+    ...options,
+    coordinator: {
+      owner: randomUUID(),
+      run: async (_module, work) =>
+        work({
+          check() {},
+          orphan: async () => {},
+        }),
+    },
+  });
+}

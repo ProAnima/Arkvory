@@ -1,4 +1,5 @@
 import './confine.js';
+import { allowResolutionUnder, resolutionConfined } from '@proanima/arkvory-resolution';
 import { randomUUID } from 'node:crypto';
 import { getCACertificates } from 'node:tls';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -6,6 +7,19 @@ import { StorageService } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
+  ModuleStorages,
+  createLicenseService,
+  PostgresLicenceStore,
+  licenceVerifier,
+  storageReserveBytes,
+  storageReserveInodes,
+  ModuleUnlinkAdmission,
+  ModuleChangeFeed,
+  PostgresEventLog,
+  PostgresModuleCursors,
+  PostgresContentPins,
+  processModules,
+  moduleCatalogSource,
   databasePlaintextExposed,
   failureCause,
   installCrashHandlers,
@@ -16,6 +30,8 @@ import {
   PostgresJobs,
   PostgresIdentity,
   PostgresModulePlan,
+  probeStorageBackends,
+  PostgresStorageIdentities,
   PostgresServices,
   installedModulesFrom,
   loadInstallation,
@@ -30,7 +46,11 @@ import {
   trustMirrorCertificates,
   watchdogSeconds,
 } from '@proanima/arkvory-infrastructure';
-import type { LogLevel, PostgresJobLease } from '@proanima/arkvory-infrastructure';
+import type {
+  HostedModuleContext,
+  LogLevel,
+  PostgresJobLease,
+} from '@proanima/arkvory-infrastructure';
 import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
 import { runMirrors } from './mirror-loop.js';
 import { runWebhooks } from './webhook-loop.js';
@@ -120,15 +140,17 @@ try {
   const rehomeBudget = rehomeBytesPerSecond(process.env['ARKVORY_REHOME_BYTES_PER_SECOND']);
   // ADR 0079: the installation's module plan, refused before the worker takes its lock. The
   // installed signed modules are verified and planned like the writer's; none runs here (X4).
-  const { compatibilityFingerprint } = (
-    await loadInstallation({
-      role: 'worker',
-      coreVersion: identity.version,
-      selections: await readModuleSelections(process.env['ARKVORY_MODULES_FILE']),
-      installed: installedModulesFrom(process.env),
-      now: Date.now(),
-    })
-  ).plan;
+  const installation = await loadInstallation<HostedModuleContext>({
+    role: 'worker',
+    coreVersion: identity.version,
+    selections: await readModuleSelections(process.env['ARKVORY_MODULES_FILE']),
+    installed: installedModulesFrom(process.env),
+    now: Date.now(),
+    admit: (directory) => {
+      if (resolutionConfined()) allowResolutionUnder(directory);
+    },
+  });
+  const { compatibilityFingerprint } = installation.plan;
   // Mirror copies create uploads here, so they need the installation's capacity limit.
   const capacity = mirrors.length > 0 ? capacityBytes(process.env['ARKVORY_CAPACITY_BYTES']) : 0;
   // A worker with another plan than the writer's gives its lock back while it waits.
@@ -160,6 +182,52 @@ try {
   );
   if (!acquired) throw new StoppedOnStandby();
   const { catalog, blobs, staging, placement } = acquired;
+  const pins = new PostgresContentPins(catalog.sessions);
+  const license = createLicenseService({
+    store: new PostgresLicenceStore(catalog.pool),
+    verifier: licenceVerifier(),
+  });
+  const moduleHost = processModules(
+    'worker',
+    installation,
+    {
+      license: () => license,
+      dataDirectory: acquired.dataDirectory,
+      dataPool: catalog.sessions,
+      reserve: {
+        bytes: storageReserveBytes(process.env['ARKVORY_STORAGE_RESERVE_BYTES']),
+        inodes: storageReserveInodes(process.env['ARKVORY_STORAGE_RESERVE_INODES']),
+      },
+      readOnly: false,
+      storage: new ModuleStorages(blobs, false, new ModuleUnlinkAdmission(catalog.sessions)),
+      catalog: () => moduleCatalogSource(catalog, blobs, pins),
+      compute: (id) => installation.prepared.get(id)?.compute?.(),
+      feed: new ModuleChangeFeed(
+        new PostgresEventLog(catalog.pool),
+        new PostgresModuleCursors(catalog.pool),
+        () => catalog.active && !stop.signal.aborted,
+      ),
+    },
+    diagnostics,
+  );
+  try {
+    await moduleHost.runtime.start();
+    await probeStorageBackends(blobs, new PostgresStorageIdentities(catalog.pool), {
+      create: false,
+    });
+    if (moduleHost.runtime.blockingFailure()) throw new Error('Required worker module failed');
+  } catch (error) {
+    try {
+      await moduleHost.close();
+    } finally {
+      try {
+        await pins.close();
+      } finally {
+        await catalog.close();
+      }
+    }
+    throw error;
+  }
   const unwatchStorage = watchWorkerStorage(blobs, catalog, diagnostics);
   const recordedPlan = new PostgresModulePlan(catalog.pool);
   const unwatchPlan = watchModulePlan(recordedPlan, compatibilityFingerprint, () => {
@@ -296,7 +364,12 @@ try {
     clearInterval(recovery);
     unwatchPlan();
     unwatchStorage();
-    await catalog.close();
+    try {
+      await moduleHost.close();
+    } finally {
+      await pins.close();
+      await catalog.close();
+    }
   }
   diagnostics.write({ level: 'info', component: 'worker', code: 'worker.stopped' });
 } catch (error) {

@@ -56,7 +56,9 @@ An installed module stays disabled until you enable it. The services load module
 3. Restart the services, as in [Apply a change](../install/configuration#apply-change).
 4. Check the module as a global administrator: `GET /api/v1/system/modules` lists it with `running: true` and `health.status` `ok` on the API and on each read gateway.
 
-The API and the read gateways run modules. The worker checks the same modules and runs none of them. This release refuses modules that run in the worker or the backup agent (`role_unsupported`) and modules that declare route prefixes without serving routes through Arkvory (`routes_unsupported`). Docker Compose installations do not load modules yet.
+Signed modules run in the API, read gateways, worker and backup agent according to their declared roles. Each process gives a module only the services available to that role and declared in `uses`. Route prefixes still require the `routes` service (`routes_unsupported`). Docker Compose installations do not load modules yet.
+
+A module storage registers instances named `<module>.<name>`. Placement policies can select these instances for new uploads; when an instance stops accepting writes, new uploads fall back to `default`. The core checks the complete bytes before publishing an object composed from stored parts. Module data cleanup waits while any content reader, backup pin or capture barrier protects the installation. Computations run in bounded threads; background subscriptions acknowledge events only after a successful handler and may deliver them again after a failure.
 
 Before a service imports any code of a module, it checks the package again:
 
@@ -81,6 +83,8 @@ Install the package again to repair a changed or missing package. Every service 
 A module that keeps indexes, caches or state of its own gets a directory on the data volume: `module-data/<id>/` in the storage directory of `default`. Its `data` part is meant for backups, its `cache` part is not. Arkvory counts every write against the approved size, in MiB and in files, for both parts together. A write beyond it is refused (`module_quota_exceeded`) and the module keeps running. Without an approved size, the module can only read. The [reserve of the volume](./storage#disk) applies too. On a read gateway the module reads the same files and cannot change them.
 
 Removing a module keeps its directory. Delete `module-data/<id>/` yourself when you no longer need the data. Backups do not include module directories yet.
+
+Before upgrading to extension API 0.7.0, stop all older API and worker processes that write module data. All new writers share quota accounting through the installation’s PostgreSQL coordinator; temporary files also count toward the quota. Mixed old and new writers are unsupported. After a crash, Arkvory rebuilds accounting when needed and reclaims temporary directories of the new protocol only after acquiring the previous owner’s database lock. Legacy temporary files are not removed automatically and continue to count toward the quota; review them separately with writers stopped. Backup processes have read-only access.
 
 ## Routes of modules {#routes}
 

@@ -56,7 +56,9 @@ Un módulo instalado permanece desactivado hasta que usted lo active. Los servic
 3. Reinicie los servicios, como en [Aplicar un cambio](../install/configuration#apply-change).
 4. Compruebe el módulo como administrador global: `GET /api/v1/system/modules` lo muestra con `running: true` y `health.status` `ok` en la API y en cada puerta de enlace de lectura.
 
-La API y las puertas de enlace de lectura ejecutan los módulos. El worker comprueba los mismos módulos y no ejecuta ninguno. Esta versión rechaza los módulos que se ejecutan en el worker o en el agente de copias de seguridad (`role_unsupported`) y los que declaran prefijos de rutas sin servir rutas a través de Arkvory (`routes_unsupported`). Las instalaciones con Docker Compose todavía no cargan módulos.
+Los módulos firmados se ejecutan en API, pasarelas de lectura, worker y agente de copias según sus roles declarados. Cada proceso proporciona solo los servicios disponibles para su rol y declarados en `uses`. Las rutas requieren `routes`. Docker Compose todavía no carga módulos.
+
+Los almacenes de módulos se registran como `<module>.<name>` y pueden seleccionarse para nuevas cargas. Si dejan de aceptar escrituras, las nuevas cargas pasan a `default`. El núcleo verifica todos los bytes antes de publicar objetos compuestos de partes. La limpieza espera a los lectores activos, todas las retenciones de copias y la barrera de captura. Los cálculos usan hilos limitados. Las suscripciones confirman eventos tras procesarlos correctamente y pueden repetir la entrega después de un error.
 
 Antes de que un servicio importe cualquier código de un módulo, vuelve a comprobar el paquete:
 
@@ -81,6 +83,8 @@ Para reparar un paquete cambiado o ausente, instálelo de nuevo. Todos los servi
 Un módulo que guarda índices, cachés o un estado propios obtiene un directorio en el volumen de datos: `module-data/<id>/` en el directorio de almacenamiento `default`. Su parte `data` está pensada para las copias de seguridad; su parte `cache`, no. Arkvory cuenta cada escritura contra el tamaño aprobado, en MiB y en archivos, para ambas partes juntas. Una escritura que lo supera se rechaza (`module_quota_exceeded`) y el módulo sigue funcionando. Sin un tamaño aprobado, el módulo solo puede leer. También se aplica la [reserva del volumen](./storage#disk). En una puerta de enlace de lectura, el módulo lee los mismos archivos y no puede cambiarlos.
 
 Eliminar un módulo conserva su directorio. Elimine `module-data/<id>/` usted mismo cuando ya no necesite los datos. Las copias de seguridad todavía no incluyen los directorios de los módulos.
+
+Antes de actualizar a extension API 0.7.0, detenga todos los procesos API y worker antiguos que escriban datos de módulos. Los nuevos escritores comparten el control de cuota mediante el coordinador PostgreSQL de la instalación; los archivos temporales también cuentan. No se admite escribir simultáneamente con procesos antiguos y nuevos. Tras un fallo, Arkvory reconstruye el recuento cuando hace falta y elimina directorios temporales del nuevo protocolo solo después de adquirir el bloqueo del propietario anterior en la base de datos. Los temporales antiguos no se eliminan automáticamente y siguen contando para la cuota; revíselos por separado con los escritores detenidos. Los procesos backup solo tienen acceso de lectura.
 
 ## Rutas de los módulos {#routes}
 

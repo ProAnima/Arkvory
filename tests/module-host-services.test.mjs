@@ -54,14 +54,9 @@ test('a module receives only the services its manifest declares', async (t) => {
   assert.equal(built, 1, 'one set of catalog use cases for the process');
   const files = both['data-directory'].data;
   assert.deepEqual(files.usage(), { bytes: 0, files: 0, quotaBytes: 1024 * 1024, quotaFiles: 2 });
-  const sink = await files.create('a', { durable: false, exclusive: true });
-  await sink.write(new Uint8Array(3));
-  await sink.close();
-  assert.equal(files.usage().files, 1);
-  // Without an approved size every write exceeds the quota; reading stays possible.
-  const none = host.for(planned(['data-directory']), null)['data-directory'].cache;
-  await assert.rejects(none.create('b', { durable: false, exclusive: false }), {
-    code: 'module_quota_exceeded',
+  // A writable runtime must supply the shared admission pool; no local-only fallback.
+  await assert.rejects(files.create('a', { durable: false, exclusive: true }), {
+    code: 'unavailable',
   });
 });
 

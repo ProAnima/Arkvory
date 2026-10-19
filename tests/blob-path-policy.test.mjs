@@ -82,3 +82,10 @@ test('the product sources that read content name no blob path', async () => {
   ])
     assert.deepEqual(inspectBlobPaths(file, await readFile(file, 'utf8')), [], file);
 });
+
+test('module storage adapter calls a resolved instance but cannot construct core blob paths', () => {
+  const file = 'packages/infrastructure/src/module-storage.ts';
+  assert.deepEqual(inspectBlobPaths(file, 'const b = instance.blobs; b.read(id, size);'), []);
+  assert.equal(inspectBlobPaths(file, "join(root, 'blobs', id);").length, 1);
+  assert.equal(inspectBlobPaths(file, 'instance.blobs.contentPath(id);').length, 1);
+});

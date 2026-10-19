@@ -56,7 +56,9 @@ Ein installiertes Modul bleibt abgeschaltet, bis Sie es einschalten. Die Dienste
 3. Starten Sie die Dienste neu, wie unter [Eine Änderung anwenden](../install/configuration#apply-change).
 4. Prüfen Sie das Modul als globaler Administrator: `GET /api/v1/system/modules` zeigt es auf der API und auf jedem Lese-Gateway mit `running: true` und `health.status` `ok`.
 
-Die API und die Lese-Gateways führen Module aus. Der Worker prüft dieselben Module und führt keines aus. Diese Version lehnt Module ab, die im Worker oder im Backup-Agenten laufen (`role_unsupported`), und Module, die Routenpräfixe deklarieren, ohne Routen über Arkvory zu bedienen (`routes_unsupported`). Docker-Compose-Installationen laden noch keine Module.
+Signierte Module laufen entsprechend ihren deklarierten Rollen in API, Lesegateway, Worker und Backup-Agent. Jeder Prozess stellt nur die für seine Rolle verfügbaren und in `uses` angegebenen Dienste bereit. Routen erfordern `routes`. Docker Compose lädt noch keine Module.
+
+Modulspeicher werden als `<module>.<name>` registriert und können für neue Uploads ausgewählt werden. Nimmt ein Speicher keine neuen Schreibvorgänge mehr an, fallen neue Uploads auf `default` zurück. Der Kern prüft alle Bytes vor der Veröffentlichung zusammengesetzter Objekte. Die Bereinigung wartet auf aktive Leser, sämtliche Backup-Pins und die Kopierbarriere. Berechnungen laufen in begrenzten Threads. Abonnements bestätigen Ereignisse erst nach erfolgreicher Verarbeitung; nach Fehlern ist eine erneute Zustellung möglich.
 
 Bevor ein Dienst irgendeinen Code eines Moduls importiert, prüft er das Paket erneut:
 
@@ -81,6 +83,8 @@ Um ein geändertes oder fehlendes Paket zu reparieren, installieren Sie es erneu
 Ein Modul, das eigene Indizes, Caches oder einen eigenen Zustand speichert, erhält ein Verzeichnis auf dem Daten-Volume: `module-data/<id>/` im Speicherverzeichnis von `default`. Sein Teil `data` ist für Backups gedacht, sein Teil `cache` nicht. Arkvory rechnet jeden Schreibvorgang auf die genehmigte Größe an, in MiB und in Dateien, für beide Teile zusammen. Ein Schreibvorgang darüber hinaus wird abgelehnt (`module_quota_exceeded`), und das Modul läuft weiter. Ohne genehmigte Größe kann das Modul nur lesen. Die [Reserve des Volumes](./storage#disk) gilt ebenfalls. Auf einem Lese-Gateway liest das Modul dieselben Dateien und kann sie nicht ändern.
 
 Wenn Sie ein Modul entfernen, bleibt sein Verzeichnis erhalten. Löschen Sie `module-data/<id>/` selbst, wenn Sie die Daten nicht mehr brauchen. Backups enthalten Modulverzeichnisse noch nicht.
+
+Stoppen Sie vor dem Wechsel auf Extension API 0.7.0 alle älteren API- und Worker-Prozesse, die Moduldaten schreiben. Alle neuen Schreiber teilen die Kontingentverwaltung über den PostgreSQL-Koordinator der Installation; auch temporäre Dateien zählen zum Kontingent. Gleichzeitiges Schreiben mit alten und neuen Prozessen wird nicht unterstützt. Nach einem Absturz baut Arkvory die Abrechnung bei Bedarf neu auf und entfernt temporäre Verzeichnisse des neuen Protokolls erst nach Erwerb der Datenbanksperre des vorherigen Besitzers. Alte temporäre Dateien werden nicht automatisch gelöscht und zählen weiter zum Kontingent; prüfen Sie sie separat bei gestoppten Schreibern. Backup-Prozesse haben nur Lesezugriff.
 
 ## Routen von Modulen {#routes}
 

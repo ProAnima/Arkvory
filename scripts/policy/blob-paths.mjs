@@ -92,7 +92,7 @@ function destructuredPaths(node, isStorage, report) {
 }
 
 /** `join`/`resolve` with a `blobs` segment, and port reads of an upload without its storage. */
-function calls(node, aliases, report) {
+function calls(node, aliases, report, instancePort = false) {
   if (!ts.isCallExpression(node)) return;
   const callee = lastName(node.expression);
   if (
@@ -100,6 +100,7 @@ function calls(node, aliases, report) {
     node.arguments.some((argument) => blobsSegment.test(literalText(argument)))
   )
     report(node, 'path into the blobs directory');
+  if (instancePort) return;
   const required = placedCalls.get(callee);
   const target = unwrap(node.expression);
   if (
@@ -148,7 +149,8 @@ export function inspectBlobPaths(file, text) {
     )
       report(node, 'storage root path');
     destructuredPaths(node, isStorage, report);
-    calls(node, aliases, report);
+    // This adapter has already resolved the backend and calls a single portable instance.
+    calls(node, aliases, report, file === 'packages/infrastructure/src/module-storage.ts');
     ts.forEachChild(node, visit);
   }
   visit(source);

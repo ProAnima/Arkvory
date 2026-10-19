@@ -53,6 +53,7 @@ export interface ModuleManifest {
    * Absent in a manifest means none.
    */
   readonly uses: readonly string[];
+  readonly compute?: readonly ComputeTask[];
   /**
    * Capabilities the module needs from other enabled modules: `name@^1.2.0`, a caret range of the
    * value's contract (ADR 0083, N13). A bare `name` means `@^0.0.0`, for built-in modules only.
@@ -116,6 +117,7 @@ const FIELDS = [
   'core',
   'roles',
   'uses',
+  'compute',
   'requires',
   'optional',
   'provides',
@@ -289,6 +291,7 @@ export function parseModuleManifest(input: unknown): ModuleManifest {
     roles: list(row, 'roles', { min: 1, max: MODULE_ROLES.length }, (value, path) =>
       oneOf(value, MODULE_ROLES, path),
     ),
+    ...(row['compute'] === undefined ? {} : { compute: computeTasks(row['compute']) }),
     uses: row['uses'] === undefined ? [] : list(row, 'uses', { min: 0, max: 32 }, matching(NAME)),
     requires,
     optional,
@@ -304,4 +307,32 @@ export function parseModuleManifest(input: unknown): ModuleManifest {
     metricPrefix: nullableText(row, 'metricPrefix'),
     tablePrefix: nullableText(row, 'tablePrefix'),
   };
+}
+
+function computeTasks(value: unknown): readonly ComputeTask[] {
+  if (!Array.isArray(value) || value.length > 16) throw new ModuleManifestError('type', '/compute');
+  const names = new Set<string>();
+  return value.map((task: unknown, index) => {
+    const path = `/compute/${String(index)}`;
+    if (typeof task !== 'object' || task === null) throw new ModuleManifestError('type', path);
+    const name: unknown = Reflect.get(task, 'name');
+    const entry: unknown = Reflect.get(task, 'entry');
+    if (
+      Object.keys(task).some((key) => key !== 'name' && key !== 'entry') ||
+      typeof name !== 'string' ||
+      !/^[a-z][a-z0-9-]{0,31}$/.test(name) ||
+      names.has(name) ||
+      typeof entry !== 'string' ||
+      !/^files\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.mjs$/.test(entry)
+    )
+      throw new ModuleManifestError('format', path);
+    names.add(name);
+    return { name, entry };
+  });
+}
+
+/** A declared entry in the signed package, executed by the host compute pool. */
+export interface ComputeTask {
+  readonly name: string;
+  readonly entry: string;
 }

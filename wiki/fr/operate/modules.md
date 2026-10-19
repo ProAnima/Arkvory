@@ -56,7 +56,9 @@ Un module installé reste désactivé jusqu’à ce que vous l’activiez. Les s
 3. Redémarrez les services, comme dans [Appliquer une modification](../install/configuration#apply-change).
 4. Vérifiez le module en tant qu’administrateur global : `GET /api/v1/system/modules` l’affiche avec `running: true` et `health.status` `ok` sur l’API et sur chaque passerelle de lecture.
 
-L’API et les passerelles de lecture exécutent les modules. Le worker vérifie les mêmes modules et n’en exécute aucun. Cette version refuse les modules qui s’exécutent dans le worker ou dans l’agent de sauvegarde (`role_unsupported`) et ceux qui déclarent des préfixes de routes sans servir de routes par Arkvory (`routes_unsupported`). Les installations Docker Compose ne chargent pas encore de modules.
+Les modules signés fonctionnent dans l’API, les passerelles de lecture, le worker et l’agent de sauvegarde selon leurs rôles déclarés. Chaque processus fournit uniquement les services de son rôle déclarés dans `uses`. Les routes nécessitent `routes`. Docker Compose ne charge pas encore les modules.
+
+Les stockages des modules sont enregistrés sous `<module>.<name>` et peuvent recevoir les nouveaux téléversements. Si un stockage refuse de nouvelles écritures, les nouveaux téléversements reviennent à `default`. Le cœur vérifie tous les octets avant de publier un objet assemblé. Le nettoyage attend les lecteurs actifs, toutes les protections des sauvegardes et la barrière de capture. Les calculs utilisent des threads limités. Les abonnements acquittent les événements après un traitement réussi et peuvent les livrer de nouveau après une erreur.
 
 Avant qu’un service importe le moindre code d’un module, il vérifie de nouveau le paquet :
 
@@ -81,6 +83,8 @@ Pour réparer un paquet modifié ou absent, installez-le de nouveau. Tous les se
 Un module qui conserve ses propres index, caches ou état obtient un répertoire sur le volume de données : `module-data/<id>/` dans le répertoire de stockage `default`. Sa partie `data` est destinée aux sauvegardes, sa partie `cache` ne l’est pas. Arkvory compte chaque écriture dans la taille approuvée, en Mio et en fichiers, pour les deux parties ensemble. Une écriture au-delà est refusée (`module_quota_exceeded`) et le module continue de fonctionner. Sans taille approuvée, le module peut seulement lire. La [réserve du volume](./storage#disk) s’applique aussi. Sur une passerelle de lecture, le module lit les mêmes fichiers et ne peut pas les modifier.
 
 La suppression d’un module conserve son répertoire. Supprimez `module-data/<id>/` vous-même lorsque vous n’avez plus besoin des données. Les sauvegardes n’incluent pas encore les répertoires des modules.
+
+Avant de passer à extension API 0.7.0, arrêtez tous les anciens processus API et worker qui écrivent des données de modules. Les nouveaux processus partagent le suivi des quotas via le coordinateur PostgreSQL de l’installation ; les fichiers temporaires comptent aussi. L’écriture simultanée par des anciens et des nouveaux processus n’est pas prise en charge. Après un arrêt brutal, Arkvory reconstruit le suivi si nécessaire et ne supprime les répertoires temporaires du nouveau protocole qu’après avoir acquis le verrou en base de données de leur ancien propriétaire. Les anciens fichiers temporaires ne sont pas supprimés automatiquement et restent comptabilisés ; examinez-les séparément, une fois les processus d’écriture arrêtés. Les processus backup ont uniquement accès en lecture.
 
 ## Routes des modules {#routes}
 

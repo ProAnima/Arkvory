@@ -1,6 +1,6 @@
 {
   "name": "@proanima/arkvory-extension-testkit",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "sideEffects": false,
@@ -17,6 +17,6 @@
     "url": "git+https://github.com/ProAnima/Arkvory.git"
   },
   "dependencies": {
-    "@proanima/arkvory-extension-api": "0.6.0"
+    "@proanima/arkvory-extension-api": "0.7.0"
   }
 }

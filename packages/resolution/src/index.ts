@@ -87,8 +87,8 @@ function permitted(roots: ReadonlySet<string>, url: string): boolean {
  * Call it first: entries import a module that calls it before any other import, so it runs
  * before the code of every library. Node resolves the static ES module graph of an entry before
  * evaluating any of it, so those imports pass unchecked: they name only packages the release
- * ships (ADR 0031, limitations). Idempotent within a thread. Worker threads are not
- * confined; the product starts only the watchdog worker, which resolves nothing.
+ * ships (ADR 0031, limitations). Idempotent within a thread. Hooks do not propagate to workers. The compute worker installs its own confinement
+ * before dynamically loading task libraries; the watchdog resolves nothing.
  */
 export function confineResolution(): void {
   if (current() !== undefined) return;

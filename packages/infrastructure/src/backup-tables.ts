@@ -20,6 +20,7 @@ export const MINIMUM_RESTORE_SCHEMA = 25;
  * capture refuses an unlisted table and tests compare both lists with a migrated database.
  */
 export const exportedTables: readonly BackupTable[] = [
+  { name: 'arkvory_module_cursors', key: ['module_id', 'consumer'], since: 48 },
   { name: 'arkvory_users', key: ['id'] },
   { name: 'arkvory_access_groups', key: ['id'] },
   { name: 'arkvory_group_members', key: ['group_id', 'user_id'] },

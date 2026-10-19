@@ -173,6 +173,7 @@ function clientManifest(rest: Row): ModuleManifest {
     [module.exposeTo.length > 0, '/exposeTo'],
     [module.resources !== null, '/resources'],
     [module.core, '/core'],
+    [(module.compute?.length ?? 0) > 0, '/compute'],
   ];
   const field = refused.find(([bad]) => bad);
   if (field) throw invalid(field[1]);
@@ -212,6 +213,8 @@ export function parsePackageManifest(input: unknown): PackageManifest {
   // A client module keeps nothing on the server.
   if (side === 'client' && dataClass !== 'none') throw invalid('/dataClass');
   const listed = files(row['files']);
+  for (const task of module.compute ?? [])
+    if (!listed.some((file) => file.path === task.entry)) throw invalid('/compute');
   const roles: readonly PackageEntryRole[] = side === 'client' ? [CLIENT_ENTRY] : module.roles;
   return {
     module,

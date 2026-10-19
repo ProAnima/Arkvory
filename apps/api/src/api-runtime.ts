@@ -97,8 +97,23 @@ export class ApiRuntime {
     this.telemetry = new ModuleTelemetry(log, () => performance.now());
     // Module settings and the plan are checked before any pool, storage or timer exists.
     this.modules = installation
-      ? apiModules(this.role, installation, this.telemetry, this.routes, (module, resources) =>
-          this.hostServices.for(module, resources),
+      ? apiModules(
+          this.role,
+          installation,
+          this.telemetry,
+          this.routes,
+          (module, resources) => this.hostServices.for(module, resources),
+          {
+            seal: (id) => {
+              this.hostServices.seal(id);
+            },
+            activate: (id) => {
+              this.hostServices.activate(id);
+            },
+            withdraw: (id) => {
+              this.hostServices.withdraw(id);
+            },
+          },
         )
       : planApiModules(this.role, coreVersion, config.modules, this.telemetry, this.routes);
     // Validate local limits before allocating pools or claiming ownership.
@@ -124,12 +139,17 @@ export class ApiRuntime {
       store: new PostgresLicenceStore(this.catalog.pool),
       verifier: licenceVerifier(),
     };
-    this.hostServices = apiHostServices(config, this.role, {
-      catalog: this.catalog,
-      blobs: this.blobs,
-      pins: this.pins,
-      license: () => this.license(),
-    });
+    this.hostServices = apiHostServices(
+      config,
+      this.role,
+      {
+        catalog: this.catalog,
+        blobs: this.blobs,
+        pins: this.pins,
+        license: () => this.license(),
+      },
+      installation,
+    );
     this.modulePlan = new PostgresModulePlan(this.catalog.pool);
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.sessions, config.sharedDownloads)
@@ -205,6 +225,7 @@ export class ApiRuntime {
       // start, the background task retries every 10 seconds and reports a failure.
       if (this.role === 'api') await this.downloadSettings.sync().catch(() => undefined);
       await this.modules.start();
+      await this.probeStorage();
     } catch (error) {
       await this.close();
       throw error;
@@ -275,9 +296,15 @@ export class ApiRuntime {
       // module start still running is cancelled and settles first.
       await this.modules.shutdown(MODULE_DRAIN_BUDGET_MS);
     } finally {
-      this.hostServices.close();
-      await this.pins.close();
-      await this.catalog.close();
+      try {
+        await this.hostServices.close();
+      } finally {
+        try {
+          await this.pins.close();
+        } finally {
+          await this.catalog.close();
+        }
+      }
     }
   }
 }

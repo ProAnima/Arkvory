@@ -25,7 +25,7 @@ test('migration 47 adds licences after moves and trees; repeating it preserves a
   assert.deepEqual(
     (
       await f.pool.query(
-        'SELECT version FROM arkvory_migrations WHERE version>=45 ORDER BY version',
+        'SELECT version FROM arkvory_migrations WHERE version BETWEEN 45 AND 47 ORDER BY version',
       )
     ).rows.map((row) => row.version),
     [45, 46, 47],

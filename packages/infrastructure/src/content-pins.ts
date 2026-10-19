@@ -52,12 +52,19 @@ export class PostgresContentPins {
         count = this.counts.get(key) ?? 0;
       if (count === 0) {
         try {
+          const global = await this.client.query<{ acquired: boolean }>(
+            'SELECT pg_try_advisory_lock_shared(18471,23) AS acquired',
+          );
+          if (!global.rows[0]?.acquired)
+            throw new ArkvoryError('busy', 'Module data is being reclaimed');
           const result = await this.client.query<{ acquired: boolean }>(
             'SELECT pg_try_advisory_lock_shared($1::bigint) AS acquired',
             [key],
           );
-          if (!result.rows[0]?.acquired)
+          if (!result.rows[0]?.acquired) {
+            await this.client.query('SELECT pg_advisory_unlock_shared(18471,23)');
             throw new ArkvoryError('busy', 'Content is being reclaimed');
+          }
         } catch (error) {
           if (!(error instanceof ArkvoryError)) this.lost = true;
           throw error;
@@ -83,6 +90,7 @@ export class PostgresContentPins {
             if (!this.lost && this.client) {
               try {
                 await this.client.query('SELECT pg_advisory_unlock_shared($1::bigint)', [key]);
+                await this.client.query('SELECT pg_advisory_unlock_shared(18471,23)');
               } catch {
                 this.lost = true;
               }

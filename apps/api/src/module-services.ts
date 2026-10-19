@@ -9,6 +9,8 @@ import {
   defaultStorageReserveBytes,
   defaultStorageReserveInodes,
   ModuleHostServices,
+  ModuleStorages,
+  ModuleUnlinkAdmission,
   PostgresBrowse,
   PostgresGlobalSearch,
   ZipManifestReader,
@@ -17,7 +19,9 @@ import type {
   PostgresCatalog,
   PostgresContentPins,
   StorageBackends,
+  InstallationPlan,
 } from '@proanima/arkvory-infrastructure';
+import type { ApiModuleContext } from './modules.js';
 import type { LicenseService } from '@proanima/arkvory-extension-api';
 import type { ServerConfig } from './config.js';
 
@@ -36,15 +40,24 @@ export function apiHostServices(
     readonly pins: PostgresContentPins;
     readonly license: () => LicenseService;
   },
+  installation?: InstallationPlan<ApiModuleContext>,
 ): ModuleHostServices {
   const { catalog, blobs, pins, license } = resources;
   return new ModuleHostServices({
     dataDirectory: config.dataDirectory,
+    dataPool: catalog.sessions,
     reserve: {
       bytes: config.storageReserveBytes ?? defaultStorageReserveBytes,
       inodes: config.storageReserveInodes ?? defaultStorageReserveInodes,
     },
     readOnly: role === 'reader',
+    role,
+    compute: (id) => installation?.prepared.get(id)?.compute?.(),
+    storage: new ModuleStorages(
+      blobs,
+      role === 'reader',
+      new ModuleUnlinkAdmission(catalog.sessions),
+    ),
     license,
     catalog: () => {
       // Reads only: no upload is created through this service, so placement is not needed.

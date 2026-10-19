@@ -56,7 +56,9 @@ Um módulo instalado fica desativado até você ativá-lo. Os serviços carregam
 3. Reinicie os serviços, como em [Aplicar uma alteração](../install/configuration#apply-change).
 4. Verifique o módulo como administrador global: `GET /api/v1/system/modules` o mostra com `running: true` e `health.status` `ok` na API e em cada gateway de leitura.
 
-A API e os gateways de leitura executam os módulos. O worker verifica os mesmos módulos e não executa nenhum. Esta versão recusa módulos que rodam no worker ou no agente de backup (`role_unsupported`) e módulos que declaram prefixos de rotas sem atender rotas pelo Arkvory (`routes_unsupported`). Instalações com Docker Compose ainda não carregam módulos.
+Os módulos assinados executam na API, nos gateways de leitura, no worker e no agente de backup conforme os papéis declarados. Cada processo fornece apenas os serviços do seu papel declarados em `uses`. As rotas exigem `routes`. O Docker Compose ainda não carrega módulos.
+
+Os armazenamentos de módulos são registrados como `<module>.<name>` e podem receber novos uploads. Quando deixam de aceitar gravações, os novos uploads usam `default`. O núcleo verifica todos os bytes antes de publicar objetos montados de partes. A limpeza aguarda leitores ativos, todas as proteções de backup e a barreira de captura. Os cálculos usam threads limitadas. As assinaturas confirmam eventos após processamento bem-sucedido e podem repetir a entrega após erros.
 
 Antes de um serviço importar qualquer código de um módulo, ele verifica o pacote de novo:
 
@@ -81,6 +83,8 @@ Para reparar um pacote alterado ou ausente, instale-o de novo. Todos os serviço
 Um módulo que guarda índices, caches ou estado próprios recebe um diretório no volume de dados: `module-data/<id>/` no diretório de armazenamento de `default`. A parte `data` dele é destinada a backups; a parte `cache`, não. O Arkvory desconta cada gravação do tamanho aprovado, em MiB e em arquivos, para as duas partes juntas. Uma gravação além dele é recusada (`module_quota_exceeded`), e o módulo continua rodando. Sem um tamanho aprovado, o módulo só pode ler. A [reserva do volume](./storage#disk) também vale. Em um gateway de leitura, o módulo lê os mesmos arquivos e não pode alterá-los.
 
 Remover um módulo mantém o diretório dele. Exclua `module-data/<id>/` você mesmo quando não precisar mais dos dados. Os backups ainda não incluem os diretórios de módulos.
+
+Antes de atualizar para extension API 0.7.0, pare todos os processos API e worker antigos que gravam dados de módulos. Os novos processos compartilham a contabilização da quota pelo coordenador PostgreSQL da instalação; arquivos temporários também contam. A gravação simultânea por processos antigos e novos não é suportada. Após uma falha, o Arkvory reconstrói a contabilização quando necessário e remove diretórios temporários do novo protocolo somente após obter o bloqueio do proprietário anterior no banco. Arquivos temporários antigos não são removidos automaticamente e continuam contando para a quota; revise-os separadamente com os processos de gravação parados. Processos backup têm acesso somente de leitura.
 
 ## Rotas de módulos {#routes}
 
