@@ -15,6 +15,7 @@ export {
   type StagedHarness,
 } from './staged-completion.js';
 export { catalogReadContract, type CatalogReadHarness } from './catalog-read.js';
+export { licenseContract, type LicenseHarness } from './license.js';
 export {
   dataDirectoryContract,
   type DataDirectoryHarness,
@@ -40,6 +41,7 @@ export const CONTRACT_SUITES = {
   'blob-store': 'storageRegistrationContract',
   compute: 'computeContract',
   'change-feed': 'changeFeedContract',
+  license: 'licenseContract',
   'staged-completion': 'stagedCompletionContract',
   'catalog-read': 'catalogReadContract',
   'content-read': 'catalogReadContract',

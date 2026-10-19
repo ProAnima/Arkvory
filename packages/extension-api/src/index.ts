@@ -143,3 +143,10 @@ export type {
   FeedSubscription,
 } from './change-feed.js';
 export type { ComputeMessage, ComputePool, ComputeTask } from './compute.js';
+export {
+  LICENSE_STATES,
+  type LicenseEvidence,
+  type LicenseService,
+  type LicenseState,
+  type LicenseView,
+} from './license.js';

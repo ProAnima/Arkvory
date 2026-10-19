@@ -2,6 +2,7 @@ import type { ComputePool } from './compute.js';
 import type { ChangeFeed } from './change-feed.js';
 import type { ModuleStorageRegistry, StagedCompletionRegistry } from './storage-backend.js';
 import type { CatalogRead, ContentRead } from './catalog-read.js';
+import type { LicenseService } from './license.js';
 import type { ModuleDataDirectory } from './module-files.js';
 import type { ModuleRoutes } from './routes.js';
 
@@ -19,6 +20,8 @@ export interface HostServiceTypes {
   readonly 'catalog-read': CatalogRead;
   readonly 'content-read': ContentRead;
   readonly 'data-directory': ModuleDataDirectory;
+  /** Read-only licence view (ADR 0078, R2): signed ProAnimaStudio modules only (ADR 0082, 18). */
+  readonly license: LicenseService;
 }
 
 /** Services available to a server module: filtered by declaration, process role and source. */

@@ -6,6 +6,9 @@ import type { CaptureDependencies, CaptureEvent } from '@proanima/arkvory-applic
 import {
   FileVault,
   ModuleStorages,
+  createLicenseService,
+  PostgresLicenceStore,
+  licenceVerifier,
   processModules,
   loadInstallation,
   readModuleSelections,
@@ -80,10 +83,15 @@ export async function openCaptureSource(config: SourceConfig): Promise<CaptureSo
       throw new BackupFailure('schema_mismatch', 'Source schema differs from this release');
     const session = await claimBackupSource(pool, storageId);
     try {
+      const license = createLicenseService({
+        store: new PostgresLicenceStore(pool),
+        verifier: licenceVerifier(),
+      });
       const host = processModules(
         'backup',
         installation,
         {
+          license: () => license,
           dataDirectory: config.dataDirectory,
           reserve: { bytes: config.reserveBytes, inodes: 0 },
           readOnly: true,

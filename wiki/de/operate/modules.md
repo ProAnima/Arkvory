@@ -84,6 +84,8 @@ Ein Modul, das eigene Indizes, Caches oder einen eigenen Zustand speichert, erh�
 
 Wenn Sie ein Modul entfernen, bleibt sein Verzeichnis erhalten. Löschen Sie `module-data/<id>/` selbst, wenn Sie die Daten nicht mehr brauchen. Backups enthalten Modulverzeichnisse noch nicht.
 
+Stoppen Sie vor dem Wechsel auf Extension API 0.7.0 alle älteren API- und Worker-Prozesse, die Moduldaten schreiben. Alle neuen Schreiber teilen die Kontingentverwaltung über den PostgreSQL-Koordinator der Installation; auch temporäre Dateien zählen zum Kontingent. Gleichzeitiges Schreiben mit alten und neuen Prozessen wird nicht unterstützt. Nach einem Absturz baut Arkvory die Abrechnung bei Bedarf neu auf und entfernt temporäre Verzeichnisse des neuen Protokolls erst nach Erwerb der Datenbanksperre des vorherigen Besitzers. Alte temporäre Dateien werden nicht automatisch gelöscht und zählen weiter zum Kontingent; prüfen Sie sie separat bei gestoppten Schreibern. Backup-Prozesse haben nur Lesezugriff.
+
 ## Routen von Modulen {#routes}
 
 Ein Modul kann HTTP-Routen unter seinem eigenen Präfix `/api/ext/<id>/v<major>/` hinzufügen, zum Beispiel `/api/ext/sample/v1/`. Arkvory prüft jede Anfrage, bevor Code des Moduls läuft:

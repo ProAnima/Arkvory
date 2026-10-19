@@ -27,8 +27,9 @@ import { migrateModulePlan } from './module-plan-store.js';
 import { migrateStoragePlacement } from './storage-placement-store.js';
 import { migrateBlobMoves } from './blob-moves-store.js';
 import { migrateTreeIndexes } from './tree-index-store.js';
+import { migrateLicences } from './licence-store.js';
 
-/** Steps of versions 15-46 (36 is an index step) in their historical order; each records its own version. */
+/** Steps of versions 15-47 (36 is an index step) in their historical order; each records its own version. */
 const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<void>])[] = [
   [15, migrateStoragePolicy],
   [16, migrateCleanup],
@@ -60,6 +61,7 @@ const storageSteps: readonly (readonly [number, (client: PoolClient) => Promise<
   [44, migrateStoragePlacement],
   [45, migrateBlobMoves],
   [46, migrateTreeIndexes],
+  [47, migrateLicences],
   [48, migrateModuleCursors],
 ];
 

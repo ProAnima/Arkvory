@@ -8,6 +8,9 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
   ModuleStorages,
+  createLicenseService,
+  PostgresLicenceStore,
+  licenceVerifier,
   storageReserveBytes,
   storageReserveInodes,
   ModuleUnlinkAdmission,
@@ -32,6 +35,7 @@ import {
   PostgresServices,
   installedModulesFrom,
   loadInstallation,
+  readLicenceConfiguration,
   readMirrorSettings,
   readModuleSelections,
   readWebhookCertificates,
@@ -51,6 +55,7 @@ import { capacityBytes, standbyRetryMs, workerResources } from './runtime.js';
 import { runMirrors } from './mirror-loop.js';
 import { runWebhooks } from './webhook-loop.js';
 import { runTreeIndexing } from './tree-loop.js';
+import { runLicences } from './license-loop.js';
 import { readEventRetention, runEventSequencer } from './event-loop.js';
 import { processJob, retireExhausted } from './completion.js';
 import { acquireWithPlan, watchModulePlan } from './module-plan.js';
@@ -127,6 +132,8 @@ try {
     process.env['ARKVORY_WEBHOOKS_CA_FILE'],
     receiverAuthorities,
   );
+  // ADR 0078, R2: licensing paths; without ARKVORY_LICENSE_DIR the worker has no licence work.
+  const licences = await readLicenceConfiguration(process.env);
   // ADR 0080: retention of the event outbox, checked before the worker takes its lock.
   const eventRetention = readEventRetention(process.env);
   // ADR 0083, N2: the copy budget of moves between storages.
@@ -176,10 +183,15 @@ try {
   if (!acquired) throw new StoppedOnStandby();
   const { catalog, blobs, staging, placement } = acquired;
   const pins = new PostgresContentPins(catalog.sessions);
+  const license = createLicenseService({
+    store: new PostgresLicenceStore(catalog.pool),
+    verifier: licenceVerifier(),
+  });
   const moduleHost = processModules(
     'worker',
     installation,
     {
+      license: () => license,
       dataDirectory: acquired.dataDirectory,
       dataPool: catalog.sessions,
       reserve: {
@@ -319,6 +331,13 @@ try {
     stop: stop.signal,
     diagnostics,
   });
+  const licensing = runLicences({
+    databaseUrl: process.env['ARKVORY_DATABASE_URL'] ?? '',
+    configuration: licences,
+    coreVersion: identity.version,
+    stop: stop.signal,
+    diagnostics,
+  });
   try {
     while (!stop.signal.aborted && catalog.active) {
       await retireExhausted(jobs, diagnostics);
@@ -341,6 +360,7 @@ try {
     await sequencing;
     await rehoming;
     await indexing;
+    await licensing;
     clearInterval(recovery);
     unwatchPlan();
     unwatchStorage();

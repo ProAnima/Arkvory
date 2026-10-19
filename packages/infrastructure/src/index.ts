@@ -229,3 +229,24 @@ export { ModuleChangeFeed } from './module-feed.js';
 export { PostgresModuleCursors } from './module-feed-store.js';
 export { moduleCatalogSource } from './module-catalog-source.js';
 export { ModuleCompute } from './module-compute.js';
+export { LICENCE_EXCHANGE_LOCK, PostgresLicenceStore, migrateLicences } from './licence-store.js';
+export { licenceVerifier } from './licence-verifier.js';
+export {
+  DEFAULT_LICENCE_HUB,
+  httpLicenceHub,
+  licenceHubUrl,
+  readLicenceHubSettings,
+  type LicenceHubSettings,
+} from './licence-hub.js';
+export { ActivationSecretError, fileActivationSecrets } from './licence-secrets.js';
+export { createLicenseService, licenseView, licenseViewOf } from './licence-service.js';
+export { installedLicenceModules } from './licence-modules.js';
+// The host command checks a typed key before any request (ADR 0078, R1).
+export { licenceKeyDigest, normaliseLicenceKey } from '@proanima/arkvory-signing';
+export {
+  licenceEnvironment,
+  licenceNonce,
+  licencePool,
+  readLicenceConfiguration,
+  type LicenceConfiguration,
+} from './licence-environment.js';

@@ -80,6 +80,10 @@ export const exportedTables: readonly BackupTable[] = [
   // Tables of contents of archives (ADR 0083, N8): restored, the worker does not read them again.
   { name: 'arkvory_tree_indexes', key: ['upload_id'], since: 46 },
   { name: 'arkvory_tree_entries', key: ['upload_id', 'ordinal'], since: 46 },
+  // Accepted licence documents (ADR 0078, R2); the activation secrets are files, never here.
+  { name: 'arkvory_license_activations', key: ['activation_id'], since: 47 },
+  { name: 'arkvory_license_clock', key: ['id'], since: 47 },
+  { name: 'arkvory_license_revocations', key: ['id'], since: 47 },
 ];
 
 /**
@@ -152,6 +156,10 @@ export const excludedTables: readonly ExcludedTable[] = [
   {
     name: 'arkvory_blob_moves',
     reason: 'moves between storages of the source; a restore writes each blob to its storage',
+  },
+  {
+    name: 'arkvory_license_requests',
+    reason: 'offline licence requests wait on the source installation; a restore asks again',
   },
   {
     name: 'arkvory_module_plan',

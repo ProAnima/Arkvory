@@ -8,6 +8,7 @@ import type {
   CatalogRead,
   ContentRead,
   HostServices,
+  LicenseService,
   ModuleDataDirectory,
   ModuleFiles,
   ModuleResources,
@@ -38,6 +39,11 @@ export interface HostServiceSources {
   readonly compute?: (id: string) => ModuleCompute | undefined;
   /** The catalog use cases, built when the first module that uses one is created. */
   readonly catalog: () => ScopedCatalog;
+  /**
+   * The `license` service (ADR 0078, R2), built on first use; absent, no module receives it.
+   * Reading it never calls the hub: it reads what the writer stored (ADR 0078, I1).
+   */
+  readonly license?: () => LicenseService;
 }
 
 /**
@@ -120,6 +126,7 @@ export class ModuleHostServices {
       ...(uses('data-directory')
         ? { 'data-directory': this.directory(module.manifest.id, resources) }
         : {}),
+      ...this.license(module),
     };
   }
 
@@ -137,6 +144,16 @@ export class ModuleHostServices {
       .get(moduleId)
       ?.close()
       .catch(() => undefined);
+  }
+
+  /**
+   * The plan already refuses `license` to operator and development plugins (ADR 0082, 18); the
+   * host gives it to signed modules only, so a built-in module never reads licences either.
+   */
+  private license(module: PlannedModule): Pick<HostServices, 'license'> {
+    const { license } = this.sources;
+    const granted = module.source === 'signed' && module.manifest.uses.includes('license');
+    return granted && license ? { license: license() } : {};
   }
 
   /**
@@ -220,9 +237,9 @@ export class ModuleHostServices {
     ]);
     // Release the owner lock only after all sinks have relinquished their OS handles.
     await this.coordinator?.close();
-    const errors = [...computeResults, ...results].flatMap((result) =>
-      result.status === 'rejected' ? [result.reason] : [],
-    );
+    const errors: unknown[] = [];
+    for (const result of [...computeResults, ...results])
+      if (result.status === 'rejected') errors.push(result.reason);
     if (errors.length) throw new AggregateError(errors, 'Module host close failed');
   }
 }

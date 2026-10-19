@@ -94,6 +94,7 @@ export function planOrThrow<Context>(
  * refused (`service_unavailable`). `routes`: module HTTP routes under `/api/ext/` (N7), served
  * by the API and read gateways, its suite in `tests/module-routes.test.mjs` (the route host
  * lives in the API process); the others each with a contract suite in `extension-testkit`.
+ * `license` (ADR 0078, R2) is open to signed ProAnimaStudio modules only (ADR 0082, 18).
  * Completion from stored parts is a capability of a storage instance the core builds, not yet a
  * service a module can offer (`staged-completion` waits for storage instances of modules).
  */
@@ -106,6 +107,7 @@ export const PROVIDED_HOST_SERVICES: readonly HostService[] = [
   'catalog-read',
   'content-read',
   'data-directory',
+  'license',
 ];
 
 export const sha256 = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');

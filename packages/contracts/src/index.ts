@@ -95,6 +95,13 @@ export {
   type TransferCapability,
 } from './modules-api.js';
 export {
+  licenseOperations,
+  readSystemLicenses,
+  systemLicenseSchema,
+  type SystemLicense,
+  type SystemLicenses,
+} from './license-api.js';
+export {
   downloadSettingsOperations,
   readDownloadSettings,
   type DownloadOverrides as DownloadSettingOverrides,

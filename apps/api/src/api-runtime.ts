@@ -11,6 +11,9 @@ import {
   PostgresContentPins,
   PostgresDownloadSettings,
   PostgresModulePlan,
+  PostgresLicenceStore,
+  createLicenseService,
+  licenceVerifier,
 } from '@proanima/arkvory-infrastructure';
 import type {
   DiagnosticRecord,
@@ -22,6 +25,8 @@ import type {
   StorageLifecycle,
 } from '@proanima/arkvory-infrastructure';
 import { DownloadSettingsControl } from '@proanima/arkvory-application';
+import type { LicenceReader } from '@proanima/arkvory-application';
+import type { LicenseService } from '@proanima/arkvory-extension-api';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { ServerConfig } from './config.js';
 import { createTransferControls } from './transfer-controls.js';
@@ -73,6 +78,9 @@ export class ApiRuntime {
   readonly telemetry: ModuleTelemetry;
   /** The plan the writer records and read gateways compare with theirs. */
   private readonly modulePlan: PostgresModulePlan;
+  /** The licences the writer keeps (ADR 0078, R2): read only, never through the hub. */
+  readonly licences: LicenceReader;
+  private licenseService: LicenseService | undefined;
   /** What the core gives modules (ADR 0083); built after the pools, used at module create. */
   readonly hostServices: ModuleHostServices;
 
@@ -127,7 +135,21 @@ export class ApiRuntime {
       config.databasePoolSize ?? 20,
     );
     this.pins = new PostgresContentPins(this.catalog.sessions);
-    this.hostServices = apiHostServices(config, this.role, this, installation);
+    this.licences = {
+      store: new PostgresLicenceStore(this.catalog.pool),
+      verifier: licenceVerifier(),
+    };
+    this.hostServices = apiHostServices(
+      config,
+      this.role,
+      {
+        catalog: this.catalog,
+        blobs: this.blobs,
+        pins: this.pins,
+        license: () => this.license(),
+      },
+      installation,
+    );
     this.modulePlan = new PostgresModulePlan(this.catalog.pool);
     this.lease = config.sharedDownloads
       ? new PostgresDownloadLease(this.catalog.sessions, config.sharedDownloads)
@@ -219,6 +241,12 @@ export class ApiRuntime {
       create: this.role === 'api',
       ...(changed ? { changed } : {}),
     });
+  }
+
+  /** The `license` service of modules: one per process, shared by the modules that use it. */
+  license(): LicenseService {
+    this.licenseService ??= createLicenseService(this.licences);
+    return this.licenseService;
   }
 
   private async loadTicketKey() {

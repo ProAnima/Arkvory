@@ -84,6 +84,8 @@ A module that keeps indexes, caches or state of its own gets a directory on the 
 
 Removing a module keeps its directory. Delete `module-data/<id>/` yourself when you no longer need the data. Backups do not include module directories yet.
 
+Before upgrading to extension API 0.7.0, stop all older API and worker processes that write module data. All new writers share quota accounting through the installation’s PostgreSQL coordinator; temporary files also count toward the quota. Mixed old and new writers are unsupported. After a crash, Arkvory rebuilds accounting when needed and reclaims temporary directories of the new protocol only after acquiring the previous owner’s database lock. Legacy temporary files are not removed automatically and continue to count toward the quota; review them separately with writers stopped. Backup processes have read-only access.
+
 ## Routes of modules {#routes}
 
 A module may add HTTP routes under its own prefix `/api/ext/<id>/v<major>/`, for example `/api/ext/sample/v1/`. Arkvory checks every request before any code of the module runs:

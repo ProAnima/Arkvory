@@ -75,7 +75,9 @@ export class PostgresModuleDataCoordinator implements ModuleDataCoordinator {
     try {
       this.check();
       const result = await work({
-        check: () => this.check(),
+        check: () => {
+          this.check();
+        },
         orphan: async (owner, remove) => {
           if (owner === this.owner) return;
           const previous = key('owner', owner);
@@ -93,13 +95,17 @@ export class PostgresModuleDataCoordinator implements ModuleDataCoordinator {
       return result;
     } finally {
       // A lost/unlock-failed session must never be reused, even if work threw first.
-      try {
-        await client.query('SELECT pg_advisory_unlock($1::bigint)', [lock]);
-      } catch (error) {
-        this.stopped = true;
-        await this.ownership?.close();
-        throw error;
-      }
+      await this.unlock(client, lock);
+    }
+  }
+
+  private async unlock(client: PoolClient, lock: string): Promise<void> {
+    try {
+      await client.query('SELECT pg_advisory_unlock($1::bigint)', [lock]);
+    } catch (error) {
+      this.stopped = true;
+      await this.ownership?.close();
+      throw error;
     }
   }
 

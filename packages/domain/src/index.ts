@@ -59,3 +59,4 @@ export type { ReplicaCopies, ReplicaPeer } from './replica.js';
 export * from './storage-placement.js';
 export * from './blob-moves.js';
 export * from './archive-tree.js';
+export * from './licence-state.js';

@@ -1,0 +1,35 @@
+{
+  "description": "An activation token of a standard licence: 30-day offline window, a limit above 2^53 as a decimal string.",
+  "document": "{\"format\":2,\"payload\":\"eyJmb3JtYXQiOjIsImtpbmQiOiJhY3RpdmF0aW9uIiwicHJvZHVjdCI6ImFya3ZvcnkiLCJ0b2tlbklkIjoidG9rXzAxMjM0NTY3ODlBQkNERUZHSEpLTU5QUVJTIiwibGljZW5jZUlkIjoibGljXzAxMjM0NTY3ODlBQkNERUZHSEpLTU5QUVJTIiwiYWN0aXZhdGlvbklkIjoiYWN0XzAxMjM0NTY3ODlBQkNERUZHSEpLTU5QUVJTIiwidHlwZSI6InN0YW5kYXJkIiwibGljZW5zZWUiOiJBQ01FIEdtYkgiLCJpbnN0YWxsYXRpb24iOiIzZjJiOGMxZS03ZDRhLTRlOWItYTZjNS0wZjFlMmQzYzRiNWEiLCJmZWF0dXJlcyI6WyJkZWR1cCIsImRlbHRhIl0sImxpbWl0cyI6eyJzaXRlcyI6IjEiLCJzdG9yYWdlLmxvZ2ljYWxCeXRlcyI6IjE4NDQ2NzQ0MDczNzA5NTUxNjE1In0sImlzc3VlZEF0IjoiMjAyNi0xMC0xOFQwMDowMDowMFoiLCJyZWZyZXNoQWZ0ZXIiOiIyMDI2LTEwLTE5VDAwOjAwOjAwWiIsIm5vdEFmdGVyIjoiMjAyNi0xMS0xN1QwMDowMDowMFoiLCJsaWNlbmNlTm90QWZ0ZXIiOiIyMDI3LTEwLTE4VDAwOjAwOjAwWiIsImdyYWNlRGF5cyI6MzAsInVwZGF0ZXNVbnRpbCI6bnVsbCwic2VxIjoxLCJub25jZSI6InEydllnTTN4VDB5SjdiRmhLOXdOY0EiLCJ3bSI6IjhmM2MyYTFiMGU5ZDhjN2I2YTVmNGUzZDJjMWIwYTk5Iiwia2V5SWQiOiIyMDAwMDAwMDAwMDAwMDAyIn0\",\"signature\":\"untrusted comment: signature from ProAnima licence key 2000000000000002\\nRUQgAAAAAAAAAhjQUHEV4UqMinrM8yr89+FQoQXHo0oA0RmW9HWKd79oB0W/basuaA+Y0PvSL0nRRj3XDmaiYh6RSEzJ2nRlTAY=\\ntrusted comment: timestamp:1792281600\\tfile:licence-activation\\ntTRkeHhXXsqIGGFdNufF+7kGwt7Ei9PTmBsSaAuHOL78Hir+gSptxbp3mNO8DSoixcYfaEKkKwpk8pvQaUsuCA==\\n\",\"chain\":[{\"format\":2,\"payload\":\"eyJmb3JtYXQiOjIsImtpbmQiOiJkZWxlZ2F0aW9uIiwicHJvZHVjdCI6ImFya3ZvcnkiLCJrZXlJZCI6IjIwMDAwMDAwMDAwMDAwMDIiLCJwdWJsaWNLZXkiOiJvSnFsOUhwbldZQXYrVlg0M0MwcUZLWEpuU08rbC9oa0VuLzVPRFJWcFBBPSIsInB1cnBvc2VzIjpbImFjdGl2YXRpb24iLCJyZXZvY2F0aW9uIl0sIm5vdEJlZm9yZSI6IjIwMjYtMTAtMDFUMDA6MDA6MDBaIiwibm90QWZ0ZXIiOiIyMDI3LTAxLTI5VDAwOjAwOjAwWiIsIm1heFRva2VuRGF5cyI6OTB9\",\"signature\":\"untrusted comment: signature from ProAnima licence key 1000000000000001\\nRUQQAAAAAAAAAT59mb2+jnxf/SKJQbdGfHCoa4DZ8n2/HDAKfSijqjf8crNanDwofNCAvdm+K2DgWp05XNri3ixDDqZrhcY1vgw=\\ntrusted comment: timestamp:1790812800\\tfile:licence-delegation\\nxKmpxvl4/p6qwglBJmcbNpjT//vZ6Zq1th2N02R2RN+o7PCGnEamBRLsPyHAocOkvn3yK2/O/Zz30HW60dxrCQ==\\n\",\"chain\":[]}]}",
+  "kind": "activation",
+  "payload": {
+    "activationId": "act_0123456789ABCDEFGHJKMNPQRS",
+    "features": [
+      "dedup",
+      "delta"
+    ],
+    "format": 2,
+    "graceDays": 30,
+    "installation": "3f2b8c1e-7d4a-4e9b-a6c5-0f1e2d3c4b5a",
+    "issuedAt": "2026-10-18T00:00:00Z",
+    "keyId": "2000000000000002",
+    "kind": "activation",
+    "licenceId": "lic_0123456789ABCDEFGHJKMNPQRS",
+    "licenceNotAfter": "2027-10-18T00:00:00Z",
+    "licensee": "ACME GmbH",
+    "limits": {
+      "sites": "1",
+      "storage.logicalBytes": "18446744073709551615"
+    },
+    "nonce": "q2vYgM3xT0yJ7bFhK9wNcA",
+    "notAfter": "2026-11-17T00:00:00Z",
+    "product": "arkvory",
+    "refreshAfter": "2026-10-19T00:00:00Z",
+    "seq": 1,
+    "tokenId": "tok_0123456789ABCDEFGHJKMNPQRS",
+    "type": "standard",
+    "updatesUntil": null,
+    "wm": "8f3c2a1b0e9d8c7b6a5f4e3d2c1b0a99"
+  },
+  "valid": true
+}

@@ -84,6 +84,8 @@ Un module qui conserve ses propres index, caches ou état obtient un répertoire
 
 La suppression d’un module conserve son répertoire. Supprimez `module-data/<id>/` vous-même lorsque vous n’avez plus besoin des données. Les sauvegardes n’incluent pas encore les répertoires des modules.
 
+Avant de passer à extension API 0.7.0, arrêtez tous les anciens processus API et worker qui écrivent des données de modules. Les nouveaux processus partagent le suivi des quotas via le coordinateur PostgreSQL de l’installation ; les fichiers temporaires comptent aussi. L’écriture simultanée par des anciens et des nouveaux processus n’est pas prise en charge. Après un arrêt brutal, Arkvory reconstruit le suivi si nécessaire et ne supprime les répertoires temporaires du nouveau protocole qu’après avoir acquis le verrou en base de données de leur ancien propriétaire. Les anciens fichiers temporaires ne sont pas supprimés automatiquement et restent comptabilisés ; examinez-les séparément, une fois les processus d’écriture arrêtés. Les processus backup ont uniquement accès en lecture.
+
 ## Routes des modules {#routes}
 
 Un module peut ajouter des routes HTTP sous son propre préfixe `/api/ext/<id>/v<major>/`, par exemple `/api/ext/sample/v1/`. Arkvory vérifie chaque requête avant que le code du module ne s’exécute :
