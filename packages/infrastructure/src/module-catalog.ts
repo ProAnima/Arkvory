@@ -105,12 +105,25 @@ function handle(
   signal: AbortSignal,
 ): ContentHandle {
   let released = false;
+  let releasing: Promise<void> | undefined;
+  const readers = new Set<() => Promise<IteratorResult<Uint8Array>>>();
   const { size, sha256 } = content.upload.descriptor;
-  const release = async () => {
-    if (released) return;
+  const check = () => {
+    if (released || signal.aborted)
+      throw new ModuleServiceError('unavailable', 'Content handle released');
+    content.pin.check();
+  };
+  const release = () => {
     released = true;
     signal.removeEventListener('abort', onAbort);
-    await content.pin.release();
+    // Revoke synchronously, but retain both object and global unlink protection until every
+    // backend next/return has settled. allSettled also waits for siblings if cleanup fails.
+    return (releasing ??= Promise.resolve().then(async () => {
+      const results = await Promise.allSettled([...readers].map((close) => close()));
+      await content.pin.release();
+      if (results.some((result) => result.status === 'rejected'))
+        throw new ModuleServiceError('unavailable', 'Content cleanup failed');
+    }));
   };
   const onAbort = () => {
     void release().catch(() => undefined);
@@ -119,29 +132,54 @@ function handle(
   if (signal.aborted) onAbort();
   return {
     descriptor: { size, sha256 },
-    async *read(given?: ByteRange) {
-      if (released) throw new ModuleServiceError('unavailable', 'Content handle released');
-      const range = given ?? opened;
-      if (range !== undefined && !inside(range, size))
-        throw new ModuleServiceError('invalid_input', 'Range outside the content');
-      try {
-        signal.throwIfAborted();
-        content.pin.check();
-        for await (const chunk of content.read(range)) {
-          // The protection is checked between chunks: a lost pin ends the read.
-          signal.throwIfAborted();
-          content.pin.check();
-          yield chunk;
-          signal.throwIfAborted();
-          content.pin.check();
-        }
-      } catch (error) {
-        if (error instanceof ModuleServiceError) throw error;
-        throw new ModuleServiceError('unavailable', 'Content read failed');
-      }
+    read(given?: ByteRange) {
+      const source = contentChunks(content, given ?? opened, check);
+      let closing: Promise<IteratorResult<Uint8Array>> | undefined;
+      const close = () =>
+        (closing ??= source.return(undefined).finally(() => readers.delete(close)));
+      // Track the inner generator, not the consumer: return() closes an abandoned yield and
+      // queues behind an in-flight next(), including its backend finally/late operation.
+      if (!released) readers.add(close);
+      const stream: AsyncIterableIterator<Uint8Array> = {
+        [Symbol.asyncIterator]() {
+          return this;
+        },
+        async next() {
+          try {
+            check();
+            const item = await source.next();
+            check();
+            if (item.done) readers.delete(close);
+            return item;
+          } catch (error) {
+            await close().catch(() => {
+              throw new ModuleServiceError('unavailable', 'Content cleanup failed');
+            });
+            if (error instanceof ModuleServiceError) throw error;
+            throw new ModuleServiceError('unavailable', 'Content read failed');
+          }
+        },
+        return: close,
+      };
+      return stream;
     },
     release,
   };
+}
+
+async function* contentChunks(
+  content: ScopedContent,
+  range: ByteRange | undefined,
+  check: () => void,
+): AsyncGenerator<Uint8Array, void, unknown> {
+  check();
+  if (range !== undefined && !inside(range, content.upload.descriptor.size))
+    throw new ModuleServiceError('invalid_input', 'Range outside the content');
+  for await (const chunk of content.read(range)) {
+    check();
+    yield chunk;
+    check();
+  }
 }
 
 /**

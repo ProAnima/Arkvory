@@ -146,3 +146,127 @@ test('revocation follows intersections and closes handles opened before or durin
   assert.deepEqual(log, ['released']);
   assert.deepEqual(new AccessScopes().principalsOf(child), []);
 });
+
+function deferred() {
+  return Promise.withResolvers();
+}
+
+async function lifecycleHandle(read, log) {
+  const scopes = new AccessScopes();
+  const root = scopes.of([reader]);
+  const scope = scopes.intersect(root, scopes.of([reader]));
+  const backend = { ...opened(log), read };
+  const { content } = moduleCatalog({ content: async () => backend }, scopes);
+  const handle = await content.open(scope, { repository: 'releases', id });
+  return { handle, scopes, root, scope };
+}
+
+for (const fail of [false, true]) {
+  test(`scope revocation waits for late backend ${fail ? 'failure' : 'chunk'} and cleanup`, async () => {
+    const log = [];
+    const entered = deferred();
+    const operation = deferred();
+    const cleaning = deferred();
+    const cleanup = deferred();
+    const f = await lifecycleHandle(async function* () {
+      try {
+        entered.resolve();
+        await operation.promise;
+        if (fail) throw new Error('backend failure');
+        yield new Uint8Array(4);
+      } finally {
+        cleaning.resolve();
+        await cleanup.promise;
+        log.push('closed');
+      }
+    }, log);
+    const stream = f.handle.read()[Symbol.asyncIterator]();
+    const pending = assert.rejects(stream.next(), { code: 'unavailable' });
+    await entered.promise;
+    f.scopes.revoke(f.root);
+    assert.deepEqual(f.scopes.principalsOf(f.scope), []);
+    const releasing = f.handle.release();
+    assert.strictEqual(f.handle.release(), releasing);
+    await assert.rejects(gather(f.handle.read()), { code: 'unavailable' });
+    assert.deepEqual(log, [], 'in-flight backend still owns the pin');
+    operation.resolve();
+    await cleaning.promise;
+    assert.deepEqual(log, [], 'backend finally still owns the pin');
+    cleanup.resolve();
+    await Promise.all([pending, releasing]);
+    assert.deepEqual(log, ['closed', 'released']);
+  });
+}
+
+test('revocation closes every abandoned yield before releasing the shared handle pin', async () => {
+  const log = [];
+  const firstClosing = deferred();
+  const secondClosing = deferred();
+  const firstDone = deferred();
+  const secondDone = deferred();
+  let count = 0;
+  const f = await lifecycleHandle(async function* () {
+    const number = ++count;
+    try {
+      yield new Uint8Array(4);
+    } finally {
+      (number === 1 ? firstClosing : secondClosing).resolve();
+      await (number === 1 ? firstDone : secondDone).promise;
+      log.push(`closed-${number}`);
+    }
+  }, log);
+  const first = f.handle.read()[Symbol.asyncIterator]();
+  const second = f.handle.read()[Symbol.asyncIterator]();
+  await first.next();
+  await second.next();
+  // Neither consumer calls next/return again: response finish/HEAD/304 must own cleanup.
+  f.scopes.revoke(f.root);
+  await Promise.all([firstClosing.promise, secondClosing.promise]);
+  firstDone.resolve();
+  await first.return();
+  assert.deepEqual(log, ['closed-1'], 'the other reader still protects global unlink');
+  secondDone.resolve();
+  await f.handle.release();
+  assert.deepEqual(log, ['closed-1', 'closed-2', 'released']);
+  await assert.rejects(first.next(), { code: 'unavailable' });
+  await assert.rejects(second.next(), { code: 'unavailable' });
+});
+
+test('release waits for sibling cleanup even when another backend return rejects', async () => {
+  const log = [];
+  const entered = deferred();
+  const finish = deferred();
+  let count = 0;
+  const f = await lifecycleHandle(async function* () {
+    const number = ++count;
+    try {
+      yield new Uint8Array(4);
+    } finally {
+      if (number === 1) throw new Error('cleanup failure');
+      entered.resolve();
+      await finish.promise;
+      log.push('closed');
+    }
+  }, log);
+  await f.handle.read()[Symbol.asyncIterator]().next();
+  await f.handle.read()[Symbol.asyncIterator]().next();
+  const released = assert.rejects(f.handle.release(), { code: 'unavailable' });
+  await entered.promise;
+  assert.deepEqual(log, []);
+  finish.resolve();
+  await released;
+  assert.deepEqual(log, ['closed', 'released']);
+});
+
+test('revoking an unread handle releases without opening its backend', async () => {
+  const log = [];
+  const f = await lifecycleHandle(async function* () {
+    log.push('unexpected read');
+    yield new Uint8Array(4);
+  }, log);
+  const stream = f.handle.read()[Symbol.asyncIterator]();
+  f.scopes.revoke(f.root);
+  await f.handle.release();
+  assert.deepEqual(log, ['released']);
+  await assert.rejects(stream.next(), { code: 'unavailable' });
+});
