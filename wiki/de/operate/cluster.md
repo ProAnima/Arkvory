@@ -274,3 +274,5 @@ Der Backup-Agent läuft nur auf dem aktiven Server, als Teil der Gruppe. Halten 
 - Solange eine [Ein-Kopie-Entscheidung](#single-copy) aktiv ist, verliert ein Ausfall des aktiven Servers die danach bestätigten Schreibvorgänge.
 - Jeder Schreibvorgang wartet auf die anderen Datenserver, daher kommt die Latenz der Verbindung zu jedem Schreibvorgang hinzu.
 - Arkvory wechselt nie von selbst auf einen reparierten Server zurück.
+
+Bei ha-2 verzögert der Plan das Fencing des Knotens mit der kleinsten DRBD-Knoten-ID um 15 Sekunden (`pcmk_delay_base`); das andere Ziel hat keine Verzögerung. Prüfen Sie, dass diese Zeit die gemessene Fencing-Dauer und die Unterschiede der Fehlererkennung übersteigt. Bestehende Cluster müssen die entsprechenden `pcs stonith update`-Befehle anwenden und Ausfälle in beiden Richtungen testen. Das erneute Erzeugen des Plans ändert den Cluster nicht. Quorum und Fencing bleiben verpflichtend.

@@ -65,6 +65,18 @@ test('ha-2 plan: witness is diskless, gets the next node id and is not a Pacemak
   );
 });
 
+test('ha-2 staggers fence targets deterministically without removing quorum or fencing', () => {
+  const input = planInput(options());
+  for (const nodes of [input.nodes, [...input.nodes].reverse()]) {
+    const plan = pacemakerCommands({ ...input, nodes });
+    assert.ok(plan.includes('stonith update fence-node-a pcmk_delay_base=15s'));
+    assert.ok(plan.includes('stonith update fence-node-b pcmk_delay_base=0s'));
+    assert.ok(plan.includes('no-quorum-policy=stop'));
+    assert.ok(plan.includes('stonith-enabled=true'));
+    assert.ok(plan.indexOf('pcmk_delay_base=15s') < plan.indexOf('cib-push'));
+  }
+});
+
 test('ha-2 plan: the fence-peer handler leaves out the witness by its own node id', () => {
   const input = planInput(options());
   const resource = drbdResource({ ...input, witness: { ...input.witness, id: 7 } });
@@ -86,6 +98,7 @@ test('ha-3 plan: three data nodes decide by majority, without a quorum device', 
   );
   assert.ok(pacemaker.includes('op monitor interval=5s role=Unpromoted'));
   assert.ok(!pacemaker.includes('quorum device'));
+  assert.ok(!pacemaker.includes('pcmk_delay_base'));
   assert.equal(pacemaker.match(/ stonith create /g)?.length, 3);
   // Resources and constraints reach the cluster in one push, never one by one.
   const lines = pacemaker.split('\n').filter((line) => line.startsWith('pcs '));

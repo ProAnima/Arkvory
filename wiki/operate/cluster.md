@@ -274,3 +274,5 @@ The backup agent runs on the active server only, as part of the group. Keep the 
 - While a [single-copy decision](#single-copy) is active, a loss of the active server loses the writes acknowledged after it.
 - Every write waits for the other data servers, so the latency of the link adds to each write.
 - Arkvory never moves back to a repaired server by itself.
+
+For ha-2, the generated plan delays fencing the node with the lowest DRBD node ID by 15 seconds (`pcmk_delay_base`); the other target has no delay. This prevents simultaneous fencing requests from powering off both nodes when the delay exceeds the measured fencing time and failure-detection skew. Validate this margin with your actual fencing agent. Existing clusters must apply the corresponding `pcs stonith update` commands and repeat failure tests in both directions; regenerating the plan alone does not update the cluster. Quorum and mandatory fencing remain enabled.
