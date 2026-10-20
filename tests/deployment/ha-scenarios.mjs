@@ -57,7 +57,7 @@ async function rejoin(cluster, node) {
     async () => {
       for (const peer of cluster.data.filter((candidate) => candidate !== node)) {
         const history = await peer.shell.tryExec(
-          `stonith_admin --history ${node.name} --output-as xml`,
+          `stonith_admin --history ${node.name} --verbose --output-as xml`,
         );
         const events = history.output.match(/<fence_event\b[^>]*\/>/g) ?? [];
         if (
