@@ -109,6 +109,7 @@ export const PROVIDED_HOST_SERVICES: readonly HostService[] = [
   'upload-read',
   'data-directory',
   'derived-cache',
+  'module-state',
   'license',
 ];
 

@@ -16,6 +16,7 @@ export const HOST_SERVICES = [
   'change-feed',
   'data-directory',
   'derived-cache',
+  'module-state',
   'routes',
   'compute',
   'license',

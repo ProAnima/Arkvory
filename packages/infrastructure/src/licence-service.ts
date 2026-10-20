@@ -72,6 +72,9 @@ export function createLicenseService(
     return cached.overview;
   };
   return {
+    async installation() {
+      return (await overview()).installation;
+    },
     async view(feature) {
       return licenseView(await overview(), feature);
     },

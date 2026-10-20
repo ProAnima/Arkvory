@@ -154,3 +154,9 @@ export type {
 export type { ComputeMessage, ComputePool, ComputeTask } from './compute.js';
 
 export type { DerivedCache, CacheBuild, CacheRead } from './derived-cache.js';
+export {
+  MAX_MODULE_STATE_BYTES,
+  type ModuleState,
+  type ModuleStateSnapshot,
+  type ModuleStateWrite,
+} from './module-state.js';

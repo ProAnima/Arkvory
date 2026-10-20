@@ -1,4 +1,5 @@
 import { ModuleDerivedCache } from './module-derived-cache.js';
+import { PostgresModuleState } from './module-state.js';
 import { derivedCacheUsage } from './derived-cache-catalog.js';
 import type { Pool } from 'pg';
 import { PostgresModuleDataCoordinator } from './module-data-coordinator.js';
@@ -118,7 +119,18 @@ export class ModuleHostServices {
       uses('catalog-read') || uses('content-read') ? this.catalog(module.manifest.id) : undefined;
     const compute = uses('compute') ? this.sources.compute?.(module.manifest.id) : undefined;
     if (compute) this.computations.set(module.manifest.id, compute);
+    if (uses('module-state') && !this.sources.dataPool)
+      throw new ModuleServiceError('unavailable', 'Module state database required');
     return {
+      ...(uses('module-state') && this.sources.dataPool
+        ? {
+            'module-state': new PostgresModuleState(
+              this.sources.dataPool,
+              module.manifest.id,
+              this.sources.readOnly || (role !== 'api' && role !== 'worker'),
+            ),
+          }
+        : {}),
       ...(uses('derived-cache')
         ? { 'derived-cache': this.derived(module.manifest.id, resources) }
         : {}),

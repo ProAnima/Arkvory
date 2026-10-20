@@ -95,6 +95,11 @@ export function tablesAt(schema: number): readonly BackupTable[] {
 }
 
 export const excludedTables: readonly ExcludedTable[] = [
+  {
+    name: 'arkvory_module_state',
+    reason:
+      'installation-bound coordination state; modules explicitly reinitialize on a restored installation',
+  },
   // ADR 0084: disposable cache state belongs to the source incarnation, never the restore.
   {
     name: 'arkvory_derived_cache_owners',

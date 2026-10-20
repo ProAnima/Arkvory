@@ -253,3 +253,4 @@ export { ModuleChangeFeed } from './module-feed.js';
 export { PostgresModuleCursors } from './module-feed-store.js';
 export { moduleCatalogSource } from './module-catalog-source.js';
 export { ModuleCompute } from './module-compute.js';
+export { PostgresModuleState } from './module-state.js';

@@ -44,6 +44,7 @@ export { bytesOf, descriptorOf, gather, sha256 } from './support.js';
  * suite here is refused by a governance test: a point enters the contract with its suite.
  */
 export const CONTRACT_SUITES = {
+  'module-state': 'moduleStateContract',
   license: 'licenseContract',
 
   'blob-store': 'storageRegistrationContract',
@@ -58,3 +59,4 @@ export const CONTRACT_SUITES = {
 } as const;
 
 export { uploadReadContract, type UploadReadHarness } from './upload-read.js';
+export { moduleStateContract, type ModuleStateHarness } from './module-state.js';

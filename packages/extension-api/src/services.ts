@@ -15,6 +15,7 @@ import type { ModuleRoutes } from './routes.js';
  * a module that declares one this host or the module's roles and source do not offer.
  */
 export interface HostServiceTypes {
+  readonly 'module-state': ModuleState;
   readonly 'derived-cache': DerivedCache;
   readonly compute: ComputePool;
   readonly 'change-feed': ChangeFeed;
@@ -31,3 +32,4 @@ export interface HostServiceTypes {
 
 /** Services available to a server module: filtered by declaration, process role and source. */
 export type HostServices = { readonly [K in keyof HostServiceTypes]?: HostServiceTypes[K] };
+import type { ModuleState } from './module-state.js';

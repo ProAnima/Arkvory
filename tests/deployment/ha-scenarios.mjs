@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { fencingFailureEvidence } from './ha-fencing-evidence.mjs';
 import { power, setFencing } from './ha-vms.mjs';
 import { activeNodes, dpkg, ROOT, until, volumeOn } from './ha-cluster.mjs';
 import { bigItem, writer } from './ha-load.mjs';
@@ -434,10 +435,8 @@ export const fencingFailure = {
         'no failover while the lost node is not fenced',
       );
       assert.equal((await api.ready()).status, 0);
-      assert.match(
-        await survivor.shell.exec('pcs status --full'),
-        /Failed Fencing Actions|fencing.*failed/i,
-      );
+      const status = await survivor.shell.exec('pcs status --full');
+      assert.ok(fencingFailureEvidence(status, lost.name, survivor.name), status);
     } finally {
       await setFencing(true);
     }

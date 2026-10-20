@@ -174,14 +174,14 @@ test('a plan refuses unreadable manifests and duplicate ids before any other rul
 test('a manifest written for another extension API is incompatible, not malformed', () => {
   // A later contract may add fields and extension points this core cannot read.
   const later = {
-    ...manifest('next', { extensionApi: '^0.10.0', kind: 'search' }),
+    ...manifest('next', { extensionApi: '^0.11.0', kind: 'search' }),
     dataClass: 'x',
   };
   assert.deepEqual(problems([candidate('npm'), { ...candidate('next'), manifest: later }]), [
-    ['incompatible_api', 'next', '^0.10.0'],
+    ['incompatible_api', 'next', '^0.11.0'],
   ]);
   // Without a readable id or range there is nothing to name: the manifest is malformed.
-  const nameless = manifest('Next', { extensionApi: '^0.10.0' });
+  const nameless = manifest('Next', { extensionApi: '^0.11.0' });
   assert.deepEqual(planModules([{ ...candidate('next'), manifest: nameless }], host).problems, [
     { code: 'invalid_manifest', module: null, subject: '/0/id', reason: 'format' },
   ]);
@@ -201,8 +201,8 @@ test('core modules are built in and enabled; every module matches the extension 
   assert.deepEqual(problems([candidate('next', { extensionApi: '^1.0.0' })]), [
     ['incompatible_api', 'next', '^1.0.0'],
   ]);
-  assert.deepEqual(problems([candidate('newer', { extensionApi: '^0.10.0' })]), [
-    ['incompatible_api', 'newer', '^0.10.0'],
+  assert.deepEqual(problems([candidate('newer', { extensionApi: '^0.11.0' })]), [
+    ['incompatible_api', 'newer', '^0.11.0'],
   ]);
   // A manifest of the previous contract lacks fields this one requires: incompatible.
   const { publisher: _publisher, ...previous } = manifest('old', { extensionApi: '^0.1.0' });
@@ -489,6 +489,7 @@ test('sources and host services are published as lists of known values', () => {
     'change-feed',
     'data-directory',
     'derived-cache',
+    'module-state',
     'routes',
     'compute',
     'license',

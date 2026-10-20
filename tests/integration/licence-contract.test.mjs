@@ -64,3 +64,13 @@ licenseContract('PostgreSQL licence host service', async (t) => {
     },
   };
 });
+
+test('module licence identity is explicit and independent of activation state', async (t) => {
+  const f = await licenceSetup(t);
+  const service = createLicenseService(f.env, { ttlMs: 0 });
+  assert.equal(await service.installation(), null);
+  await f.env.store.observe(INSTALLATION);
+  assert.equal(await service.installation(), INSTALLATION);
+  assert.equal((await service.view()).state, 'none');
+  assert.deepEqual(await service.evidence(), []);
+});

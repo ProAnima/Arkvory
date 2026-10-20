@@ -17,6 +17,6 @@
     "url": "git+https://github.com/ProAnima/Arkvory.git"
   },
   "dependencies": {
-    "@proanima/arkvory-extension-api": "0.9.0"
+    "@proanima/arkvory-extension-api": "0.10.0"
   }
 }
