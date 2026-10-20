@@ -37,6 +37,7 @@ export interface RestorePlan {
   readonly contentBytes: string;
   readonly tables: number;
   readonly rows: number;
+  readonly toDefaultStorage?: boolean;
 }
 export type RestoreReport =
   | (RestorePlan & { readonly outcome: 'planned' })
@@ -70,7 +71,11 @@ export class RestoreToEmptyTarget {
   }
 
   async run(
-    request: { readonly pointId: string; readonly confirmed: boolean },
+    request: {
+      readonly pointId: string;
+      readonly confirmed: boolean;
+      readonly toDefaultStorage?: boolean;
+    },
     cancellation: Cancellation,
   ): Promise<RestoreReport> {
     this.deps.progress?.('verify');
@@ -91,11 +96,16 @@ export class RestoreToEmptyTarget {
     if (!check.ok) throw new BackupFailure('integrity_mismatch', 'Point failed verification');
     await this.deps.database.requireEmpty();
     await this.deps.storage.requireEmpty();
-    await this.requireTargets(manifest, cancellation);
-    if (!request.confirmed) return { outcome: 'planned', ...plan(manifest) };
+    const toDefaultStorage = request.toDefaultStorage === true;
+    const reportPlan = {
+      ...plan(manifest),
+      ...(toDefaultStorage ? { toDefaultStorage: true } : {}),
+    };
+    await this.requireTargets(manifest, cancellation, toDefaultStorage);
+    if (!request.confirmed) return { outcome: 'planned', ...reportPlan };
     this.deps.progress?.('content');
     const storageId = await this.deps.storage.prepare();
-    await this.copyContent(manifest, cancellation);
+    await this.copyContent(manifest, cancellation, toDefaultStorage);
     this.deps.progress?.('schema');
     await this.deps.database.prepare(manifest.schemaVersion);
     this.deps.progress?.('tables');
@@ -105,6 +115,7 @@ export class RestoreToEmptyTarget {
         pointId: manifest.pointId,
         storageId,
         restoredAt: this.deps.identity.now(),
+        ...(toDefaultStorage ? { toDefaultStorage: true } : {}),
         tables: manifest.tables.map((table) => ({
           name: table.name,
           rows: table.rows,
@@ -118,14 +129,18 @@ export class RestoreToEmptyTarget {
     await this.deps.database.finish();
     this.deps.progress?.('done');
     const { rows: loadedRows, ...normalization } = loaded;
-    return { outcome: 'restored', ...plan(manifest), normalization, loadedRows };
+    return { outcome: 'restored', ...reportPlan, normalization, loadedRows };
   }
 
   /**
    * Every storage the point's content lives in must be a storage of the target, checked before
    * anything is written: a restore never puts a blob where its upload row will not look.
    */
-  private async requireTargets(manifest: BackupManifest, cancellation: Cancellation) {
+  private async requireTargets(
+    manifest: BackupManifest,
+    cancellation: Cancellation,
+    toDefaultStorage: boolean,
+  ) {
     const supports = this.deps.storage.supports?.bind(this.deps.storage);
     if (!supports) return;
     const checked = new Set<string>();
@@ -136,7 +151,10 @@ export class RestoreToEmptyTarget {
       cancellation,
     )) {
       cancellation.throwIfAborted();
-      const backend = parseInventoryEntry(parseVaultJson(line)).backend ?? DEFAULT_STORAGE_BACKEND;
+      const entry = parseInventoryEntry(parseVaultJson(line));
+      const backend = toDefaultStorage
+        ? DEFAULT_STORAGE_BACKEND
+        : (entry.backend ?? DEFAULT_STORAGE_BACKEND);
       if (checked.has(backend)) continue;
       if (!supports(backend))
         throw new BackupFailure(
@@ -147,7 +165,11 @@ export class RestoreToEmptyTarget {
     }
   }
 
-  private async copyContent(manifest: BackupManifest, cancellation: Cancellation): Promise<void> {
+  private async copyContent(
+    manifest: BackupManifest,
+    cancellation: Cancellation,
+    toDefaultStorage: boolean,
+  ): Promise<void> {
     for await (const line of this.deps.vault.lines(
       manifest.pointId,
       INVENTORY_FILE,
@@ -156,7 +178,8 @@ export class RestoreToEmptyTarget {
     )) {
       cancellation.throwIfAborted();
       const entry = parseInventoryEntry(parseVaultJson(line));
-      await this.deps.storage.put(entry, this.deps.vault.readBlob(entry), cancellation);
+      const target = toDefaultStorage ? { ...entry, backend: DEFAULT_STORAGE_BACKEND } : entry;
+      await this.deps.storage.put(target, this.deps.vault.readBlob(entry), cancellation);
     }
   }
 }

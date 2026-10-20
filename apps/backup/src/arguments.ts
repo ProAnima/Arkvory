@@ -39,6 +39,8 @@ export type BackupCommand =
       readonly storage: string;
       /** The target's modules file: its `local-storage` instances receive their content. */
       readonly modulesFile?: string;
+      /** Explicitly recover all content to the built-in default storage. */
+      readonly toDefaultStorage?: boolean;
       readonly confirmed: boolean;
       readonly report?: string;
     };
@@ -71,7 +73,7 @@ export const usage = `Usage: arkvory-backup <command>
   list --vault <dir> [--key-file <file>]
   verify --vault <dir> [--key-file <file>] [--point <id>] [--deep]
   restore --vault <dir> [--key-file <file>] --point <id> --storage <dir> [--modules-file <file>]
-          [--database-url <url>] [--yes] [--report <file>]
+          [--database-url <url>] [--yes] [--report <file>] [--to-default-storage]
 Source configuration: ARKVORY_DATABASE_URL, ARKVORY_DATA_DIR (as for API and worker).
 Agent: ARKVORY_BACKUP_VAULT (initialized vault), ARKVORY_BACKUP_BYTES_PER_SECOND (copy cap),
 ARKVORY_BACKUP_POLL_SECONDS (15). SIGTERM/SIGINT stop it after the current phase (exit 0).
@@ -311,6 +313,7 @@ function restore(rest: readonly string[]): BackupCommand {
     '--database-url': 'value',
     '--storage': 'value',
     '--modules-file': 'value',
+    '--to-default-storage': 'switch',
     '--yes': 'switch',
     '--report': 'value',
   });
@@ -325,6 +328,7 @@ function restore(rest: readonly string[]): BackupCommand {
     pointId: point(required(values, '--point')),
     storage: required(values, '--storage'),
     ...(modulesFile === undefined ? {} : { modulesFile }),
+    ...(values.has('--to-default-storage') ? { toDefaultStorage: true } : {}),
     confirmed: values.has('--yes'),
     ...(databaseUrl === undefined ? {} : { databaseUrl }),
     ...(report === undefined ? {} : { report }),

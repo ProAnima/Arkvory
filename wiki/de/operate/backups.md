@@ -430,3 +430,7 @@ Lesen Sie das Agent-Log unter Linux mit `journalctl -u arkvory-backup`, unter Wi
 - [Selbstheilung](./self-healing)
 - [Fehlerbehebung](./troubleshooting)
 - [Umgebungsvariablen](../reference/environment#backups)
+
+## Wiederherstellung ohne ursprünglichen Speicher {#restore-default-storage}
+
+Fügen Sie dem Wiederherstellungsbefehl `--to-default-storage` hinzu, um alle Objekte ohne die ursprünglichen Volumes oder Module im Standardspeicher abzulegen. Planen Sie Platz für die vollständigen Objektdaten ein. Ohne `--yes` prüft und meldet der Befehl nur den Plan. Datenbank und Speicher müssen leer sein. Dieser Modus entfernt Platzierungsregeln und stellt veröffentlichte Inhalte als normale Blobs wieder her; konfigurieren Sie anschließend neue Platzierungsregeln.
