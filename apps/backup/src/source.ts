@@ -93,6 +93,7 @@ export async function openCaptureSource(config: SourceConfig): Promise<CaptureSo
         {
           license: () => license,
           dataDirectory: config.dataDirectory,
+          dataPool: pool,
           reserve: { bytes: config.reserveBytes, inodes: 0 },
           readOnly: true,
           storage: new ModuleStorages(blobs, true),
