@@ -68,6 +68,8 @@ export interface LicenseEvidence {
 }
 
 export interface LicenseService {
+  /** Stable installation identity, null before initialization; never an activation secret. */
+  installation(): Promise<string | null>;
   /**
    * The licence that carries `feature`, or the installation's best licence without one. It never
    * waits for the hub: it reads the state the core keeps.

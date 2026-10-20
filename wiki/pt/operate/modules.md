@@ -210,3 +210,7 @@ No host de confiança, com `ARKVORY_DATABASE_URL` configurado, execute o comando
 ```sh
 node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 ```
+
+## Estado de coordenação dos módulos {#module-state}
+
+Extension API 0.10.0 acrescenta um registo de estado atómico e limitado para módulos assinados. Mantém-se após uma comutação HA, mas não é incluído em cópias lógicas portáteis. Após restaurar, siga o procedimento explícito de reinicialização do módulo; a leitura e a recuperação dos objetos devem continuar disponíveis. Este estado é separado do armazenamento de objetos e não é reposto ao reinstalar o módulo.

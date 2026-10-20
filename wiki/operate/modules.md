@@ -210,3 +210,7 @@ On the trusted host, with `ARKVORY_DATABASE_URL` configured, run the command bel
 ```sh
 node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 ```
+
+## Module coordination state {#module-state}
+
+Extension API 0.10.0 adds a bounded, atomic state register for signed modules. It survives HA failover but is not included in portable logical backups. After restore, follow the module's explicit reinitialization procedure; reading and restoring stored objects must remain available. This state is separate from object storage and is not reset by reinstalling a module.

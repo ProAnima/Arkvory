@@ -210,3 +210,7 @@ PostgreSQL 会话丢失并不能证明文件 I/O 已停止。不确定 owner 的
 ```sh
 node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 ```
+
+## 模块协调状态 {#module-state}
+
+Extension API 0.10.0 为已签名模块提供有容量限制的原子状态寄存器。该状态在 HA 故障切换后保留，但不包含在可移植的逻辑备份中。恢复后，请按照模块的明确流程重新初始化；已有对象的读取和恢复必须保持可用。该状态与对象存储分离，重新安装模块不会将其重置。

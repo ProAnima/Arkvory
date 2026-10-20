@@ -210,3 +210,7 @@ PostgreSQL 세션 손실은 파일 I/O 중지를 증명하지 않습니다. 불�
 ```sh
 node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 ```
+
+## 모듈 조정 상태 {#module-state}
+
+Extension API 0.10.0은 서명된 모듈에 크기가 제한된 원자적 상태 저장소를 제공합니다. HA 장애 조치 후에도 유지되지만 이식 가능한 논리 백업에는 포함되지 않습니다. 복원 후에는 모듈의 명시적인 재초기화 절차를 따르세요. 저장된 객체의 읽기와 복원은 계속 가능해야 합니다. 이 상태는 객체 저장소와 분리되며 모듈 재설치로 초기화되지 않습니다.

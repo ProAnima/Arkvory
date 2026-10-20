@@ -7,6 +7,7 @@ import type { PoolClient } from 'pg';
 import { migrateServices } from './service-schema.js';
 import { migrateDelegations } from './delegation-schema.js';
 import { SCHEMA_VERSION } from './schema-version.js';
+import { migrateModuleState } from './module-state-schema.js';
 
 const packagePageIndexes = [
   {
@@ -224,6 +225,7 @@ export async function migrate(pool: Pool, options: MigrateOptions = {}): Promise
     await migrateBaseSchema(client, upTo);
     for (const [version, step] of serviceSteps) if (version <= upTo) await step(client);
     await migrateStorageSchemas(client, upTo);
+    if (upTo >= 50) await migrateModuleState(client);
     await client.query('COMMIT');
   } catch (error) {
     try {

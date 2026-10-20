@@ -210,3 +210,7 @@ En el host de confianza, con `ARKVORY_DATABASE_URL` configurado, ejecute el coma
 ```sh
 node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 ```
+
+## Estado de coordinación de módulos {#module-state}
+
+Extension API 0.10.0 añade un registro de estado atómico y limitado para módulos firmados. Sobrevive a la conmutación HA, pero no se incluye en copias lógicas portátiles. Tras restaurar, siga el procedimiento explícito de reinicialización del módulo; la lectura y restauración de objetos deben seguir disponibles. Este estado está separado del almacenamiento de objetos y no se reinicia al reinstalar el módulo.
