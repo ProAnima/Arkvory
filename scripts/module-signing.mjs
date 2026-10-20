@@ -100,9 +100,17 @@ async function listFiles(root, directory = 'files') {
  * Packs `<module-dir>/module.json` (without `files`) and `<module-dir>/files/` into a signed
  * package: the manifest gets the list of files with sizes and SHA-256, its exact bytes are
  * signed with the purpose `file:module.json`, and the signature is checked before the archive
- * is written.
+ * is written. A fixed SOURCE_DATE_EPOCH makes the signing comment reproducible;
+ * it is build metadata, never an authorization or revocation validity timestamp.
  */
-export async function packModule(directory, output, key, revocationsFile = null) {
+export async function packModule(
+  directory,
+  output,
+  key,
+  revocationsFile = null,
+  sourceDateEpoch = process.env.SOURCE_DATE_EPOCH,
+) {
+  const timestamp = packageTimestamp(sourceDateEpoch);
   const source = JSON.parse(await readFile(join(directory, MANIFEST_FILE), 'utf8'));
   if ('files' in source) throw Error('module.json lists its files when packed; remove "files"');
   const tree = await listFiles(directory);
@@ -114,7 +122,7 @@ export async function packModule(directory, output, key, revocationsFile = null)
       sha256: createHash('sha256').update(entry.data).digest('hex'),
     }));
   const manifest = Buffer.from(JSON.stringify({ ...source, files }, null, 2) + '\n');
-  const comment = `timestamp:${Math.floor(Date.now() / 1000)}\tfile:${MANIFEST_FILE}\tid:${source.id}\tversion:${source.version}`;
+  const comment = `timestamp:${timestamp}\tfile:${MANIFEST_FILE}\tid:${source.id}\tversion:${source.version}`;
   const signature = signMinisign(
     manifest,
     key.privateKey,
@@ -131,6 +139,18 @@ export async function packModule(directory, output, key, revocationsFile = null)
     ...tree,
   ];
   await writeFile(output, tarGzip(entries), { flag: 'wx' });
+  return { signingTimestamp: timestamp };
+}
+
+function packageTimestamp(value) {
+  if (value === undefined) return Math.floor(Date.now() / 1000);
+  if (
+    typeof value !== 'string' ||
+    !/^(0|[1-9][0-9]{0,11})$/.test(value) ||
+    Number(value) > 253402300799
+  )
+    throw Error('SOURCE_DATE_EPOCH must be canonical UTC seconds between 0 and 253402300799');
+  return Number(value);
 }
 
 const DAY = 24 * 60 * 60 * 1000;
