@@ -274,3 +274,5 @@ El agente de copias de seguridad se ejecuta solo en el servidor activo, como par
 - Mientras una [decisión de copia única](#single-copy) está activa, la pérdida del servidor activo pierde las escrituras confirmadas después de ella.
 - Cada escritura espera a los demás servidores de datos, así que la latencia del enlace se suma a cada escritura.
 - Arkvory nunca vuelve por sí mismo a un servidor reparado.
+
+En ha-2, el plan retrasa 15 segundos el fencing del nodo con el menor ID de DRBD (`pcmk_delay_base`); el otro destino no tiene retraso. Compruebe que este margen supera el tiempo de fencing y la diferencia en la detección del fallo. En clústeres existentes, aplique los comandos `pcs stonith update` correspondientes y pruebe fallos en ambas direcciones. Regenerar el plan no actualiza el clúster. El cuórum y el fencing siguen siendo obligatorios.

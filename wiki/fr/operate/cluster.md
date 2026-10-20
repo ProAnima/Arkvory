@@ -274,3 +274,5 @@ L’agent de sauvegarde s’exécute uniquement sur le serveur actif, au sein du
 - Tant qu’une [décision de copie unique](#single-copy) est active, la perte du serveur actif fait perdre les écritures acquittées après elle.
 - Chaque écriture attend les autres serveurs de données : la latence du lien s’ajoute donc à chaque écriture.
 - Arkvory ne revient jamais de lui-même sur un serveur réparé.
+
+Pour ha-2, le plan retarde de 15 secondes le fencing du nœud ayant le plus petit ID DRBD (`pcmk_delay_base`), sans délai pour l’autre cible. Vérifiez que ce délai dépasse la durée du fencing et l’écart de détection des pannes. Pour un cluster existant, appliquez les commandes `pcs stonith update` correspondantes et testez les deux sens. Régénérer le plan ne modifie pas le cluster. Le quorum et le fencing restent obligatoires.

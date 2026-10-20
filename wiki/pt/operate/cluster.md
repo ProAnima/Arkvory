@@ -274,3 +274,5 @@ O agente de backup executa somente no servidor ativo, como parte do grupo. Mante
 - Enquanto uma [decisão de cópia única](#single-copy) está ativa, a perda do servidor ativo perde as gravações confirmadas depois dela.
 - Cada gravação espera os outros servidores de dados, por isso a latência do link se soma a cada gravação.
 - O Arkvory nunca volta sozinho para um servidor reparado.
+
+Em ha-2, o plano atrasa em 15 segundos o fencing do nó com o menor ID DRBD (`pcmk_delay_base`); o outro destino não tem atraso. Verifique se a margem supera o tempo de fencing e a diferença na detecção de falhas. Em clusters existentes, aplique os comandos `pcs stonith update` correspondentes e teste falhas nas duas direções. Regenerar o plano não atualiza o cluster. Quórum e fencing continuam obrigatórios.

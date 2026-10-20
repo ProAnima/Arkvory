@@ -274,3 +274,5 @@ arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:0
 - 当[单副本决定](#single-copy)生效时，活动服务器的丢失会丢失此后确认的写入。
 - 每次写入都要等待其他数据服务器，因此链路的延迟会叠加到每次写入上。
 - Arkvory 绝不会自行迁回已修复的服务器。
+
+ha-2 计划为 DRBD 节点 ID 最小的目标设置 15 秒 fencing 延迟（`pcmk_delay_base`），另一个目标无延迟。请确认该延迟大于实际 fencing 时间与故障检测时间差。现有集群需执行相应的 `pcs stonith update` 命令并测试两个方向的故障；重新生成计划不会自动更新集群。仲裁与 fencing 仍为必需。

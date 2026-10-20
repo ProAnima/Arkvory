@@ -159,6 +159,15 @@ export function pacemakerCommands(input: ClusterPlanInput): string {
       (node) =>
         `${cib} stonith create fence-${node.name} ${input.fenceAgent} pcmk_host_list=${node.name} <agent parameters: address, login, password or key file, plug>`,
     ),
+    // A lost peer can be fenced even without quorum. In ha-2, stagger the two
+    // targets so simultaneous requests cannot power off both nodes. Prefer the
+    // lowest DRBD id, independent of the current primary and input ordering.
+    ...(input.profile === 'ha-2'
+      ? input.nodes.map(
+          (node) =>
+            `${cib} stonith update fence-${node.name} pcmk_delay_base=${node.id === Math.min(...input.nodes.map((peer) => peer.id)) ? '15s' : '0s'}`,
+        )
+      : []),
     // The agent scores a standby for promotion in its monitor and after each notification. A
     // notification that lands while DRBD is still confirming the lost primary (the standby's
     // disk is Consistent for about a second) removes the score, and only the next standby

@@ -274,3 +274,5 @@ arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:0
 - [단일 복사본 결정](#single-copy)이 유효한 동안 활성 서버를 잃으면 그 이후 확인된 쓰기를 잃습니다.
 - 모든 쓰기는 다른 데이터 서버를 기다리므로 링크 지연이 매 쓰기에 더해집니다.
 - Arkvory는 복구된 서버로 스스로 되돌아가지 않습니다.
+
+ha-2 계획은 DRBD 노드 ID가 가장 작은 대상의 fencing을 15초 지연합니다(`pcmk_delay_base`). 다른 대상에는 지연이 없습니다. 실제 fencing 시간과 장애 감지 시간 차이보다 지연이 긴지 확인하십시오. 기존 클러스터에는 해당 `pcs stonith update` 명령을 적용하고 양방향 장애를 시험해야 합니다. 계획 재생성만으로 클러스터가 변경되지는 않습니다. 쿼럼과 fencing은 계속 필수입니다.

@@ -45,11 +45,39 @@ const step = (text) => {
 async function powerOff(node) {
   step(`power off ${node.name}`);
   node.lostBoot = await bootId(node);
+  node.lostAt = Date.now();
   await power.off(node.domain);
 }
 
 /** Back after a failure: fencing has restarted it; the operator rejoins it to the cluster. */
 async function rejoin(cluster, node) {
+  // Never power a guest back on while the cluster still has a delayed fence for it:
+  // that request would kill the newly booted guest during `pcs cluster start`.
+  await until(
+    async () => {
+      for (const peer of cluster.data.filter((candidate) => candidate !== node)) {
+        const history = await peer.shell.tryExec(
+          `stonith_admin --history ${node.name} --output-as xml`,
+        );
+        const events = history.output.match(/<fence_event\b[^>]*\/>/g) ?? [];
+        if (
+          events.some((event) => {
+            const completed = event.match(/completed="([^"]+)"/)?.[1];
+            return (
+              event.includes('status="success"') &&
+              completed &&
+              Date.parse(completed.replace(' ', 'T')) >= node.lostAt
+            );
+          })
+        )
+          return true;
+      }
+      return false;
+    },
+    `completed fencing of ${node.name} before operator rejoin`,
+    180000,
+    2000,
+  );
   await until(
     async () => {
       if ((await power.state(node.domain)).includes('shut off')) await power.on(node.domain);
@@ -331,26 +359,33 @@ export const partition = {
     const primary = await active(cluster);
     const [other] = await standbys(cluster);
     const boots = { [primary.name]: await bootId(primary), [other.name]: await bootId(other) };
+    const lostAt = Date.now();
     await other.shell.exec(
       `iptables -I INPUT -s ${primary.address} -j DROP && iptables -I OUTPUT -d ${primary.address} -j DROP`,
     );
     let loser;
+    let fenced = [];
     // A fence is a reboot or a power-off: fence_virsh reports success once the node is off,
     // and a node that stays off is fenced as well (rejoin powers it on, as an operator would).
     try {
       await until(
         async () => {
+          fenced = [];
           for (const node of [primary, other]) {
-            if ((await power.state(node.domain)).includes('shut off')) loser = node;
+            let changed = (await power.state(node.domain)).includes('shut off');
             const boot = await node.shell.tryExec('cat /proc/sys/kernel/random/boot_id');
-            if (boot.ok && boot.output !== boots[node.name]) loser = node;
+            if (boot.ok && boot.output !== boots[node.name]) changed = true;
+            if (changed) fenced.push(node);
           }
+          // Remember both results: overwriting the loser hid mutual fencing until timeout.
+          loser = fenced[0];
           return loser !== undefined;
         },
         'fencing to restart or power off the losing side',
         420000,
         3000,
       );
+      assert.equal(fenced.length, 1, 'partition must fence exactly one data node');
     } catch (error) {
       await partitionDiagnostics([primary, other]);
       throw error;
@@ -360,12 +395,16 @@ export const partition = {
       async () => (await activeNodes(cluster)).join() === winner.name,
       `Arkvory on ${winner.name} only`,
       300000,
-    );
+    ).catch(async (error) => {
+      await partitionDiagnostics([primary, other]);
+      throw error;
+    });
     // The network is repaired: the rules stay on the node that set them when that node won.
     await other.shell.tryExec(
       `iptables -D INPUT -s ${primary.address} -j DROP; iptables -D OUTPUT -d ${primary.address} -j DROP`,
     );
     loser.lostBoot = boots[loser.name];
+    loser.lostAt = lostAt;
     await rejoin(cluster, loser);
     await complete(cluster);
     for (const node of [primary, other])
