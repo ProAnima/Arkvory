@@ -3,7 +3,7 @@ import { recountUploadBytes } from './upload-bytes.js';
 import type { RestoreNormalization } from '@proanima/arkvory-application';
 
 /** Version of the transformation below; recorded in the security journal of the target. */
-export const RESTORE_NORMALIZATION_VERSION = 1;
+export const RESTORE_NORMALIZATION_VERSION = 2;
 
 /**
  * Normalization 1 for schema 25, run inside the load transaction (ADR 0054). A restored
@@ -18,9 +18,27 @@ export const RESTORE_NORMALIZATION_VERSION = 1;
  */
 export async function normalizeRestore(
   client: PoolClient,
-  input: { readonly pointId: string; readonly storageId: string; readonly restoredAt: string },
+  input: {
+    readonly pointId: string;
+    readonly storageId: string;
+    readonly restoredAt: string;
+    readonly toDefaultStorage?: boolean;
+  },
 ): Promise<RestoreNormalization> {
   const at = input.restoredAt;
+  // Content has already been verified in core storage. Rebind all rows atomically with
+  // catalog publication, including cancelled uploads, so no stale backend survives recovery.
+  if (input.toDefaultStorage) {
+    await client.query("UPDATE arkvory_uploads SET storage_backend='default'");
+    const placement = await client.query<{ t: string | null }>(
+      "SELECT to_regclass('arkvory_storage_placement')::text AS t",
+    );
+    if (placement.rows[0]?.t) {
+      await client.query('DELETE FROM arkvory_storage_placement');
+      // Both were introduced in schema 44; no staging data survives a logical restore.
+      await client.query('UPDATE arkvory_uploads SET parts_backend=NULL');
+    }
+  }
   const count = async (sql: string, values: unknown[] = []) =>
     (await client.query(sql, values)).rowCount ?? 0;
   const cancelledUploads = await count(
@@ -73,7 +91,14 @@ export async function normalizeRestore(
   await client.query(
     `INSERT INTO arkvory_security_audit(actor, action, target, outcome, details)
      VALUES('backup-restore', 'backup.restored', $1, 'success', $2::jsonb)`,
-    [input.pointId, JSON.stringify({ normalization: RESTORE_NORMALIZATION_VERSION, ...result })],
+    [
+      input.pointId,
+      JSON.stringify({
+        normalization: RESTORE_NORMALIZATION_VERSION,
+        ...result,
+        ...(input.toDefaultStorage ? { toDefaultStorage: true } : {}),
+      }),
+    ],
   );
   return result;
 }

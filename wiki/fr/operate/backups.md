@@ -430,3 +430,7 @@ Lisez le journal de l’agent avec `journalctl -u arkvory-backup` sous Linux, da
 - [Autoréparation](./self-healing)
 - [Dépannage](./troubleshooting)
 - [Variables d’environnement](../reference/environment#backups)
+
+## Restaurer sans le stockage d’origine {#restore-default-storage}
+
+Ajoutez `--to-default-storage` à la commande de restauration pour placer tous les objets dans le stockage par défaut sans les volumes ni modules d’origine. Prévoyez de l’espace pour les données complètes des objets. Sans `--yes`, la commande vérifie et affiche uniquement le plan. La base de données et le stockage doivent être vides. Ce mode supprime les règles de placement et restaure les contenus publiés sous forme de blobs ordinaires ; configurez de nouvelles règles après la restauration.

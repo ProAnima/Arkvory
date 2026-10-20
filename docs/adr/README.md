@@ -96,3 +96,5 @@ ADR нужен для изменения границ, публичных кон
 - [0083 — Точки расширения ядра для модулей (proposed)](0083-core-extension-points.md)
 
 - [0084 — Поколения производного кеша модулей (proposed)](0084-derived-cache-generations.md)
+
+- [0085 — Восстановление в основное хранилище](0085-restore-to-default-storage.md)

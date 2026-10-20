@@ -430,3 +430,7 @@ Read the agent log with `journalctl -u arkvory-backup` on Linux, in `logs\` of t
 - [Self-healing](./self-healing)
 - [Troubleshooting](./troubleshooting)
 - [Environment variables](../reference/environment#backups)
+
+## Restore without the original storage {#restore-default-storage}
+
+Add `--to-default-storage` to the restore command to place all objects in the default storage without the original volumes or modules. Reserve space for the full object bytes. Without `--yes`, the command only checks and reports the plan. The database and storage must be empty. This mode clears placement rules and restores published content as ordinary blobs; configure new placement rules after recovery.

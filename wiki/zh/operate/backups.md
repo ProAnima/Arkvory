@@ -430,3 +430,7 @@ arkvoryctl backup status --json || echo "backup problem"
 - [自愈](./self-healing)
 - [故障排查](./troubleshooting)
 - [环境变量](../reference/environment#backups)
+
+## 无需原始存储即可恢复 {#restore-default-storage}
+
+在恢复命令中添加 `--to-default-storage`，将所有对象恢复到默认存储，无需原始卷或模块。请为完整对象数据预留空间。不带 `--yes` 时，命令仅检查并报告计划。数据库和存储必须为空。此模式会清除放置规则，并将已发布内容恢复为普通 blob；请在恢复后配置新的放置规则。

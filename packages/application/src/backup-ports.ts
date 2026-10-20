@@ -169,6 +169,8 @@ export interface RestoreDatabase {
       pointId: string;
       storageId: string;
       restoredAt: string;
+      /** Explicit recovery to core storage; rebind metadata in the same load transaction. */
+      toDefaultStorage?: boolean;
       tables: readonly RestoreTableSource[];
     },
     cancellation: Cancellation,

@@ -60,6 +60,7 @@ export class PostgresRestoreDatabase implements RestoreDatabase {
       pointId: string;
       storageId: string;
       restoredAt: string;
+      toDefaultStorage?: boolean;
       tables: readonly RestoreTableSource[];
     },
     cancellation: Cancellation,

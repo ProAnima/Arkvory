@@ -116,7 +116,11 @@ export async function runRestore(command: RestoreCommand, context: CliContext): 
       },
     });
     const report = await restore.run(
-      { pointId: command.pointId, confirmed: command.confirmed },
+      {
+        pointId: command.pointId,
+        confirmed: command.confirmed,
+        ...(command.toDefaultStorage ? { toDefaultStorage: true } : {}),
+      },
       context.cancellation,
     );
     context.logger.write({
@@ -131,6 +135,7 @@ export async function runRestore(command: RestoreCommand, context: CliContext): 
       contentBytes: report.contentBytes,
       tables: report.tables,
       rows: report.rows,
+      ...(report.toDefaultStorage ? { toDefaultStorage: true } : {}),
       ...(report.outcome === 'restored' ? report.normalization : {}),
       durationMs: Math.round(performance.now() - started),
     });

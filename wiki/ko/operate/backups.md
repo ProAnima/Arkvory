@@ -430,3 +430,7 @@ Prometheus를 위해 API는 `arkvory_backup_last_success_timestamp_seconds`(가�
 - [자가 복구](./self-healing)
 - [문제 해결](./troubleshooting)
 - [환경 변수](../reference/environment#backups)
+
+## 원래 저장소 없이 복원 {#restore-default-storage}
+
+복원 명령에 `--to-default-storage`를 추가하면 원래 볼륨이나 모듈 없이 모든 객체를 기본 저장소에 복원합니다. 전체 객체 데이터가 들어갈 공간을 확보하세요. `--yes`가 없으면 명령은 계획을 검사하고 표시하기만 합니다. 데이터베이스와 저장소는 비어 있어야 합니다. 이 모드는 배치 규칙을 삭제하고 게시된 내용을 일반 blob으로 복원합니다. 복원 후 새 배치 규칙을 설정하세요.
