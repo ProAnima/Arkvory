@@ -42,11 +42,14 @@ test('backend limit reserves across connections/repositories and preserves admit
   await catalogs[0].exclusive(original.id, (m) => m.publish(original.repository));
   assert.equal(await used(), '6', 'publication does not charge twice');
   assert.equal((await catalogs[0].create(upload(1))).storageBackend, 'default');
-  await catalogs[0].exclusive(original.id, (m) => m.cancel(original.repository));
-  assert.equal(await used(), '6', 'cancel does not free bytes before cleanup');
   await pool.query('UPDATE arkvory_uploads SET reclaimed=true WHERE id=$1', [original.id]);
   assert.equal(await used(), '0');
   limit = '6';
+  const pending = await catalogs[0].create(upload());
+  await catalogs[0].exclusive(pending.id, (m) => m.cancel(pending.repository));
+  assert.equal(await used(), '6', 'cancel does not free bytes before cleanup');
+  await pool.query('UPDATE arkvory_uploads SET reclaimed=true WHERE id=$1', [pending.id]);
+  assert.equal(await used(), '0');
   assert.equal((await catalogs[0].create(upload())).storageBackend, 'limited.data');
   limit = '18446744073709551615';
   assert.equal((await catalogs[0].create(upload())).storageBackend, 'limited.data');
