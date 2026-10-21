@@ -232,7 +232,7 @@ export class ModuleHostServices {
         },
         remove: (name) => files.remove(name),
       },
-    );
+    ).service();
   }
 
   private derived(moduleId: string, resources: ModuleResources | null): ModuleDerivedCache {

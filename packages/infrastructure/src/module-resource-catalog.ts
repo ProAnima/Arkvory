@@ -30,6 +30,21 @@ export class PostgresResourceCatalog implements ResourceCatalog {
     this.database = new ResourceCatalogDatabase(pool, moduleId, readOnly);
   }
 
+  /** Only this bound port crosses into module code: no pool, namespace or cleanup grant. */
+  service(): ResourceCatalog {
+    return Object.freeze({
+      ready: () => this.ready(),
+      restore: (file: ResourceFile) => this.restore(file),
+      initialize: () => this.initialize(),
+      retain: (owner: string, keys: readonly string[]) => this.retain(owner, keys),
+      reserve: (owner: string, file: ResourceFile) => this.reserve(owner, file),
+      publish: (owner: string, name: string) => this.publish(owner, name),
+      find: (key: string) => this.find(key),
+      release: (owner: string) => this.release(owner),
+      collect: (graceMs: number, limit: number) => this.collect(graceMs, limit),
+    });
+  }
+
   ready(): Promise<boolean> {
     return catalogReady(this.database);
   }

@@ -11,6 +11,23 @@ test('resource catalog is restricted to signed server modules', () => {
   }
 });
 
+test('resource module port cannot expose the database or rebind a read-only instance', async () => {
+  const pool = { connect: () => assert.fail('read-only port cannot acquire a write connection') };
+  const cleanup = {
+    run: () => assert.fail('read-only port cannot collect'),
+    check() {},
+    remove() {},
+  };
+  const port = new PostgresResourceCatalog(pool, 'module-a', true, cleanup).service();
+  assert.equal(port.database, undefined);
+  assert.equal(port.cleanup, undefined);
+  assert.equal(Object.getPrototypeOf(port), Object.prototype);
+  assert.equal(Object.isFrozen(port), true);
+  const forged = new PostgresResourceCatalog(pool, 'module-b', false, cleanup);
+  await assert.rejects(port.retain.call(forged, 'owner', ['key']), { code: 'read_only' });
+  await assert.rejects(port.collect.call(forged, 0, 1), { code: 'read_only' });
+});
+
 test('resource catalog rejects invalid input and read-only writes before acquiring a connection', async () => {
   const pool = { connect: () => assert.fail('validation must precede database work') };
   const cleanup = { run: () => assert.fail('no cleanup'), check() {}, remove() {} };
