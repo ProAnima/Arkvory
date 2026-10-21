@@ -89,6 +89,28 @@ test('module storage becomes eligible only after activation and can withdraw new
   h.host.active('signed-store', false);
   assert.equal(h.backends.state('signed-store.data'), 'disabled');
 });
+test('module byte policy validates registrations and never treats malformed values as unlimited', async (t) => {
+  const h = await stores(t);
+  const registry = h.host.storage('signed-store');
+  for (const logicalByteLimit of [null, false, 0, '', '10'])
+    assert.throws(() => registry.add('invalid', { ...h.instance, logicalByteLimit }), {
+      code: 'invalid_input',
+    });
+  let value = '18446744073709551615';
+  const instance = { ...h.instance, logicalByteLimit: () => value };
+  registry.add('data', instance);
+  h.host.seal('signed-store');
+  assert.throws(() => h.backends.logicalByteLimit('signed-store.data'));
+  h.host.active('signed-store', true);
+  assert.equal(h.backends.logicalByteLimit('signed-store.data'), value);
+  value = null;
+  assert.equal(h.backends.logicalByteLimit('signed-store.data'), null);
+  for (value of [undefined, false, 0, '', '01', '18446744073709551616', Promise.resolve('10')])
+    assert.throws(() => h.backends.logicalByteLimit('signed-store.data'));
+  instance.logicalByteLimit = false;
+  assert.throws(() => h.backends.logicalByteLimit('signed-store.data'));
+});
+
 test('cleanup authority expires after collect and never leaks to an independent call', async () => {
   const removal = new ModuleRemoval();
   assert.throws(() => removal.require(), { code: 'busy' });

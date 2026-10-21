@@ -25,6 +25,7 @@ export interface StorageInstance {
   readonly lifecycle: StorageLifecycle;
   readonly mode: 'full' | 'read-only';
   readonly acceptsWrites: boolean;
+  readonly logicalByteLimit?: () => string | null;
   /** Switched off in the configuration: never opened, its uploads unreadable until enabled. */
   readonly enabled: boolean;
   /**
@@ -150,6 +151,10 @@ export class StorageBackends implements BlobStore, StorageBackendStates, StagedP
     if (this.faults.has(backendId)) return 'unavailable';
     if (instance.mode === 'read-only') return 'read_only';
     return instance.acceptsWrites ? 'accepting' : 'not_accepting';
+  }
+
+  logicalByteLimit(backendId: string): string | null {
+    return this.instances.get(backendId)?.logicalByteLimit?.() ?? null;
   }
 
   status(): readonly StorageBackendStatus[] {

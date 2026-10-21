@@ -33,7 +33,9 @@ export async function resources(role: 'worker' | 'maintenance', capacity = 0, wr
     { reserveInodes: storageReserveInodes(process.env['ARKVORY_STORAGE_RESERVE_INODES']) },
   );
   const core = blobs.core.lifecycle;
-  const catalog = new PostgresCatalog(databaseUrl, capacity, writers);
+  const catalog = new PostgresCatalog(databaseUrl, capacity, writers, 5, (id) =>
+    blobs.logicalByteLimit(id),
+  );
   try {
     await catalog.ready();
     await core.ready();

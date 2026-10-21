@@ -9,6 +9,7 @@ import type {
 } from '@proanima/arkvory-extension-api';
 import type { StorageBackends, StorageInstance } from './storage-backends.js';
 import { fromModule, moduleCall, withSignal } from './module-errors.js';
+import { logicalLimit } from './storage-logical-bytes.js';
 
 function member(value: unknown, name: string): unknown {
   return typeof value === 'object' && value !== null ? Reflect.get(value, name) : undefined;
@@ -86,8 +87,10 @@ export class ModuleStorages {
         if (entry.instances.size >= 16 || entry.instances.has(name))
           throw new ModuleServiceError('conflict');
         const mode = member(instance, 'mode');
+        const byteLimit = member(instance, 'logicalByteLimit');
         if (
           (mode !== 'full' && mode !== 'read-only') ||
+          (byteLimit !== undefined && typeof byteLimit !== 'function') ||
           typeof member(instance, 'acceptsWrites') !== 'function'
         )
           throw new ModuleServiceError('invalid_input');
@@ -164,6 +167,13 @@ export class ModuleStorages {
         } catch {
           return false;
         }
+      },
+      logicalByteLimit: () => {
+        requireActive();
+        const value: unknown =
+          instance.logicalByteLimit === undefined ? null : instance.logicalByteLimit();
+        const limit = logicalLimit(value);
+        return limit === null ? null : limit.toString();
       },
       lifecycle: {
         initialize: () =>

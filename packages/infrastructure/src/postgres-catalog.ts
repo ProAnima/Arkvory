@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { lockReservations, requireRoom } from './upload-bytes.js';
+import { limitedBackend } from './storage-logical-bytes.js';
 import { Pool } from 'pg';
 import {
   ArkvoryError,
@@ -86,6 +87,7 @@ export class PostgresCatalog implements Catalog {
     readonly capacityBytes: number,
     maxWriters: number,
     poolSize = 5,
+    private readonly backendLimit: (backend: string) => string | null = () => null,
   ) {
     if (!Number.isSafeInteger(poolSize) || poolSize < 4 || poolSize > 200)
       throw new Error('Invalid database pool size');
@@ -162,6 +164,12 @@ export class PostgresCatalog implements Catalog {
       }
       // Capacity counts retained bytes only; catalog entries have no fixed count ceiling.
       await requireRoom(client, input.repository, input.descriptor.size, this.capacityBytes);
+      const backend = await limitedBackend(
+        client,
+        input.storageBackend ?? 'default',
+        input.descriptor.size,
+        this.backendLimit,
+      );
       const inserted = await client.query<Record<string, unknown>>(
         'INSERT INTO arkvory_uploads(id,repository,owner,idempotency_key,descriptor,size,created_at,storage_backend,part_bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
         [
@@ -172,7 +180,7 @@ export class PostgresCatalog implements Catalog {
           descriptorWire(input.descriptor),
           input.descriptor.size,
           input.createdAt,
-          input.storageBackend ?? 'default',
+          backend,
           input.partBytes,
         ],
       );
