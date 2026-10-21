@@ -63,6 +63,7 @@ async function fixture(t) {
   };
   return {
     ...f,
+    sessions: f.catalog.sessions,
     files,
     cleanup,
     create,
@@ -139,7 +140,7 @@ test('resource collection refuses a real core reader pin and excludes concurrent
   const file = f.record('raced');
   await f.put('owner', file);
   await f.release('owner');
-  const pins = new PostgresContentPins(f.catalog.sessions);
+  const pins = new PostgresContentPins(f.sessions);
   f.after(() => pins.close());
   const pin = await pins.acquire(randomUUID());
   await assert.rejects(a.collect(0, 1), { code: 'busy' });
