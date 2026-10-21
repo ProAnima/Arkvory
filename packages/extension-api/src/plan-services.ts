@@ -30,6 +30,7 @@ const AVAILABILITY: Readonly<Record<HostService, Availability>> = {
   'data-directory': { roles: servers, plugins: true },
   'derived-cache': { roles: ['api', 'reader', 'worker'], plugins: false },
   'module-state': { roles: servers, plugins: false },
+  'resource-catalog': { roles: servers, plugins: false },
   routes: { roles: ['api', 'reader'], plugins: true },
   compute: { roles: ['api', 'worker', 'backup'], plugins: true },
   license: { roles: servers, plugins: false },

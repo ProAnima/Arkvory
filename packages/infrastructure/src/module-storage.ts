@@ -75,6 +75,17 @@ export class ModuleStorages {
   removal(id: string): ModuleRemoval {
     return this.entry(id).removal;
   }
+  async cleanup<T>(id: string, work: () => Promise<T>): Promise<T> {
+    if (this.readOnly) throw new ModuleServiceError('read_only');
+    if (!this.admission) throw new ModuleServiceError('busy');
+    const entry = this.entry(id);
+    return this.admission.run((check) =>
+      entry.removal.collect(() => {
+        check();
+        if (!entry.active) throw new ModuleServiceError('unavailable');
+      }, work),
+    );
+  }
   private name(entry: Registration, name: string): void {
     if (entry.sealed || !/^[a-z][a-z0-9-]{0,30}$/.test(name))
       throw new ModuleServiceError('invalid_input');
