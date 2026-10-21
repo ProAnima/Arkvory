@@ -161,6 +161,10 @@ export const excludedTables: readonly ExcludedTable[] = [
     reason: 'derived from the uploads by a trigger; restore counts it again',
   },
   {
+    name: 'arkvory_backend_bytes',
+    reason: 'derived from retained uploads by a trigger during restore',
+  },
+  {
     name: 'arkvory_oci_uploads',
     reason: 'image uploads in progress; their staged bytes stay with the source',
   },

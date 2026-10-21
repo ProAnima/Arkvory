@@ -216,3 +216,5 @@ node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 Extension API 0.10.0 ajoute un registre d’état atomique et limité pour les modules signés. Il survit au basculement HA, mais ne figure pas dans les sauvegardes logiques portables. Après restauration, suivez la procédure explicite de réinitialisation du module ; la lecture et la restauration des objets doivent rester disponibles. Cet état est distinct du stockage des objets et une réinstallation du module ne le réinitialise pas.
 
 Un module de transfert peut retirer temporairement son protocole et le rétablir après validation de sa politique, sans redémarrer Arkvory. Chaque requête reste soumise à la politique actuelle du module.
+
+L’API d’extension 0.12.0 permet à un module de stockage signé de limiter les octets logiques. Le noyau compte la taille complète des objets et des transferts inachevés acceptés dans tous les dépôts, sans réduction liée à la déduplication. Lorsque la limite est atteinte, les nouveaux transferts utilisent le stockage par défaut ; ceux déjà acceptés conservent leur destination et les objets restent lisibles. Le compteur ne diminue qu’après le nettoyage.

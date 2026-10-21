@@ -44,6 +44,10 @@ export interface ModuleStorageInstance {
   readonly lifecycle: ModuleStorageLifecycle;
   readonly mode: 'full' | 'read-only';
   acceptsWrites(): boolean;
+  /** Installation-wide retained logical bytes, including pending uploads; canonical uint64.
+   * Null means unlimited. The core reserves atomically and falls back to default on overflow.
+   * Existing uploads and reads retain their rights. Must return synchronously without I/O. */
+  logicalByteLimit?(): string | null;
 }
 
 /** Registration during create only; available instances activate after successful start. */

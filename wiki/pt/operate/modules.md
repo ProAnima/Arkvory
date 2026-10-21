@@ -216,3 +216,5 @@ node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 Extension API 0.10.0 acrescenta um registo de estado atómico e limitado para módulos assinados. Mantém-se após uma comutação HA, mas não é incluído em cópias lógicas portáteis. Após restaurar, siga o procedimento explícito de reinicialização do módulo; a leitura e a recuperação dos objetos devem continuar disponíveis. Este estado é separado do armazenamento de objetos e não é reposto ao reinstalar o módulo.
 
 Um módulo de transferência pode retirar temporariamente seu protocolo e restaurá-lo após verificar sua política, sem reiniciar o Arkvory. Cada solicitação continua sujeita à política atual do módulo.
+
+A API de extensões 0.12.0 permite que um módulo de armazenamento assinado limite os bytes lógicos. O núcleo conta o tamanho completo dos objetos e dos envios incompletos aceitos em todos os repositórios, sem desconto por deduplicação. Ao atingir o limite, novos envios usam o armazenamento padrão; os aceitos mantêm seu destino e os objetos continuam legíveis. O contador diminui somente após a limpeza.

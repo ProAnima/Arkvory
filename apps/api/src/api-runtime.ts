@@ -134,6 +134,7 @@ export class ApiRuntime {
       config.capacityBytes,
       config.maxUploads,
       config.databasePoolSize ?? 20,
+      (id) => this.blobs.logicalByteLimit(id),
     );
     this.pins = new PostgresContentPins(this.catalog.sessions);
     this.uploadPins = new PostgresContentPins(this.catalog.sessions, 'upload');

@@ -9,6 +9,7 @@ import type {
 } from '@proanima/arkvory-extension-api';
 import type { StorageBackends, StorageInstance } from './storage-backends.js';
 import { fromModule, moduleCall, withSignal } from './module-errors.js';
+import { logicalLimit } from './storage-logical-bytes.js';
 
 function member(value: unknown, name: string): unknown {
   return typeof value === 'object' && value !== null ? Reflect.get(value, name) : undefined;
@@ -164,6 +165,12 @@ export class ModuleStorages {
         } catch {
           return false;
         }
+      },
+      logicalByteLimit: () => {
+        requireActive();
+        const value: unknown = instance.logicalByteLimit ? instance.logicalByteLimit() : null;
+        const limit = logicalLimit(value);
+        return limit === null ? null : limit.toString();
       },
       lifecycle: {
         initialize: () =>
