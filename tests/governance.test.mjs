@@ -254,8 +254,9 @@ test('every registered gate must reach CI and explicit strict overrides are reje
   assert.match(inspectWorkflow(workflow, registry).join('\n'), /Gate absent from CI: forgotten/);
   const expanded = parse(workflow);
   expanded.jobs.extra = structuredClone(expanded.jobs.integration);
-  expanded.jobs.extra.steps.find((s) => s.run === 'npm run gate -- integration').run =
-    'npm run gate -- forgotten';
+  expanded.jobs.extra.steps.find(
+    (s) => s.run === 'npm run gate -- resource-catalog integration',
+  ).run = 'npm run gate -- forgotten';
   expanded.jobs.verdict.needs.push('extra');
   assert.match(
     inspectWorkflow(stringify(expanded), registry).join('\n'),
