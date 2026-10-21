@@ -13,6 +13,11 @@ import { setup } from './fixture.mjs';
 import { resourceCatalogContract } from '@proanima/arkvory-extension-testkit';
 
 async function fixture(t) {
+  const cleanups = [];
+  // Close module sessions before setup's pool teardown, otherwise pool.end waits forever.
+  t.after(async () => {
+    for (const close of cleanups.reverse()) await close();
+  });
   const f = await setup(t);
   const removal = new ModuleRemoval();
   const admission = new ModuleUnlinkAdmission(f.catalog.sessions);
@@ -26,7 +31,7 @@ async function fixture(t) {
     readOnly: false,
     requireRemoval: () => removal.require(),
   });
-  t.after(async () => {
+  cleanups.push(async () => {
     await opened.close();
     await coordinator.close();
   });
@@ -68,6 +73,7 @@ async function fixture(t) {
     beforeRemove: (fn) => {
       beforeRemove = fn;
     },
+    after: (fn) => cleanups.push(fn),
   };
 }
 
@@ -134,7 +140,7 @@ test('resource collection refuses a real core reader pin and excludes concurrent
   await f.put('owner', file);
   await f.release('owner');
   const pins = new PostgresContentPins(f.catalog.sessions);
-  t.after(() => pins.close());
+  f.after(() => pins.close());
   const pin = await pins.acquire(randomUUID());
   await assert.rejects(a.collect(0, 1), { code: 'busy' });
   assert.ok(await f.files.stat(file.name));
