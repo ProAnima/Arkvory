@@ -214,3 +214,5 @@ node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 ## Koordinationszustand von Modulen {#module-state}
 
 Extension API 0.10.0 bietet signierten Modulen einen begrenzten, atomaren Zustandsspeicher. Er bleibt beim HA-Failover erhalten, ist aber nicht in portablen logischen Sicherungen enthalten. Nach einer Wiederherstellung ist das ausdrückliche Neuinitialisierungsverfahren des Moduls erforderlich; Lesen und Wiederherstellen gespeicherter Objekte müssen verfügbar bleiben. Dieser Zustand ist vom Objektspeicher getrennt und wird bei einer Neuinstallation des Moduls nicht zurückgesetzt.
+
+Ein Übertragungsmodul kann sein Protokoll vorübergehend zurückziehen und nach erfolgreicher Richtlinienprüfung ohne Neustart von Arkvory wieder anbieten. Jede Anfrage unterliegt weiterhin der aktuellen Richtlinie des Moduls.

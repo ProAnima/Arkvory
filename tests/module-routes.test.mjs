@@ -885,4 +885,17 @@ test('withdrawal updates an existing route set without releasing the name or del
   registrar.document({ openapi: '3.1.0', paths: fragment([otherRoute]).paths });
   registrar.offerTransfer({ name: 'echo', versions: ['1.0.0'], prefix: '/api/ext/other/v1/' });
   assert.throws(() => registry.seal(other), refusal('transfer_invalid', '/offers/0/name'));
+  registrar.restoreTransfer('echo');
+  assert.equal(set.offers.length, 0, 'another registrar cannot restore the owner');
+  service.restoreTransfer('foreign');
+  assert.equal(set.offers.length, 0);
+  assert.throws(() => service.restoreTransfer('../echo'), TypeError);
+  service.restoreTransfer('echo');
+  service.restoreTransfer('echo');
+  assert.deepEqual(
+    set.offers.map(({ name, versions }) => ({ name, versions })),
+    [{ name: 'echo', versions: ['1.0.0'] }],
+  );
+  service.withdrawTransfer('echo');
+  assert.equal(set.offers.length, 0, 'restoration does not prevent a later withdrawal');
 });

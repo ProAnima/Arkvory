@@ -190,7 +190,7 @@ export interface ModuleTransferOffer {
 /**
  * The host service `routes` (ADR 0083, section 2.4), for modules that declare it in `uses`.
  * Declarations belong in `create`: the core checks them right after `create` returns
- * and refuses later declarations. `withdrawTransfer` may be called throughout the lifecycle. A module whose routes, fragment or offers break the contract does not
+ * and refuses later declarations. Withdrawal and restoration are allowed throughout the lifecycle. A module whose routes, fragment or offers break the contract does not
  * start (`routes_invalid`, `openapi_invalid`, `openapi_route_mismatch`, `transfer_invalid`).
  */
 export interface ModuleRoutes {
@@ -207,7 +207,12 @@ export interface ModuleRoutes {
   offerTransfer(offer: ModuleTransferOffer): void;
   /** Withdraws this module's declared offer immediately; idempotent, also after create.
    * Routes and in-flight transfers remain; handlers must enforce their current policy.
-   * A withdrawn name stays reserved and cannot be advertised again until restart.
+   * A withdrawn name stays reserved; restoreTransfer can re-enable the original offer.
    */
   withdrawTransfer(name: string): void;
+  /** Restores only this module's previously declared offer, without changing its definition.
+   * Idempotent; unknown names are ignored. The module must revalidate its policy first.
+   * Does not activate a failed or stopped module; handlers still enforce current policy.
+   */
+  restoreTransfer(name: string): void;
 }

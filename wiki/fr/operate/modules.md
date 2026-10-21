@@ -214,3 +214,5 @@ node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 ## État de coordination des modules {#module-state}
 
 Extension API 0.10.0 ajoute un registre d’état atomique et limité pour les modules signés. Il survit au basculement HA, mais ne figure pas dans les sauvegardes logiques portables. Après restauration, suivez la procédure explicite de réinitialisation du module ; la lecture et la restauration des objets doivent rester disponibles. Cet état est distinct du stockage des objets et une réinstallation du module ne le réinitialise pas.
+
+Un module de transfert peut retirer temporairement son protocole et le rétablir après validation de sa politique, sans redémarrer Arkvory. Chaque requête reste soumise à la politique actuelle du module.

@@ -214,3 +214,5 @@ node scripts/recover-derived-cache.mjs --owner UUID --confirm-owner-stopped
 ## Module coordination state {#module-state}
 
 Extension API 0.10.0 adds a bounded, atomic state register for signed modules. It survives HA failover but is not included in portable logical backups. After restore, follow the module's explicit reinitialization procedure; reading and restoring stored objects must remain available. This state is separate from object storage and is not reset by reinstalling a module.
+
+A transfer module can temporarily withdraw its protocol and restore it after successful policy checks, without restarting Arkvory. Every request remains subject to the current module policy.
