@@ -117,6 +117,12 @@ export class ModuleRouteRegistry {
       offerTransfer: (offer: ModuleTransferOffer) => {
         open(declaration.offers, offer);
       },
+      restoreTransfer: (name: string) => {
+        if (typeof name !== 'string' || !NAME.test(name))
+          throw new TypeError('Invalid transfer name');
+        // Only withdrawal of an owned declaration can insert a name into this set.
+        declaration.withdrawn.delete(name);
+      },
     };
   }
 
