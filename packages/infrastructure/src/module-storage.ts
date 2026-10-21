@@ -87,8 +87,10 @@ export class ModuleStorages {
         if (entry.instances.size >= 16 || entry.instances.has(name))
           throw new ModuleServiceError('conflict');
         const mode = member(instance, 'mode');
+        const byteLimit = member(instance, 'logicalByteLimit');
         if (
           (mode !== 'full' && mode !== 'read-only') ||
+          (byteLimit !== undefined && typeof byteLimit !== 'function') ||
           typeof member(instance, 'acceptsWrites') !== 'function'
         )
           throw new ModuleServiceError('invalid_input');
@@ -168,7 +170,8 @@ export class ModuleStorages {
       },
       logicalByteLimit: () => {
         requireActive();
-        const value: unknown = instance.logicalByteLimit ? instance.logicalByteLimit() : null;
+        const value: unknown =
+          instance.logicalByteLimit === undefined ? null : instance.logicalByteLimit();
         const limit = logicalLimit(value);
         return limit === null ? null : limit.toString();
       },
