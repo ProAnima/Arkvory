@@ -62,7 +62,8 @@ export function checkServices(
         provided.some((service) => service === name) &&
         m.manifest.roles.some((role) => found.roles.includes(role)) &&
         (found.plugins || !plugin) &&
-        (!['derived-cache', 'module-state'].includes(name) || m.source === 'signed');
+        (!['derived-cache', 'module-state', 'resource-catalog'].includes(name) ||
+          m.source === 'signed');
       if (!usable)
         problems.push({ code: 'service_unavailable', module: m.manifest.id, subject: name });
     }
@@ -77,7 +78,8 @@ export function hostServiceAvailable(
   source: ModuleSource,
 ): boolean {
   const found = availability(name);
-  if (['derived-cache', 'module-state'].includes(name) && source !== 'signed') return false;
+  if (['derived-cache', 'module-state', 'resource-catalog'].includes(name) && source !== 'signed')
+    return false;
   return (
     found !== undefined &&
     found.roles.includes(role) &&

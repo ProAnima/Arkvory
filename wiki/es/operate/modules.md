@@ -218,3 +218,9 @@ Extension API 0.10.0 añade un registro de estado atómico y limitado para módu
 Un módulo de transferencia puede retirar temporalmente su protocolo y restaurarlo tras verificar su política, sin reiniciar Arkvory. Cada solicitud sigue sujeta a la política actual del módulo.
 
 La API de extensiones 0.12.0 permite que un módulo de almacenamiento firmado limite los bytes lógicos. El núcleo cuenta los tamaños completos de los objetos y las cargas incompletas aceptadas en todos los repositorios, sin descuento por deduplicación. Al alcanzar el límite, las cargas nuevas usan el almacenamiento predeterminado; las aceptadas conservan su destino y los objetos siguen siendo legibles. El contador se reduce solo después de la limpieza.
+
+## Catálogo compartido de recursos {#resource-catalog}
+
+Extension API 0.13.0 ofrece a los módulos firmados un catálogo compartido de recursos. Los archivos están protegidos mientras las cargas o los recursos dependientes los referencien. Solo la limpieza del núcleo libera las referencias de las cargas. La eliminación física espera a los lectores y las copias de seguridad; si falla, conserva las dependencias para reintentarlo.
+
+Antes de la primera actualización a un módulo que use este catálogo, detenga todos los procesos API y worker anteriores. No mezcle escritores antiguos y nuevos. Tras una restauración lógica, la limpieza permanece desactivada hasta que el módulo compruebe todas las recetas, archivos y dependencias. Repare los datos ausentes o dañados antes de reanudarla.
