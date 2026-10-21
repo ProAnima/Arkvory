@@ -10,5 +10,3 @@ description: 'Install signed module packages on a host, enable and check them, r
 :::
 
 <!--@include: ../../operate/modules.md-->
-
-يمكن لوحدة النقل سحب بروتوكولها مؤقتًا واستعادته بعد نجاح التحقق من سياستها، دون إعادة تشغيل Arkvory. ويظل كل طلب خاضعًا لسياسة الوحدة الحالية.
