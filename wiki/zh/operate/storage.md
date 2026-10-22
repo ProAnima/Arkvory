@@ -340,6 +340,8 @@ Arkvory 还会在每个卷上保留 100 000 个空闲 inode（`ARKVORY_STORAGE_R
 - 存储必须是本地文件系统。不支持网络共享。额外的[卷](#volumes)也是本地目录。已存储的文件只能通过服务器上的命令 [`arkvory storage rehome`](#rehome) 在它们之间移动，不能通过 API。
 - 在 Windows 上，Arkvory 会把每个文件同步到磁盘，但无法同步发布该文件的目录项：Node.js 在那里不提供目录同步。上传完成后不久断电，可能导致已发布的文件在磁盘上缺失。请使用 UPS，并保留[备份](./backups)或[镜像](./mirrors)。在 Linux 上，目录项也会同步。
 
+签名存储模块可供离线 `scrub` 以只读模式访问。请保留已安装的模块及其配置。`storage rehome` 可以规划从已配置的模块存储迁移到普通存储；worker 会在复制前检查目标。已安装模块的计划必须与 writer 一致。运行 `scrub` 前请停止 API 和 worker。
+
 ## 相关页面 {#related-pages}
 
 - [备份](./backups)

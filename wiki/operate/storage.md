@@ -340,6 +340,8 @@ If an upload fails with the reason `storage_quota` or `catalog_limit` instead, t
 - The storage must be a local file system. There is no support for network shares. Extra [volumes](#volumes) are local directories too. Stored files move between them only by the command on the server, [`arkvory storage rehome`](#rehome), not through the API.
 - On Windows, Arkvory syncs each file to disk but cannot sync the directory entry that publishes it: Node.js has no directory sync there. A power loss shortly after an upload can leave a published file missing from the disk. Use a UPS and keep [backups](./backups) or a [mirror](./mirrors). On Linux, the directory entries are synced too.
 
+Signed storage modules remain available to offline `scrub` in read-only mode. Keep the installed modules and their configuration in place. `storage rehome` can plan moves from a configured module storage to ordinary storage; the worker checks the target before copying. The installed module plan must match the writer. Stop API and worker before `scrub`.
+
 ## Related pages {#related-pages}
 
 - [Backups](./backups)

@@ -340,6 +340,8 @@ Si una subida falla en cambio con el motivo `storage_quota` o `catalog_limit`, e
 - El almacenamiento debe ser un sistema de archivos local. No se admiten recursos compartidos de red. Los [volúmenes](#volumes) adicionales también son directorios locales. Los archivos almacenados solo se mueven entre ellos con el comando del servidor, [`arkvory storage rehome`](#rehome), no a través de la API.
 - En Windows, Arkvory sincroniza cada archivo con el disco, pero no puede sincronizar la entrada de directorio que lo publica: Node.js no ofrece sincronización de directorios allí. Un corte de energía poco después de una subida puede dejar un archivo publicado sin su contenido en el disco. Use un SAI y mantenga [copias de seguridad](./backups) o un [espejo](./mirrors). En Linux, las entradas de directorio también se sincronizan.
 
+Los módulos de almacenamiento firmados están disponibles para `scrub` sin conexión en modo de solo lectura. Mantenga los módulos instalados y su configuración. `storage rehome` puede planificar traslados del almacenamiento configurado de un módulo al almacenamiento ordinario; el worker verifica el destino antes de copiar. El plan de módulos debe coincidir con el del writer. Detenga API y worker antes de ejecutar `scrub`.
+
 ## Páginas relacionadas {#related-pages}
 
 - [Copias de seguridad](./backups)

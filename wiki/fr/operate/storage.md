@@ -340,6 +340,8 @@ Si un téléversement échoue avec la raison `storage_quota` ou `catalog_limit` 
 - Le stockage doit être un système de fichiers local. Les partages réseau ne sont pas pris en charge. Les [volumes](#volumes) supplémentaires sont aussi des répertoires locaux. Les fichiers stockés ne passent de l’un à l’autre que par la commande sur le serveur, [`arkvory storage rehome`](#rehome), pas par l’API.
 - Sous Windows, Arkvory synchronise chaque fichier sur le disque, mais ne peut pas synchroniser l’entrée de répertoire qui le publie : Node.js n’y offre pas de synchronisation de répertoire. Une coupure de courant peu après un téléversement peut laisser un fichier publié absent du disque. Utilisez un onduleur et gardez des [sauvegardes](./backups) ou un [miroir](./mirrors). Sous Linux, les entrées de répertoire sont aussi synchronisées.
 
+Les modules de stockage signés restent accessibles à `scrub` hors ligne en lecture seule. Conservez les modules installés et leur configuration. `storage rehome` peut planifier un transfert du stockage configuré d’un module vers le stockage ordinaire ; le worker vérifie la destination avant la copie. Le plan des modules doit correspondre à celui du writer. Arrêtez API et worker avant `scrub`.
+
 ## Pages associées {#related-pages}
 
 - [Sauvegardes](./backups)

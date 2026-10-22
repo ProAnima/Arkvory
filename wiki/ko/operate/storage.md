@@ -340,6 +340,8 @@ API 작업 [runStoragePolicy](../api/reference/storage#runStoragePolicy)로 배�
 - 스토리지는 로컬 파일 시스템이어야 합니다. 네트워크 공유는 지원하지 않습니다. 추가 [볼륨](#volumes)도 로컬 디렉터리입니다. 저장된 파일은 API가 아니라 서버의 명령 [`arkvory storage rehome`](#rehome)으로만 볼륨 사이에서 옮겨집니다.
 - Windows에서 Arkvory는 각 파일을 디스크에 동기화하지만, 파일을 게시하는 디렉터리 항목은 동기화할 수 없습니다. Node.js가 그곳에서 디렉터리 동기화를 제공하지 않기 때문입니다. 업로드 직후 정전이 일어나면 게시된 파일이 디스크에서 사라질 수 있습니다. UPS를 사용하고 [백업](./backups)이나 [미러](./mirrors)를 유지하십시오. Linux에서는 디렉터리 항목도 동기화됩니다.
 
+서명된 저장소 모듈은 오프라인 `scrub`에서 읽기 전용으로 사용할 수 있습니다. 설치된 모듈과 설정을 유지하세요. `storage rehome`은 설정된 모듈 저장소에서 일반 저장소로 이동을 계획할 수 있으며, worker는 복사 전에 대상을 확인합니다. 설치된 모듈 계획은 writer의 계획과 일치해야 합니다. `scrub` 실행 전에 API와 worker를 중지하세요.
+
 ## 관련 페이지 {#related-pages}
 
 - [백업](./backups)
