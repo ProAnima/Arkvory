@@ -54,7 +54,7 @@ export async function requireInside(area: string, segments: readonly string[]): 
 /**
  * Regular files under `folder` as names relative to `area` with `/`, in byte order, after
  * `after`, at most `limit`. Links and other entries are skipped, never followed. The walk covers
- * the folder of the prefix; its size is bounded by the module's file quota.
+ * only matching subtrees beyond the cursor and stops as soon as the page is full.
  */
 export async function listFiles(
   area: string,
@@ -72,18 +72,28 @@ export async function listFiles(
       if (hasCode(error, 'ENOENT') || hasCode(error, 'ENOTDIR')) return;
       throw error;
     }
+    // Sort directories by their name INCLUDING the separator: `a-` precedes `a/`.
+    // A sorted depth-first walk then has the same order as sorting all complete names.
+    const key = (entry: (typeof entries)[number]) => entry.name + (entry.isDirectory() ? '/' : '');
+    entries.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
     for (const entry of entries) {
+      if (found.length >= limit) return;
       const relative = [...segments, entry.name].join('/');
-      if (entry.isDirectory()) await walk([...segments, entry.name]);
-      else if (entry.isFile() && relative.startsWith(prefix)) found.push(relative);
+      if (entry.isDirectory()) {
+        const subtree = relative + '/';
+        if (!subtree.startsWith(prefix) && !prefix.startsWith(subtree)) continue;
+        if (after !== null && after >= subtree && !after.startsWith(subtree)) continue;
+        await walk([...segments, entry.name]);
+      } else if (
+        entry.isFile() &&
+        relative.startsWith(prefix) &&
+        (after === null || relative > after)
+      )
+        found.push(relative);
     }
   };
   await walk(folder);
-  // Byte order of whole names, which a depth-first walk does not give ('-' sorts before '/').
-  return found
-    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-    .filter((name) => after === null || name > after)
-    .slice(0, limit);
+  return found;
 }
 
 /** Bytes and regular files under `path`, for the bounded reconciliation with the disk. */
