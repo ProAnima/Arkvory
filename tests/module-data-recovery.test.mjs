@@ -77,3 +77,50 @@ test('deferred writer reads during guarded preparation but cannot reuse uncounte
   assert.equal(files.usage().bytes, 3);
   assert.equal(await files.stat('new'), null);
 });
+
+test('deferred accounting retries startup contention without losing quota or blocking reads', async (t) => {
+  const options = await fixture(t);
+  let attempts = 0;
+  let mutations = 0;
+  const opened = await openModuleData({
+    ...options,
+    readOnly: false,
+    coordinator: {
+      owner: randomUUID(),
+      run: async (_id, work) => {
+        if (++attempts <= 2) throw Object.assign(new Error('contended'), { code: 'busy' });
+        mutations++;
+        return work({ check() {}, orphan: async () => {} });
+      },
+    },
+  });
+  t.after(() => opened.close());
+  assert.equal((await opened.directory.data.stat('existing')).size, 3);
+  await assert.rejects(opened.directory.data.create('new', { exclusive: true, durable: false }), {
+    code: 'module_quota_exceeded',
+  });
+  assert.equal(opened.directory.data.usage().bytes, 3);
+  assert.equal(mutations, 2, 'one preparation and one quota-rejected write');
+});
+
+test('shutdown cancels accounting lock retries before any mutation', async (t) => {
+  const options = await fixture(t);
+  const entered = Promise.withResolvers();
+  let attempts = 0;
+  const opened = await openModuleData({
+    ...options,
+    readOnly: false,
+    coordinator: {
+      owner: randomUUID(),
+      run: async () => {
+        attempts++;
+        entered.resolve();
+        throw Object.assign(new Error('contended'), { code: 'busy' });
+      },
+    },
+  });
+  await entered.promise;
+  await opened.close();
+  assert.equal(attempts, 1);
+  await assert.rejects(opened.directory.data.create('new', { exclusive: true, durable: false }));
+});

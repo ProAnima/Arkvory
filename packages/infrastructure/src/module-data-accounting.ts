@@ -1,4 +1,5 @@
 import { ModuleDataLedger } from './module-data-ledger.js';
+import { setTimeout as delay } from 'node:timers/promises';
 import { mkdir, readdir, rm } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
 import { ModuleServiceError } from '@proanima/arkvory-extension-api';
@@ -27,6 +28,28 @@ export interface ModuleDataOptions {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Only startup lock contention is retryable: never replay work that already entered. */
+async function prepareAdmission<T>(
+  coordinator: ModuleDataCoordinator,
+  moduleId: string,
+  work: (guard: ModuleDataGuard) => Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    signal?.throwIfAborted();
+    let entered = false;
+    try {
+      return await coordinator.run(moduleId, (guard) => {
+        entered = true;
+        return work(guard);
+      });
+    } catch (error) {
+      if (!signal || entered || !hasCode(error, 'busy') || attempt >= 299) throw error;
+      await delay(Math.min(100 * (attempt + 1), 1000), undefined, { signal });
+    }
+  }
+}
 
 /** Disk files are the reservations: after a crash no in-memory credit can be reused. */
 export class ModuleDataAccounting {
@@ -193,22 +216,27 @@ export class ModuleDataAccounting {
     if (this.pending >= 64) return Promise.reject(new ModuleServiceError('busy'));
     this.pending++;
     const result = this.tail.then(() =>
-      coordinator.run(this.options.moduleId, async (guard) => {
-        if (this.preparationFailed)
-          throw new ModuleServiceError('unavailable', 'Accounting failed');
-        await this.ledger.begin(guard, signal);
-        if (await this.cleanup(guard)) await this.ledger.rebuild(signal);
-        guard.check();
-        try {
-          return await work(guard);
-        } finally {
+      prepareAdmission(
+        coordinator,
+        this.options.moduleId,
+        async (guard) => {
+          if (this.preparationFailed)
+            throw new ModuleServiceError('unavailable', 'Accounting failed');
+          await this.ledger.begin(guard, signal);
+          if (await this.cleanup(guard)) await this.ledger.rebuild(signal);
           guard.check();
-          await this.ledger.commit(guard);
-          this.bytes = this.ledger.counts.bytes;
-          this.files = this.ledger.counts.files;
-          this.accounted = true;
-        }
-      }),
+          try {
+            return await work(guard);
+          } finally {
+            guard.check();
+            await this.ledger.commit(guard);
+            this.bytes = this.ledger.counts.bytes;
+            this.files = this.ledger.counts.files;
+            this.accounted = true;
+          }
+        },
+        signal,
+      ),
     );
     this.tail = result
       .catch(() => undefined)

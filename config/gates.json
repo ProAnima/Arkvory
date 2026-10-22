@@ -6,6 +6,7 @@
       "unit",
       "security",
       "resource-catalog",
+      "module-data-recovery",
       "integration",
       "browser",
       "docs",
@@ -25,6 +26,7 @@
       "unit",
       "security",
       "resource-catalog",
+      "module-data-recovery",
       "integration",
       "browser",
       "docs",
@@ -87,6 +89,16 @@
       "needs": ["build"],
       "timeoutSeconds": 180,
       "entries": ["tests/integration/resource-catalog.test.mjs"],
+      "kind": "node-test",
+      "database": true
+    },
+    "module-data-recovery": {
+      "needs": ["build"],
+      "timeoutSeconds": 180,
+      "entries": [
+        "tests/module-data-recovery.test.mjs",
+        "tests/integration/module-data-coordination.test.mjs"
+      ],
       "kind": "node-test",
       "database": true
     },

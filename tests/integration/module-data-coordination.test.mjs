@@ -9,6 +9,7 @@ import { openModuleData, ModuleHostServices } from '@proanima/arkvory-infrastruc
 import { PostgresModuleDataCoordinator } from '../../packages/infrastructure/dist/module-data-coordinator.js';
 import { removeTestDirectory } from '../helpers.mjs';
 import { setup } from './fixture.mjs';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const options = { durable: false, exclusive: false };
 async function fixture(t, quota = { bytes: 10, files: 3 }) {
@@ -181,6 +182,19 @@ test('two runtime hosts receive mandatory coordinators and drain before pool clo
       const area = host.for(planned, { dataMiB: 1, dataFiles: 1 })['data-directory'].data;
       await area.stat('not-yet-created');
       areas.push(area);
+    }
+    // Reads no longer wait for accounting. Both hosts must finish preparation before
+    // testing ordinary nonblocking quota admission against the other host's live sink.
+    for (const area of areas) {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          area.usage();
+          break;
+        } catch (error) {
+          if (error.code !== 'busy' || attempt >= 99) throw error;
+          await delay(50);
+        }
+      }
     }
     const sink = await areas[0].create('first', options);
     await sink.write(Buffer.alloc(8));
