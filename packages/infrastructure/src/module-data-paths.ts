@@ -97,10 +97,14 @@ export async function listFiles(
 }
 
 /** Bytes and regular files under `path`, for the bounded reconciliation with the disk. */
-export async function measureTree(path: string): Promise<{ bytes: number; files: number }> {
+export async function measureTree(
+  path: string,
+  signal?: AbortSignal,
+): Promise<{ bytes: number; files: number }> {
   let bytes = 0;
   let files = 0;
   const walk = async (folder: string): Promise<void> => {
+    signal?.throwIfAborted();
     let entries;
     try {
       entries = await readdir(folder, { withFileTypes: true });
@@ -109,6 +113,7 @@ export async function measureTree(path: string): Promise<{ bytes: number; files:
       throw error;
     }
     for (const entry of entries) {
+      signal?.throwIfAborted();
       const child = join(folder, entry.name);
       if (entry.isDirectory()) await walk(child);
       else if (entry.isFile()) {

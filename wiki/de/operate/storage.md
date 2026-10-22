@@ -342,6 +342,8 @@ Wenn ein Upload stattdessen mit dem Grund `storage_quota` oder `catalog_limit` f
 
 Signierte Speichermodule stehen dem Offline-Werkzeug `scrub` schreibgeschützt zur Verfügung. Behalten Sie die installierten Module und ihre Konfiguration bei. `storage rehome` kann Umzüge von einem konfigurierten Modulspeicher in gewöhnlichen Speicher planen; der Worker prüft das Ziel vor dem Kopieren. Der Modulplan muss mit dem des Writers übereinstimmen. Stoppen Sie API und Worker vor `scrub`.
 
+Während der Modulwiederherstellung können vorhandene Daten lesbar bleiben, während Schreibzugriffe gesperrt sind. Unbekannter Verbrauch liefert `busy` und gilt nicht als freie Quote. Warten Sie vor Schreib- und Löschvorgängen auf die Wiederherstellung. Untersuchen Sie Fehler, statt das Startzeitlimit zu erhöhen.
+
 ## Verwandte Seiten {#related-pages}
 
 - [Backups](./backups)

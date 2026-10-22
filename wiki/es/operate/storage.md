@@ -342,6 +342,8 @@ Si una subida falla en cambio con el motivo `storage_quota` o `catalog_limit`, e
 
 Los módulos de almacenamiento firmados están disponibles para `scrub` sin conexión en modo de solo lectura. Mantenga los módulos instalados y su configuración. `storage rehome` puede planificar traslados del almacenamiento configurado de un módulo al almacenamiento ordinario; el worker verifica el destino antes de copiar. El plan de módulos debe coincidir con el del writer. Detenga API y worker antes de ejecutar `scrub`.
 
+Durante la recuperación del módulo, los datos existentes pueden seguir disponibles para lectura mientras las escrituras están bloqueadas. El uso desconocido devuelve `busy`, no cuota libre. Espere a la recuperación antes de escribir o eliminar datos. Investigue los fallos en lugar de aumentar el tiempo límite de inicio.
+
 ## Páginas relacionadas {#related-pages}
 
 - [Copias de seguridad](./backups)

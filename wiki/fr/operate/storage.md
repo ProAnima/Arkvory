@@ -342,6 +342,8 @@ Si un téléversement échoue avec la raison `storage_quota` ou `catalog_limit` 
 
 Les modules de stockage signés restent accessibles à `scrub` hors ligne en lecture seule. Conservez les modules installés et leur configuration. `storage rehome` peut planifier un transfert du stockage configuré d’un module vers le stockage ordinaire ; le worker vérifie la destination avant la copie. Le plan des modules doit correspondre à celui du writer. Arrêtez API et worker avant `scrub`.
 
+Pendant la récupération du module, les données existantes peuvent rester lisibles alors que les écritures sont bloquées. Un usage inconnu renvoie `busy`, jamais un quota libre. Attendez la récupération avant toute écriture ou suppression. Analysez les échecs plutôt que de prolonger le délai de démarrage.
+
 ## Pages associées {#related-pages}
 
 - [Sauvegardes](./backups)

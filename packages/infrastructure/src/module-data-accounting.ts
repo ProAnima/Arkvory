@@ -15,6 +15,8 @@ export interface ModuleDataOptions {
   readonly quota: { readonly bytes: number; readonly files: number };
   readonly reserve: VolumeReserve;
   readonly readOnly: boolean;
+  /** Hosted modules may read while accounting recovers; mutations still wait for admission. */
+  readonly deferredAccounting?: boolean;
   readonly probe?: VolumeProbe;
   readonly requireRemoval?: () => void;
   /** Required for every writable directory; the host closes it after all directories. */
@@ -38,6 +40,9 @@ export class ModuleDataAccounting {
   private pending = 0;
   private closed = false;
   private closing: Promise<void> | undefined;
+  private readonly preparation = new AbortController();
+  private accounted = false;
+  private preparationFailed = false;
 
   constructor(readonly options: ModuleDataOptions) {
     if (!/^[a-z][a-z0-9-]{0,31}$/.test(options.moduleId))
@@ -60,16 +65,37 @@ export class ModuleDataAccounting {
 
   async initialize(): Promise<void> {
     await requireInside(this.options.dataDirectory, ['module-data', this.options.moduleId]);
+    if (this.options.deferredAccounting) {
+      // Read-only hosts need no write credit. Their explicit reconciliation supplies usage.
+      if (!this.options.readOnly)
+        void this.prepare().catch(() => {
+          this.preparationFailed = true;
+        });
+      return;
+    }
+    await this.prepare();
+  }
+
+  requireAccounting(): void {
+    if (this.preparationFailed) throw new ModuleServiceError('unavailable', 'Accounting failed');
+    if (!this.accounted) throw new ModuleServiceError('busy', 'Accounting is recovering');
+  }
+
+  private async prepare(): Promise<void> {
     if (this.options.readOnly) return this.refresh();
-    await this.run(async (guard) => {
-      for (const area of ['data', 'cache', 'tmp/coordinated-v1']) {
+    await this.run(
+      async (guard) => {
+        for (const area of ['data', 'cache', 'tmp/coordinated-v1']) {
+          guard.check();
+          await requireInside(this.root, area.split('/'));
+          await mkdir(join(this.root, area), { recursive: true, mode: 0o700 });
+        }
         guard.check();
-        await requireInside(this.root, area.split('/'));
-        await mkdir(join(this.root, area), { recursive: true, mode: 0o700 });
-      }
-      guard.check();
-      await mkdir(this.temporary, { recursive: true, mode: 0o700 });
-    });
+        await mkdir(this.temporary, { recursive: true, mode: 0o700 });
+      },
+      false,
+      this.preparation.signal,
+    );
   }
 
   /** Only this protocol's dead owners are collectible. Unknown/legacy tmp stays charged.
@@ -107,6 +133,7 @@ export class ModuleDataAccounting {
     const cache = await measureTree(join(this.root, 'cache'));
     this.bytes = data.bytes + cache.bytes;
     this.files = data.files + cache.files;
+    this.accounted = true;
   }
 
   /** Credit only the target of THIS operation, at its current size. Other sinks are charged
@@ -155,7 +182,11 @@ export class ModuleDataAccounting {
     });
   }
 
-  run<T>(work: (guard: ModuleDataGuard) => Promise<T>, closing = false): Promise<T> {
+  run<T>(
+    work: (guard: ModuleDataGuard) => Promise<T>,
+    closing = false,
+    signal?: AbortSignal,
+  ): Promise<T> {
     const coordinator = this.options.coordinator;
     if (!coordinator || (this.closed && !closing))
       return Promise.reject(new ModuleServiceError('unavailable'));
@@ -163,8 +194,10 @@ export class ModuleDataAccounting {
     this.pending++;
     const result = this.tail.then(() =>
       coordinator.run(this.options.moduleId, async (guard) => {
-        await this.ledger.begin(guard);
-        if (await this.cleanup(guard)) await this.ledger.rebuild();
+        if (this.preparationFailed)
+          throw new ModuleServiceError('unavailable', 'Accounting failed');
+        await this.ledger.begin(guard, signal);
+        if (await this.cleanup(guard)) await this.ledger.rebuild(signal);
         guard.check();
         try {
           return await work(guard);
@@ -173,6 +206,7 @@ export class ModuleDataAccounting {
           await this.ledger.commit(guard);
           this.bytes = this.ledger.counts.bytes;
           this.files = this.ledger.counts.files;
+          this.accounted = true;
         }
       }),
     );
@@ -191,6 +225,7 @@ export class ModuleDataAccounting {
 
   close(): Promise<void> {
     this.closed = true;
+    this.preparation.abort();
     return (this.closing ??= (async () => {
       await this.tail;
       const errors: unknown[] = [];

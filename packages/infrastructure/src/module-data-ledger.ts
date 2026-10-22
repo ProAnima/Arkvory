@@ -25,10 +25,10 @@ export class ModuleDataLedger {
     private readonly owner: string,
   ) {}
 
-  async rebuild(): Promise<void> {
-    const data = await measureTree(join(this.root, 'data'));
-    const cache = await measureTree(join(this.root, 'cache'));
-    const tmp = await measureTree(join(this.root, 'tmp'));
+  async rebuild(signal?: AbortSignal): Promise<void> {
+    const data = await measureTree(join(this.root, 'data'), signal);
+    const cache = await measureTree(join(this.root, 'cache'), signal);
+    const tmp = await measureTree(join(this.root, 'tmp'), signal);
     this.counts = {
       bytes: data.bytes + cache.bytes,
       files: data.files + cache.files,
@@ -81,7 +81,7 @@ export class ModuleDataLedger {
     guard.check();
   }
 
-  async begin(guard: ModuleDataGuard): Promise<void> {
+  async begin(guard: ModuleDataGuard, signal?: AbortSignal): Promise<void> {
     for (const name of ['.accounting.json', '.accounting.next', '.accounting.dirty'])
       await requireInside(this.root, [name]);
     guard.check();
@@ -90,7 +90,7 @@ export class ModuleDataLedger {
     const interrupted = await entryAt(join(this.root, '.accounting.dirty'));
     const loaded = await this.load();
     if (!loaded) this.owners = [];
-    if (this.first || interrupted || !loaded) await this.rebuild();
+    if (this.first || interrupted || !loaded) await this.rebuild(signal);
     // Keep first=true on failure: a failed initialization must never enable cached admission.
     await this.durableFile('.accounting.dirty', '1', guard);
     await syncDirectory(this.root);

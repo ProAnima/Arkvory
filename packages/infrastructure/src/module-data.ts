@@ -150,6 +150,7 @@ class AreaFiles implements ModuleFiles {
   }
 
   usage(): ModuleDataUsage {
+    this.shared.requireAccounting();
     const {
       bytes,
       files,

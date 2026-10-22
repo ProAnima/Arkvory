@@ -342,6 +342,8 @@ Se o motivo for `storage_quota` ou `catalog_limit`, o problema não é o disco. 
 
 Os módulos de armazenamento assinados permanecem disponíveis para `scrub` offline em modo somente leitura. Mantenha os módulos instalados e sua configuração. `storage rehome` pode planejar transferências do armazenamento configurado de um módulo para o armazenamento comum; o worker verifica o destino antes de copiar. O plano de módulos deve corresponder ao do writer. Pare API e worker antes de `scrub`.
 
+Durante a recuperação do módulo, os dados existentes podem continuar disponíveis para leitura enquanto as gravações estão bloqueadas. O uso desconhecido retorna `busy`, não quota livre. Aguarde a recuperação antes de gravar ou excluir dados. Investigue falhas em vez de aumentar o tempo limite de inicialização.
+
 ## Páginas relacionadas {#related-pages}
 
 - [Backups](./backups)
