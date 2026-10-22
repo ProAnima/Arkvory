@@ -38,14 +38,14 @@ async function prepareAdmission<T>(
 ): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     signal?.throwIfAborted();
-    let entered = false;
+    const admission = { entered: false };
     try {
       return await coordinator.run(moduleId, (guard) => {
-        entered = true;
+        admission.entered = true;
         return work(guard);
       });
     } catch (error) {
-      if (!signal || entered || !hasCode(error, 'busy') || attempt >= 299) throw error;
+      if (!signal || admission.entered || !hasCode(error, 'busy') || attempt >= 299) throw error;
       await delay(Math.min(100 * (attempt + 1), 1000), undefined, { signal });
     }
   }
