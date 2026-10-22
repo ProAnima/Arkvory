@@ -96,6 +96,7 @@
       "needs": ["build"],
       "timeoutSeconds": 180,
       "entries": [
+        "tests/governance.test.mjs",
         "tests/module-data-recovery.test.mjs",
         "tests/integration/module-data-coordination.test.mjs"
       ],
