@@ -154,6 +154,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm run gate -- module-data-recovery
       - run: npm run gate -- resource-catalog integration
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}

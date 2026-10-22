@@ -4,17 +4,21 @@ import { ArkvoryError } from '@proanima/arkvory-domain';
 import type { BlobStore } from '@proanima/arkvory-application';
 import { resources } from './runtime.js';
 import { maintenanceFailed, maintenanceLogger } from './maintenance-log.js';
+import { scrubModules } from './scrub-modules.js';
 
 const diagnostics = await maintenanceLogger('scrub');
 const started = performance.now();
 try {
-  const { catalog, blobs: local } = await resources('maintenance');
+  const acquired = await resources('maintenance');
+  const { catalog, blobs: local } = acquired;
   // Through the port: each upload names the storage that holds it (ADR 0083, N9).
   const blobs: BlobStore = local;
   let checked = 0,
     failed = 0;
   let after: string | undefined;
+  let modules: Awaited<ReturnType<typeof scrubModules>> | undefined;
   try {
+    modules = await scrubModules(acquired, diagnostics);
     diagnostics.write({ level: 'info', component: 'maintenance', code: 'scrub.started' });
     const records = new PostgresCleanup(catalog.pool);
     for (;;) {
@@ -56,7 +60,11 @@ try {
     });
     if (failed) process.exitCode = 1;
   } finally {
-    await catalog.close();
+    try {
+      await modules?.close();
+    } finally {
+      await catalog.close();
+    }
   }
 } catch (error) {
   maintenanceFailed(

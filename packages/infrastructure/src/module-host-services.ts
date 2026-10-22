@@ -54,12 +54,11 @@ export interface HostServiceSources {
 
 /**
  * A module's files while its directory opens: the port is given synchronously at `create`, the
- * directory is made and counted on the first use; until then the usage reads zero.
+ * reads open without a full accounting scan; unknown usage fails busy, never reports zero credit.
  */
 function lazyFiles(
   opening: Promise<ModuleData>,
   area: (directory: ModuleDataDirectory) => ModuleFiles,
-  quota: { readonly bytes: number; readonly files: number },
   opened: () => ModuleData | undefined,
 ): ModuleFiles {
   const files = async () => area((await opening).directory);
@@ -78,9 +77,8 @@ function lazyFiles(
     list: async (prefix, after, limit) => (await files()).list(prefix, after, limit),
     usage: () => {
       const current = opened();
-      return current
-        ? area(current.directory).usage()
-        : { bytes: 0, files: 0, quotaBytes: quota.bytes, quotaFiles: quota.files };
+      if (!current) throw new ModuleServiceError('busy', 'Accounting is recovering');
+      return area(current.directory).usage();
     },
   };
 }
@@ -268,6 +266,7 @@ export class ModuleHostServices {
     const entry: { opening: Promise<ModuleData>; opened?: ModuleData } = {
       opening: openModuleData({
         dataDirectory: this.sources.dataDirectory,
+        deferredAccounting: true,
         moduleId,
         ...(this.coordinator ? { coordinator: this.coordinator } : {}),
         quota,
@@ -289,8 +288,8 @@ export class ModuleHostServices {
     this.startReconciliation();
     const opened = () => entry.opened;
     return {
-      data: lazyFiles(entry.opening, (d) => d.data, quota, opened),
-      cache: lazyFiles(entry.opening, (d) => d.cache, quota, opened),
+      data: lazyFiles(entry.opening, (d) => d.data, opened),
+      cache: lazyFiles(entry.opening, (d) => d.cache, opened),
     };
   }
 

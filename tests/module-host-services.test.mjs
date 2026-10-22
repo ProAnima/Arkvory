@@ -53,7 +53,7 @@ test('a module receives only the services its manifest declares', async (t) => {
   assert.deepEqual(Object.keys(both).sort(), ['catalog-read', 'content-read', 'data-directory']);
   assert.equal(built, 1, 'one set of catalog use cases for the process');
   const files = both['data-directory'].data;
-  assert.deepEqual(files.usage(), { bytes: 0, files: 0, quotaBytes: 1024 * 1024, quotaFiles: 2 });
+  assert.throws(() => files.usage(), { code: 'busy' }, 'unknown usage is not zero credit');
   // A writable runtime must supply the shared admission pool; no local-only fallback.
   await assert.rejects(files.create('a', { durable: false, exclusive: true }), {
     code: 'unavailable',

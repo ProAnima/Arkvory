@@ -1,4 +1,5 @@
 import { ModuleDataLedger } from './module-data-ledger.js';
+import { setTimeout as delay } from 'node:timers/promises';
 import { mkdir, readdir, rm } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
 import { ModuleServiceError } from '@proanima/arkvory-extension-api';
@@ -15,6 +16,8 @@ export interface ModuleDataOptions {
   readonly quota: { readonly bytes: number; readonly files: number };
   readonly reserve: VolumeReserve;
   readonly readOnly: boolean;
+  /** Hosted modules may read while accounting recovers; mutations still wait for admission. */
+  readonly deferredAccounting?: boolean;
   readonly probe?: VolumeProbe;
   readonly requireRemoval?: () => void;
   /** Required for every writable directory; the host closes it after all directories. */
@@ -25,6 +28,28 @@ export interface ModuleDataOptions {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Only startup lock contention is retryable: never replay work that already entered. */
+async function prepareAdmission<T>(
+  coordinator: ModuleDataCoordinator,
+  moduleId: string,
+  work: (guard: ModuleDataGuard) => Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    signal?.throwIfAborted();
+    const admission = { entered: false };
+    try {
+      return await coordinator.run(moduleId, (guard) => {
+        admission.entered = true;
+        return work(guard);
+      });
+    } catch (error) {
+      if (!signal || admission.entered || !hasCode(error, 'busy') || attempt >= 299) throw error;
+      await delay(Math.min(100 * (attempt + 1), 1000), undefined, { signal });
+    }
+  }
+}
 
 /** Disk files are the reservations: after a crash no in-memory credit can be reused. */
 export class ModuleDataAccounting {
@@ -38,6 +63,9 @@ export class ModuleDataAccounting {
   private pending = 0;
   private closed = false;
   private closing: Promise<void> | undefined;
+  private readonly preparation = new AbortController();
+  private accounted = false;
+  private preparationFailed = false;
 
   constructor(readonly options: ModuleDataOptions) {
     if (!/^[a-z][a-z0-9-]{0,31}$/.test(options.moduleId))
@@ -60,16 +88,37 @@ export class ModuleDataAccounting {
 
   async initialize(): Promise<void> {
     await requireInside(this.options.dataDirectory, ['module-data', this.options.moduleId]);
+    if (this.options.deferredAccounting) {
+      // Read-only hosts need no write credit. Their explicit reconciliation supplies usage.
+      if (!this.options.readOnly)
+        void this.prepare().catch(() => {
+          this.preparationFailed = true;
+        });
+      return;
+    }
+    await this.prepare();
+  }
+
+  requireAccounting(): void {
+    if (this.preparationFailed) throw new ModuleServiceError('unavailable', 'Accounting failed');
+    if (!this.accounted) throw new ModuleServiceError('busy', 'Accounting is recovering');
+  }
+
+  private async prepare(): Promise<void> {
     if (this.options.readOnly) return this.refresh();
-    await this.run(async (guard) => {
-      for (const area of ['data', 'cache', 'tmp/coordinated-v1']) {
+    await this.run(
+      async (guard) => {
+        for (const area of ['data', 'cache', 'tmp/coordinated-v1']) {
+          guard.check();
+          await requireInside(this.root, area.split('/'));
+          await mkdir(join(this.root, area), { recursive: true, mode: 0o700 });
+        }
         guard.check();
-        await requireInside(this.root, area.split('/'));
-        await mkdir(join(this.root, area), { recursive: true, mode: 0o700 });
-      }
-      guard.check();
-      await mkdir(this.temporary, { recursive: true, mode: 0o700 });
-    });
+        await mkdir(this.temporary, { recursive: true, mode: 0o700 });
+      },
+      false,
+      this.preparation.signal,
+    );
   }
 
   /** Only this protocol's dead owners are collectible. Unknown/legacy tmp stays charged.
@@ -107,6 +156,7 @@ export class ModuleDataAccounting {
     const cache = await measureTree(join(this.root, 'cache'));
     this.bytes = data.bytes + cache.bytes;
     this.files = data.files + cache.files;
+    this.accounted = true;
   }
 
   /** Credit only the target of THIS operation, at its current size. Other sinks are charged
@@ -155,26 +205,38 @@ export class ModuleDataAccounting {
     });
   }
 
-  run<T>(work: (guard: ModuleDataGuard) => Promise<T>, closing = false): Promise<T> {
+  run<T>(
+    work: (guard: ModuleDataGuard) => Promise<T>,
+    closing = false,
+    signal?: AbortSignal,
+  ): Promise<T> {
     const coordinator = this.options.coordinator;
     if (!coordinator || (this.closed && !closing))
       return Promise.reject(new ModuleServiceError('unavailable'));
     if (this.pending >= 64) return Promise.reject(new ModuleServiceError('busy'));
     this.pending++;
     const result = this.tail.then(() =>
-      coordinator.run(this.options.moduleId, async (guard) => {
-        await this.ledger.begin(guard);
-        if (await this.cleanup(guard)) await this.ledger.rebuild();
-        guard.check();
-        try {
-          return await work(guard);
-        } finally {
+      prepareAdmission(
+        coordinator,
+        this.options.moduleId,
+        async (guard) => {
+          if (this.preparationFailed)
+            throw new ModuleServiceError('unavailable', 'Accounting failed');
+          await this.ledger.begin(guard, signal);
+          if (await this.cleanup(guard)) await this.ledger.rebuild(signal);
           guard.check();
-          await this.ledger.commit(guard);
-          this.bytes = this.ledger.counts.bytes;
-          this.files = this.ledger.counts.files;
-        }
-      }),
+          try {
+            return await work(guard);
+          } finally {
+            guard.check();
+            await this.ledger.commit(guard);
+            this.bytes = this.ledger.counts.bytes;
+            this.files = this.ledger.counts.files;
+            this.accounted = true;
+          }
+        },
+        signal,
+      ),
     );
     this.tail = result
       .catch(() => undefined)
@@ -191,6 +253,7 @@ export class ModuleDataAccounting {
 
   close(): Promise<void> {
     this.closed = true;
+    this.preparation.abort();
     return (this.closing ??= (async () => {
       await this.tail;
       const errors: unknown[] = [];

@@ -9,6 +9,7 @@ import {
   startupReason,
   storageReserveBytes,
 } from '@proanima/arkvory-infrastructure';
+import { rehomeStorages } from './rehome-storages.js';
 
 /**
  * `arkvory storage rehome` (ADR 0083, N2): plans moves of published blobs from one storage to
@@ -65,7 +66,12 @@ try {
         await readLocalStorageSettings(process.env['ARKVORY_MODULES_FILE'], root),
       );
       const repository = given.get('repository') ?? null;
-      const planned = await planRehome(moves, backends, { from, to, repository, limit });
+      const planned = await planRehome(moves, await rehomeStorages(catalog, backends), {
+        from,
+        to,
+        repository,
+        limit,
+      });
       process.stdout.write(`Planned ${String(planned)} moves from ${from} to ${to}\n`);
     }
     process.stdout.write(`Moves: ${summary(await moves.counts())}\n`);
