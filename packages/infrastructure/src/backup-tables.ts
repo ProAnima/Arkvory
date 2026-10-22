@@ -95,6 +95,18 @@ export function tablesAt(schema: number): readonly BackupTable[] {
 }
 
 export const excludedTables: readonly ExcludedTable[] = [
+  ...[
+    'arkvory_module_resource_catalogs',
+    'arkvory_module_resources',
+    'arkvory_module_resource_owners',
+    'arkvory_module_resource_refs',
+    'arkvory_module_resource_files',
+    'arkvory_module_resource_edges',
+  ].map((name) => ({
+    name,
+    reason:
+      'resource references are rebuilt from restored module files before collection is enabled',
+  })),
   {
     name: 'arkvory_module_state',
     reason:

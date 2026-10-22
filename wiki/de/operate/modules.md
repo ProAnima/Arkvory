@@ -218,3 +218,9 @@ Extension API 0.10.0 bietet signierten Modulen einen begrenzten, atomaren Zustan
 Ein Übertragungsmodul kann sein Protokoll vorübergehend zurückziehen und nach erfolgreicher Richtlinienprüfung ohne Neustart von Arkvory wieder anbieten. Jede Anfrage unterliegt weiterhin der aktuellen Richtlinie des Moduls.
 
 Mit der Erweiterungs-API 0.12.0 kann ein signiertes Speichermodul die logischen Bytes begrenzen. Der Kern zählt vollständige Objektgrößen und angenommene, unfertige Uploads über alle Repositorys hinweg, ohne Deduplizierungsrabatt. Bei erreichtem Limit nutzen neue Uploads den Standardspeicher; angenommene Uploads behalten ihr Ziel und gespeicherte Objekte bleiben lesbar. Der Zähler sinkt erst nach der Bereinigung.
+
+## Gemeinsamer Ressourcenkatalog {#resource-catalog}
+
+Extension API 0.13.0 stellt signierten Modulen einen gemeinsamen Ressourcenkatalog bereit. Dateien bleiben geschützt, solange Uploads oder abhängige Ressourcen darauf verweisen. Nur die Kernbereinigung gibt Upload-Verweise frei. Physisches Löschen wartet auf Leser und Sicherungen; bei Fehlern bleiben Abhängigkeiten für einen erneuten Versuch erhalten.
+
+Stoppen Sie vor dem ersten Upgrade auf ein Modul mit diesem Katalog alle älteren API- und Worker-Prozesse. Mischen Sie keine alten und neuen Schreibprozesse. Nach einer logischen Wiederherstellung bleibt die Bereinigung gesperrt, bis das Modul alle Rezepte, Dateien und Abhängigkeiten erfolgreich geprüft hat. Reparieren Sie fehlende oder beschädigte Daten vor der erneuten Bereinigung.

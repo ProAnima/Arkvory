@@ -207,6 +207,7 @@ export { PostgresModulePlan, type ModulePlanFingerprints } from './module-plan-s
 // Host services of ADR 0083 (N1, N2, N4, N6, N13).
 export { CapabilityRegistry } from './module-capabilities.js';
 export { openModuleData } from './module-data.js';
+export { PostgresModuleDataCoordinator } from './module-data-coordinator.js';
 export type { ModuleData, ModuleDataOptions } from './module-data.js';
 export { requireVolumeRoom } from './volume-space.js';
 export type { VolumeProbe, VolumeReserve } from './volume-space.js';
@@ -254,3 +255,4 @@ export { PostgresModuleCursors } from './module-feed-store.js';
 export { moduleCatalogSource } from './module-catalog-source.js';
 export { ModuleCompute } from './module-compute.js';
 export { PostgresModuleState } from './module-state.js';
+export { PostgresResourceCatalog } from './module-resource-catalog.js';

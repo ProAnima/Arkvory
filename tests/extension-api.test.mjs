@@ -493,6 +493,7 @@ test('sources and host services are published as lists of known values', () => {
     'data-directory',
     'derived-cache',
     'module-state',
+    'resource-catalog',
     'routes',
     'compute',
     'license',

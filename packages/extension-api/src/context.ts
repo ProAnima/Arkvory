@@ -17,6 +17,7 @@ export const HOST_SERVICES = [
   'data-directory',
   'derived-cache',
   'module-state',
+  'resource-catalog',
   'routes',
   'compute',
   'license',

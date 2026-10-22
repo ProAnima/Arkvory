@@ -44,6 +44,7 @@ export { bytesOf, descriptorOf, gather, sha256 } from './support.js';
  * suite here is refused by a governance test: a point enters the contract with its suite.
  */
 export const CONTRACT_SUITES = {
+  'resource-catalog': 'resourceCatalogContract',
   'module-state': 'moduleStateContract',
   license: 'licenseContract',
 
@@ -60,3 +61,4 @@ export const CONTRACT_SUITES = {
 
 export { uploadReadContract, type UploadReadHarness } from './upload-read.js';
 export { moduleStateContract, type ModuleStateHarness } from './module-state.js';
+export { resourceCatalogContract, type ResourceCatalogHarness } from './resource-catalog.js';

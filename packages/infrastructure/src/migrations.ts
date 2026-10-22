@@ -9,6 +9,7 @@ import { migrateDelegations } from './delegation-schema.js';
 import { SCHEMA_VERSION } from './schema-version.js';
 import { migrateModuleState } from './module-state-schema.js';
 import { migrateBackendBytes } from './storage-logical-bytes.js';
+import { migrateResourceCatalog } from './resource-catalog-schema.js';
 
 const packagePageIndexes = [
   {
@@ -228,6 +229,7 @@ export async function migrate(pool: Pool, options: MigrateOptions = {}): Promise
     await migrateStorageSchemas(client, upTo);
     if (upTo >= 50) await migrateModuleState(client);
     if (upTo >= 51) await migrateBackendBytes(client);
+    if (upTo >= 52) await migrateResourceCatalog(client);
     await client.query('COMMIT');
   } catch (error) {
     try {

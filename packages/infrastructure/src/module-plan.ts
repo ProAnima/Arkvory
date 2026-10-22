@@ -110,6 +110,7 @@ export const PROVIDED_HOST_SERVICES: readonly HostService[] = [
   'data-directory',
   'derived-cache',
   'module-state',
+  'resource-catalog',
   'license',
 ];
 

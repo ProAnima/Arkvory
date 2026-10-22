@@ -160,3 +160,4 @@ export {
   type ModuleStateSnapshot,
   type ModuleStateWrite,
 } from './module-state.js';
+export type { ResourceCatalog, ResourceFile } from './resource-catalog.js';

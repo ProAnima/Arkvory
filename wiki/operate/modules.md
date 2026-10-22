@@ -218,3 +218,9 @@ Extension API 0.10.0 adds a bounded, atomic state register for signed modules. I
 A transfer module can temporarily withdraw its protocol and restore it after successful policy checks, without restarting Arkvory. Every request remains subject to the current module policy.
 
 Extension API 0.12.0 lets a signed storage module set a logical byte limit. The core counts full object sizes and accepted unfinished uploads across repositories, without a deduplication discount. When the limit is reached, new uploads use default storage; accepted uploads keep their destination and stored objects remain readable. Bytes leave the counter only after cleanup.
+
+## Shared resource catalog {#resource-catalog}
+
+Extension API 0.13.0 provides a shared resource catalog for signed modules. Files remain protected while uploads or dependent resources refer to them. Only core cleanup releases upload ownership. Physical collection waits for readers and backups; failed deletions retain dependencies for retry.
+
+Before the first upgrade to a module using this catalog, stop all older API and worker processes. Do not mix old and new writers. After logical restore, collection stays disabled until the module successfully checks all recipes, files and dependencies. Repair missing or corrupt data before collection resumes.

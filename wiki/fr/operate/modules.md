@@ -218,3 +218,9 @@ Extension API 0.10.0 ajoute un registre d’état atomique et limité pour les m
 Un module de transfert peut retirer temporairement son protocole et le rétablir après validation de sa politique, sans redémarrer Arkvory. Chaque requête reste soumise à la politique actuelle du module.
 
 L’API d’extension 0.12.0 permet à un module de stockage signé de limiter les octets logiques. Le noyau compte la taille complète des objets et des transferts inachevés acceptés dans tous les dépôts, sans réduction liée à la déduplication. Lorsque la limite est atteinte, les nouveaux transferts utilisent le stockage par défaut ; ceux déjà acceptés conservent leur destination et les objets restent lisibles. Le compteur ne diminue qu’après le nettoyage.
+
+## Catalogue partagé des ressources {#resource-catalog}
+
+Extension API 0.13.0 fournit aux modules signés un catalogue partagé des ressources. Les fichiers restent protégés tant que des téléversements ou des ressources dépendantes les référencent. Seul le nettoyage du noyau libère les références des téléversements. La suppression physique attend les lectures et les sauvegardes ; en cas d’échec, les dépendances sont conservées pour une nouvelle tentative.
+
+Avant la première mise à niveau vers un module utilisant ce catalogue, arrêtez tous les anciens processus API et worker. Ne mélangez pas les anciens et nouveaux processus d’écriture. Après une restauration logique, le nettoyage reste désactivé jusqu’à la vérification réussie de toutes les recettes, fichiers et dépendances par le module. Réparez les données manquantes ou corrompues avant de reprendre le nettoyage.

@@ -5,6 +5,7 @@
       "static",
       "unit",
       "security",
+      "resource-catalog",
       "integration",
       "browser",
       "docs",
@@ -23,6 +24,7 @@
       "static",
       "unit",
       "security",
+      "resource-catalog",
       "integration",
       "browser",
       "docs",
@@ -80,6 +82,13 @@
       "pattern": "tests/*.test.mjs",
       "concurrency": 2,
       "kind": "node-test"
+    },
+    "resource-catalog": {
+      "needs": ["build"],
+      "timeoutSeconds": 180,
+      "entries": ["tests/integration/resource-catalog.test.mjs"],
+      "kind": "node-test",
+      "database": true
     },
     "integration": {
       "needs": ["build"],

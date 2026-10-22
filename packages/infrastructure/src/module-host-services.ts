@@ -1,5 +1,6 @@
 import { ModuleDerivedCache } from './module-derived-cache.js';
 import { PostgresModuleState } from './module-state.js';
+import { PostgresResourceCatalog } from './module-resource-catalog.js';
 import { derivedCacheUsage } from './derived-cache-catalog.js';
 import type { Pool } from 'pg';
 import { PostgresModuleDataCoordinator } from './module-data-coordinator.js';
@@ -122,6 +123,9 @@ export class ModuleHostServices {
     if (uses('module-state') && !this.sources.dataPool)
       throw new ModuleServiceError('unavailable', 'Module state database required');
     return {
+      ...(uses('resource-catalog')
+        ? { 'resource-catalog': this.resources(module.manifest.id, resources, role) }
+        : {}),
       ...(uses('module-state') && this.sources.dataPool
         ? {
             'module-state': new PostgresModuleState(
@@ -209,6 +213,26 @@ export class ModuleHostServices {
   } {
     this.scoped ??= this.sources.catalog();
     return moduleCatalog(this.scoped, this.scopes(moduleId));
+  }
+
+  private resources(moduleId: string, resources: ModuleResources | null, role: ModuleRole) {
+    const pool = this.sources.dataPool,
+      storage = this.sources.storage;
+    if (!pool || !storage)
+      throw new ModuleServiceError('unavailable', 'Resource catalog requires storage');
+    const files = this.directory(moduleId, resources).data;
+    return new PostgresResourceCatalog(
+      pool,
+      moduleId,
+      this.sources.readOnly || (role !== 'api' && role !== 'worker'),
+      {
+        run: (work) => storage.cleanup(moduleId, work),
+        check: () => {
+          storage.removal(moduleId).require();
+        },
+        remove: (name) => files.remove(name),
+      },
+    ).service();
   }
 
   private derived(moduleId: string, resources: ModuleResources | null): ModuleDerivedCache {
