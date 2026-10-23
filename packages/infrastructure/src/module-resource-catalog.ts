@@ -9,7 +9,8 @@ import {
   resourceObject,
 } from './resource-catalog-db.js';
 import { collectResources, type ResourceCleanup } from './resource-catalog-collect.js';
-import { catalogReady, restoreResource, initializeCatalog } from './resource-catalog-rebuild.js';
+import { catalogReady, initializeCatalog } from './resource-catalog-rebuild.js';
+import { ResourceRestoreQueue } from './resource-catalog-restore-queue.js';
 
 interface FileRow {
   key: string;
@@ -21,6 +22,7 @@ interface FileRow {
 /** Durable references protect every physical generation of a logical resource. No TTL release. */
 export class PostgresResourceCatalog implements ResourceCatalog {
   readonly database: ResourceCatalogDatabase;
+  private readonly restoration: ResourceRestoreQueue;
   constructor(
     pool: Pool,
     moduleId: string,
@@ -28,6 +30,7 @@ export class PostgresResourceCatalog implements ResourceCatalog {
     private readonly cleanup: ResourceCleanup,
   ) {
     this.database = new ResourceCatalogDatabase(pool, moduleId, readOnly);
+    this.restoration = new ResourceRestoreQueue(this.database);
   }
 
   /** Only this bound port crosses into module code: no pool, namespace or cleanup grant. */
@@ -49,7 +52,7 @@ export class PostgresResourceCatalog implements ResourceCatalog {
     return catalogReady(this.database);
   }
   restore(file: ResourceFile): Promise<void> {
-    return restoreResource(this.database, file);
+    return this.restoration.restore(file);
   }
   initialize(): Promise<void> {
     return initializeCatalog(this.database);

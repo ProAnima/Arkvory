@@ -52,10 +52,32 @@ export class ResourceCatalogDatabase {
       .toString();
   }
 
-  async run<T>(work: (client: PoolClient) => Promise<T>, write = true): Promise<T> {
+  /** Admission also covers restore requests waiting for a batch, not just open transactions. */
+  admit(write = true): () => void {
     if (write && this.readOnly) throw new ModuleServiceError('read_only');
     if (this.pending >= 8) throw new ModuleServiceError('busy');
     this.pending++;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.pending--;
+    };
+  }
+
+  async run<T>(work: (client: PoolClient) => Promise<T>, write = true): Promise<T> {
+    const release = this.admit(write);
+    try {
+      return await this.runAdmitted(work, write);
+    } finally {
+      release();
+    }
+  }
+
+  /** Infrastructure-only: the caller must retain admission for every grouped request until
+   * this transaction settles. No namespace, admission or DB object crosses the module port. */
+  async runAdmitted<T>(work: (client: PoolClient) => Promise<T>, write = true): Promise<T> {
+    if (write && this.readOnly) throw new ModuleServiceError('read_only');
     let client: PoolClient | undefined;
     try {
       client = await this.pool.connect();
@@ -79,7 +101,6 @@ export class ResourceCatalogDatabase {
       throw new ModuleServiceError('unavailable', 'Resource catalog unavailable');
     } finally {
       client?.release();
-      this.pending--;
     }
   }
 
