@@ -19,15 +19,15 @@ async function fixture(t, mode) {
   for (let i = 0; i < 20; i++) await writeFile(join(area, String(i)), Buffer.alloc(i + 1));
   const entered = Promise.withResolvers();
   const release = Promise.withResolvers();
-  const state = { active: 0, peak: 0 };
+  const state = { active: 0, peak: 0, block: mode === 'cancel' };
   const original = fs.promises.lstat;
   fs.promises.lstat = async (path, ...args) => {
     if (typeof path !== 'string' || !path.startsWith(area + sep)) return original(path, ...args);
     state.active++;
     state.peak = Math.max(state.peak, state.active);
-    if (state.active === 8) entered.resolve();
+    if (state.active === 8 && state.block) entered.resolve();
     try {
-      if (mode === 'cancel') await release.promise;
+      if (state.block) await release.promise;
       else await turn();
       if (mode === 'fault') throw new Error('scan fault');
       return await original(path, ...args);
@@ -76,6 +76,38 @@ test('quota reconciliation bounds stats and retains exact byte/file admission', 
     data.directory.data.create('overflow', { durable: false, exclusive: true }),
     { code: 'module_quota_exceeded' },
   );
+});
+
+test('cancelled periodic accounting leaves dirty intent and forces full quota recovery', async (t) => {
+  const f = await fixture(t);
+  const data = await openModuleData(f.options);
+  const next = await openModuleData({
+    ...f.options,
+    quota: { bytes: 212, files: 21 },
+    coordinator: { ...f.options.coordinator, owner: randomUUID() },
+  });
+  t.after(() => next.close());
+  t.after(async () => {
+    f.release.resolve();
+    await data.close();
+  });
+  await writeFile(join(f.base, 'data', 'late'), Buffer.alloc(2));
+  f.state.block = true;
+  const rejected = assert.rejects(data.reconcile(), { code: 'unavailable' });
+  await f.entered.promise;
+  const closing = data.close();
+  f.release.resolve();
+  await rejected;
+  await closing;
+  assert.equal(f.state.active, 0);
+  assert.equal(await readFile(join(f.base, '.accounting.dirty'), 'utf8'), '1');
+  f.state.block = false;
+  await assert.rejects(
+    next.directory.data.create('overflow', { durable: false, exclusive: true }),
+    { code: 'module_quota_exceeded' },
+  );
+  assert.equal(next.directory.data.usage().bytes, 212);
+  assert.equal(next.directory.data.usage().files, 21);
 });
 
 test('quota scan failure drains stats without committing partial accounting', async (t) => {

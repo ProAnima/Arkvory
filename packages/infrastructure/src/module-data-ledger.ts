@@ -20,12 +20,14 @@ export class ModuleDataLedger {
   owners: string[] = [];
   private readonly touched = new Map<string, Tracked>();
   private first = true;
+  private measured = true;
   constructor(
     private readonly root: string,
     private readonly owner: string,
   ) {}
 
   async rebuild(signal?: AbortSignal): Promise<void> {
+    this.measured = false;
     const data = await measureTree(join(this.root, 'data'), signal);
     const cache = await measureTree(join(this.root, 'cache'), signal);
     const tmp = await measureTree(join(this.root, 'tmp'), signal);
@@ -36,6 +38,7 @@ export class ModuleDataLedger {
       temporaryFiles: tmp.files,
     };
     this.touched.clear();
+    this.measured = true;
   }
 
   private async load(): Promise<boolean> {
@@ -110,6 +113,10 @@ export class ModuleDataLedger {
   }
 
   async commit(guard: ModuleDataGuard): Promise<void> {
+    // A cancelled/failed reconciliation must leave the durable intent dirty. Another host
+    // must scan again, rather than treating the previous totals as newly verified credit.
+    if (!this.measured)
+      throw new ModuleServiceError('unavailable', 'Data accounting reconciliation incomplete');
     for (const [path, before] of this.touched) {
       const after = await entryAt(path);
       const bytes = (after?.isFile() ? after.size : 0) - before.bytes;
