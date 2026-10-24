@@ -5,7 +5,7 @@ description: Aktivieren Sie die Lizenz eines kostenpflichtigen Moduls online ode
 
 # Lizenzen
 
-Der kostenlose Kern von Arkvory braucht keine Lizenz. Jede Funktion dieser Dokumentation arbeitet ohne sie, und kein Lizenzzustand schaltet eine davon ab oder macht Daten unlesbar. Eine Lizenz schaltet ein kostenpflichtiges Modul von ProAnimaStudio frei (siehe [Module](modules)). Bis Sie eine Lizenz aktivieren, sendet Arkvory nirgendwohin etwas über Lizenzen.
+Der kostenlose Arkvory-Kern funktioniert ohne Lizenz für kostenpflichtige Module. Eine Lizenz aktiviert kostenpflichtige ProAnimaStudio-Funktionen einschließlich [Arkvory Pro](modules#pro). Ihr Ablauf macht bestehende Pro-Daten nicht unlesbar; bei nicht verfügbaren kostenpflichtigen Funktionen nutzen neue Uploads Kernspeicher und gewöhnliche Übertragungen. Bis Sie eine Lizenz aktivieren, sendet Arkvory keine Lizenzdaten.
 
 Die Befehle dieser Seite laufen auf dem Host der Installation, unter Linux als root, unter Windows als Administrator. Docker-Compose-Installationen laden keine Module und lehnen diese Befehle deshalb ab.
 

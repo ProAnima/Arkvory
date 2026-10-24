@@ -5,7 +5,7 @@ description: Activez la licence d’un module payant en ligne ou hors ligne, vé
 
 # Licences
 
-Le cœur gratuit d’Arkvory n’a besoin d’aucune licence. Toutes les fonctions de cette documentation marchent sans elle, et aucun état de licence ne les désactive ni ne rend les données illisibles. Une licence active un module payant de ProAnimaStudio (voir [Modules](modules)). Tant que vous n’avez pas activé de licence, Arkvory n’envoie rien sur les licences nulle part.
+Le cœur gratuit d’Arkvory fonctionne sans licence de module payant. Une licence active les fonctions payantes de ProAnimaStudio, dont [Arkvory Pro](modules#pro). Son expiration ne rend pas les données Pro existantes illisibles ; si les fonctions payantes sont indisponibles, les nouveaux envois utilisent le stockage du cœur et les transferts ordinaires. Tant que vous n’avez pas activé de licence, Arkvory n’envoie rien sur les licences.
 
 Les commandes de cette page s’exécutent sur l’hôte de l’installation, en root sous Linux ou en administrateur sous Windows. Les installations Docker Compose ne chargent pas de modules : elles refusent donc ces commandes.
 

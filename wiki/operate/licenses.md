@@ -5,7 +5,7 @@ description: Activate the licence of a paid module online or offline, check its 
 
 # Licences
 
-The free core of Arkvory needs no licence. Every function of this documentation works without one, and no licence state turns any of them off or makes data unreadable. A licence enables a paid module of ProAnimaStudio (see [Modules](modules)). Until you activate a licence, Arkvory sends nothing about licences anywhere.
+The free Arkvory core works without a paid-module licence. A licence enables paid ProAnimaStudio features, including [Arkvory Pro](modules#pro). Expiry does not make existing Pro data unreadable; new uploads use core storage and ordinary transfers when paid features are unavailable. Until you activate a licence, Arkvory sends nothing about licences anywhere.
 
 The commands of this page run on the host of the installation, as root on Linux or as an administrator on Windows. Docker Compose installations do not load modules, so they refuse these commands.
 

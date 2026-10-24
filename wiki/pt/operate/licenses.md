@@ -5,7 +5,7 @@ description: Ative a licença de um módulo pago online ou offline, verifique o 
 
 # Licenças
 
-O núcleo gratuito do Arkvory não precisa de licença. Todas as funções desta documentação funcionam sem ela, e nenhum estado de licença desliga qualquer uma delas ou torna os dados ilegíveis. Uma licença habilita um módulo pago da ProAnimaStudio (veja [Módulos](modules)). Até você ativar uma licença, o Arkvory não envia nada sobre licenças a lugar nenhum.
+O núcleo gratuito do Arkvory funciona sem licença de módulos pagos. Uma licença habilita recursos pagos da ProAnimaStudio, incluindo [Arkvory Pro](modules#pro). A expiração não torna os dados Pro existentes ilegíveis; quando os recursos pagos estão indisponíveis, novos uploads usam o armazenamento do núcleo e transferências comuns. Até você ativar uma licença, o Arkvory não envia nada sobre licenças.
 
 Os comandos desta página rodam no host da instalação, como root no Linux ou como administrador no Windows. Instalações com Docker Compose não carregam módulos e por isso recusam esses comandos.
 
