@@ -21,6 +21,6 @@
     "@proanima/arkvory-resolution": "0.0.0",
     "@proanima/arkvory-sdk": "0.0.0",
     "@proanima/arkvory-signing": "0.0.0",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   }
 }
