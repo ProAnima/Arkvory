@@ -9,6 +9,24 @@ Ein Modulpaket fügt Arkvory eine Funktion hinzu. Arkvory installiert nur Pakete
 
 Die Dienste prüfen die installierten Module bei jedem Start erneut und laden sie. Ein Modul läuft erst, nachdem Sie es eingeschaltet haben.
 
+## Arkvory Pro {#pro}
+
+Arkvory Pro ist ein optionales Paket kostenpflichtiger, signierter ProAnimaStudio-Module für den kostenlosen Arkvory-Kern. Pro 0.1.0 läuft mit Arkvory 0.6.3 auf Windows/Linux x64. Pakete und Lizenz erhalten Sie von ProAnimaStudio; die Module werden getrennt vom Kern installiert. Siehe [Installation](#install) und [Lizenzen](licenses).
+
+- **Deduplizierung:** speichert gemeinsame Chunks einmal und verwendet sie für mehrere Objekte. Der gemeinsame Katalog stimmt die Speicherbereinigung mit Veröffentlichung, Lesern und Backups ab.
+- **Delta-Übertragungen:** verwenden Inhalte eines kompatiblen Clients erneut und übertragen fehlende Daten oder Patches. Das Paket enthält serverseitige Speicher- und Übertragungsmodule sowie ein Delta-Client-Modul. Die Einsparung hängt von Daten und Client ab; gewöhnliche HTTP-Downloads werden nicht automatisch zu Delta-Übertragungen.
+- **Lizenzierung:** steuert kostenpflichtige Schreibvorgänge und Optimierungen. Bestehende Daten bleiben bei abgelaufener oder nicht verfügbarer Lizenz lesbar; neue Uploads nutzen Kernspeicher und gewöhnliche Übertragungen. Die Pro-Quote zählt logische Pro-Daten einschließlich angenommener, unvollständiger Uploads ohne Deduplizierungsrabatt. updatesUntil begrenzt den Anspruch auf neuere Modul-Builds.
+
+Module laden beim Dienststart; Docker Compose lädt keine Module. Sichern Sie Metadaten und Moduldaten vor Updates. Stoppen Sie bei der ersten Einführung des gemeinsamen Katalogs ältere schreibende API/worker-Prozesse; gemischte alte und neue Schreiber werden nicht unterstützt. Stellen Sie Daten und Lizenzzustand gemeinsam wieder her, warten Sie auf die Wiederherstellung und prüfen Sie einen neuen Pro-Upload vor dem normalen Schreibbetrieb.
+
+Große Kataloge brauchen Zeit: Im Abnahmetest waren 4 Millionen Chunks bei bereits wiederhergestelltem gemeinsamen Katalog nach 32 Minuten 43 Sekunden ohne Neustart beschreibbar. Dies garantiert keine Wiederherstellungszeit und misst keinen Durchsatz für 4 TB. HA-Tests auf einem physischen Host ersetzen keine Fencing- und Ausfalldomänentests am Einsatzort. Pro ändert die Lizenzbedingungen des Kerns nicht.
+
+## Modulfunktionen und Drittanbieter-Plugins {#module-capabilities}
+
+Signierte ProAnimaStudio-Module können Speicher, Übertragungsprotokolle und HTTP-Routen ergänzen und je nach Rolle Dienste für Hintergrundarbeit, begrenzte Berechnungen und koordinierte Bereinigung nutzen. Kostenlose Module benötigen keine Lizenz für kostenpflichtige Funktionen; kostenpflichtige Module deklarieren ihre Anforderungen. Jedes Paket muss zur extension API des Kerns passen und Signatur- und Integritätsprüfungen bestehen.
+
+Installation und Ausführung von Drittanbieter-Plugins sind in dieser Version nicht verfügbar. Sie können [vertrauenswürdige Autorenschlüssel](#trust) verwalten, aber ein hinzugefügter Schlüssel aktiviert keine Plugin-Installation. Die Modulschnittstelle ist keine Sandbox für beliebigen Code.
+
 ## Ein Paket installieren {#install}
 
 1. Kopieren Sie die Paketdatei `arkvory-module-<id>-<version>.tgz` auf den Host.

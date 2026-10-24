@@ -32,6 +32,14 @@ It is a standalone product with its own HTTP API, command-line client and TypeSc
 - **Runs by itself.** Windows services, Linux packages or Docker Compose. Services restart after a crash or a hang; signed stable updates install by hand or in a maintenance hour, behind a fresh verified backup, with rollback.
 - **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark. The documentation is in the same languages.
 
+## Modules and Arkvory Pro
+
+Arkvory supports signed ProAnimaStudio modules for additional storage, transfer protocols and HTTP routes. Modules are installed on the host and loaded at service startup; Docker Compose does not load them. Third-party plugins cannot yet be installed or run; the host can only maintain their trusted author keys.
+
+**Arkvory Pro** is an optional paid module bundle for deduplication and delta transfers with compatible clients. Pro 0.1.0 works with Arkvory 0.6.3 on Windows/Linux x64. It reuses shared chunks in storage and transfers missing content or patches instead of always sending complete files. Savings depend on the data and client. Existing Pro data remains readable without an active licence; new uploads fall back to core storage and ordinary transfers when paid features are unavailable. The core remains free of charge under its existing licence.
+
+Obtain Pro packages and a licence from ProAnimaStudio. See [modules, Pro features and operating limits](https://proanima.github.io/Arkvory/operate/modules#pro) and [licence activation](https://proanima.github.io/Arkvory/operate/licenses) before deployment.
+
 ## Install
 
 | Platform                                  | Package                                                                                | Guide                                                         |

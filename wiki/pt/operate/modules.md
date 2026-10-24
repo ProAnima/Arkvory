@@ -9,6 +9,24 @@ Um pacote de módulo adiciona uma função ao Arkvory. O Arkvory instala apenas 
 
 Os serviços verificam de novo os módulos instalados e os carregam sempre que iniciam. Um módulo só é executado depois que você o ativa.
 
+## Arkvory Pro {#pro}
+
+Arkvory Pro é um conjunto opcional de módulos pagos e assinados da ProAnimaStudio para o núcleo gratuito do Arkvory. Pro 0.1.0 funciona com Arkvory 0.6.3 em Windows/Linux x64. Obtenha os pacotes e a licença com a ProAnimaStudio; os módulos são instalados separadamente do núcleo. Veja [Instalação](#install) e [Licenças](licenses).
+
+- **Deduplicação:** armazena os chunks compartilhados uma vez e os reutiliza entre objetos. O catálogo compartilhado coordena a coleta de lixo com publicação, leitores e backups.
+- **Transferências delta:** reutilizam conteúdo disponível em um cliente compatível e transferem os dados ausentes ou patches. O conjunto inclui módulos de armazenamento e transferência do servidor e um módulo cliente delta. A economia depende dos dados e do cliente; downloads HTTP comuns não viram transferências delta automaticamente.
+- **Licenciamento:** controla gravações e otimizações pagas. Os dados existentes continuam legíveis se a licença expirar ou ficar indisponível; novos uploads usam o armazenamento do núcleo e transferências comuns. A cota Pro conta os dados lógicos Pro, incluindo uploads aceitos ainda incompletos, sem desconto por deduplicação. updatesUntil limita o direito a builds mais recentes dos módulos.
+
+Os módulos carregam na inicialização dos serviços; Docker Compose não os carrega. Faça backup dos metadados e dos dados dos módulos antes de atualizar. Na primeira adoção do catálogo compartilhado, pare os processos API/worker antigos que gravam; misturar escritores antigos e novos não é suportado. Restaure dados e estado da licença juntos, aguarde a recuperação e verifique um novo upload Pro antes de retomar as gravações normais.
+
+Recuperar um catálogo grande pode demorar: no ambiente de aceitação, 4 milhões de chunks com o catálogo compartilhado já restaurado permitiram gravações após 32 minutos e 43 segundos, sem reiniciar. Isso não garante um prazo de recuperação nem mede a vazão com 4 TB. A aceitação HA em um único host físico não substitui testes de fencing e domínios de falha no seu ambiente. Pro não altera a licença do núcleo.
+
+## Recursos dos módulos e plugins de terceiros {#module-capabilities}
+
+Módulos assinados da ProAnimaStudio podem adicionar armazenamento, protocolos de transferência e rotas HTTP, com serviços de trabalho em segundo plano, computação limitada e limpeza coordenada conforme seus papéis. Módulos gratuitos não precisam de licença de recursos pagos; os pagos declaram seus requisitos. Cada pacote deve corresponder à extension API do núcleo e passar pelas verificações de assinatura e integridade.
+
+Esta versão não permite instalar nem executar plugins de terceiros. Você pode manter as [chaves de autores confiáveis](#trust), mas adicionar uma chave não habilita a instalação de plugins. A interface de módulos não é uma sandbox para código arbitrário.
+
 ## Instalar um pacote {#install}
 
 1. Copie o arquivo do pacote `arkvory-module-<id>-<version>.tgz` para o host.
