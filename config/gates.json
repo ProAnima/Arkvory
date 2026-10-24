@@ -19,7 +19,8 @@
       "deployment-ha",
       "deployment-ha-power",
       "deployment-ha-operations",
-      "deployment-ha-three"
+      "deployment-ha-three",
+      "module-data-scan"
     ],
     "release": [
       "static",
@@ -41,7 +42,8 @@
       "deployment-ha",
       "deployment-ha-power",
       "deployment-ha-operations",
-      "deployment-ha-three"
+      "deployment-ha-three",
+      "module-data-scan"
     ],
     "large": ["large-full", "large-multipart"]
   },
@@ -240,6 +242,17 @@
       "entries": ["tests/deployment/ha-stand.mjs"],
       "args": ["power"],
       "kind": "scenario"
+    },
+    "module-data-scan": {
+      "kind": "node-test",
+      "concurrency": 1,
+      "timeoutSeconds": 180,
+      "entries": [
+        "tests/module-data-scan.test.mjs",
+        "tests/module-data-accounting.test.mjs",
+        "tests/module-data-recovery.test.mjs"
+      ],
+      "needs": ["build"]
     }
   },
   "spawnedHelpers": [

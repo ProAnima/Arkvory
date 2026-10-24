@@ -103,6 +103,13 @@ export async function measureTree(
 ): Promise<{ bytes: number; files: number }> {
   let bytes = 0;
   let files = 0;
+  const pending: Promise<void>[] = [];
+  const drain = async () => {
+    const results = await Promise.allSettled(pending);
+    pending.length = 0;
+    for (const result of results) if (result.status === 'rejected') throw result.reason;
+    signal?.throwIfAborted();
+  };
   const walk = async (folder: string): Promise<void> => {
     signal?.throwIfAborted();
     let entries;
@@ -115,13 +122,30 @@ export async function measureTree(
     for (const entry of entries) {
       signal?.throwIfAborted();
       const child = join(folder, entry.name);
-      if (entry.isDirectory()) await walk(child);
-      else if (entry.isFile()) {
-        files++;
-        bytes += (await lstat(child)).size;
+      if (entry.isDirectory()) {
+        await drain();
+        await walk(child);
+      } else if (entry.isFile()) {
+        pending.push(
+          (async () => {
+            const measured = await lstat(child);
+            signal?.throwIfAborted();
+            files++;
+            bytes += measured.size;
+          })(),
+        );
+        if (pending.length === 8) await drain();
       }
     }
+    await drain();
   };
-  await walk(path);
+  try {
+    // The caller still holds the quota/admission lock for the complete walk. Only independent
+    // stats overlap; cancellation/failure drains them before that lock can be released.
+    await walk(path);
+  } catch (error) {
+    await Promise.allSettled(pending);
+    throw error;
+  }
   return { bytes, files };
 }

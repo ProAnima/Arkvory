@@ -90,6 +90,50 @@ resourceCatalogContract('PostgreSQL resource catalog', async (t) => {
   };
 });
 
+test('concurrent restores share one durable transaction and keep the eight-request bound', async (t) => {
+  const f = await fixture(t);
+  const requests = Array.from({ length: 8 }, (_, i) => f.catalog.restore(f.record(`batch-${i}`)));
+  await assert.rejects(f.catalog.restore(f.record('overflow')), { code: 'busy' });
+  await assert.rejects(f.catalog.ready(), { code: 'busy' });
+  await Promise.all(requests);
+  const rows = await f.catalog.database.pool.query(
+    `SELECT count(*)::integer AS files, count(DISTINCT xmin::text)::integer AS transactions
+     FROM arkvory_module_resource_files WHERE module_id='resource-test'`,
+  );
+  assert.deepEqual(rows.rows[0], { files: 8, transactions: 1 });
+  assert.equal(await f.catalog.ready(), false);
+  assert.equal(await f.catalog.collect(0, 10), 0);
+});
+
+test('restore batch snapshots input, preserves canonical order and rolls back disagreements', async (t) => {
+  const f = await fixture(t);
+  const original = f.record('same', 'first');
+  const first = f.catalog.restore(original);
+  original.metadata.fill(0);
+  original.key = 'changed';
+  original.sources.push('missing');
+  await Promise.all([first, f.catalog.restore(f.record('same', 'second'))]);
+  const row = await f.catalog.find('same');
+  assert.equal(row.name, 'resources/same/first');
+  assert.deepEqual(Buffer.from(row.metadata), Buffer.from('same'));
+  const conflicting = { ...f.record('same', 'first'), metadata: Buffer.from('disagreement') };
+  const results = await Promise.allSettled([
+    f.catalog.restore(f.record('must-roll-back')),
+    f.catalog.restore(conflicting),
+  ]);
+  for (const result of results) {
+    assert.equal(result.status, 'rejected');
+    assert.equal(result.reason.code, 'conflict');
+  }
+  assert.equal(await f.catalog.find('must-roll-back'), null);
+  assert.equal(await f.catalog.ready(), false);
+  await assert.rejects(f.create('resource-test', true).restore(f.record('read-only')), {
+    code: 'read_only',
+  });
+  await f.catalog.restore(f.record('after-failure'));
+  assert.ok(await f.catalog.find('after-failure'), 'failed batch releases every admission slot');
+});
+
 test('resource catalog protects shared owners across adapters and permanently fences closed uploads', async (t) => {
   const f = await fixture(t),
     a = f.catalog,

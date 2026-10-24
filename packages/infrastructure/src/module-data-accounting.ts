@@ -248,7 +248,7 @@ export class ModuleDataAccounting {
 
   reconcile(): Promise<void> {
     if (this.options.readOnly) return this.refresh();
-    return this.run(() => this.ledger.rebuild());
+    return this.run(() => this.ledger.rebuild(this.preparation.signal));
   }
 
   close(): Promise<void> {
