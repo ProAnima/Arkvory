@@ -17,11 +17,11 @@ Arkvory reserviert standardmäßig bis zu 10 TiB Inhalt (`ARKVORY_CAPACITY_BYTES
 
 ### Ist Arkvory hochverfügbar? {#high-availability}
 
-Nein. Eine Installation ist ein Server mit einer PostgreSQL-Datenbank und einem lokalen Inhaltsverzeichnis. Bleibt der Server stehen, warten die Clients und setzen ihre Übertragungen dann fort; die Dienste starten nach einem Absturz oder Stillstand selbst neu. Zum Schutz vor dem Verlust des Servers verwenden Sie [Backups](../operate/backups). Zum Lesen von einem zweiten Standort verwenden Sie [Spiegel](../operate/mirrors); das Umschalten auf einen Spiegel ist ein manueller Schritt, und Änderungen, die der Spiegel noch nicht erhalten hat, gehen verloren.
+Ja, mit einem Linux-Cluster an einem Standort: ha-2 nutzt zwei Datenserver und einen separaten Zeugen; ha-3 nutzt drei Datenserver. DRBD 9, Pacemaker und geprüftes Fencing sind erforderlich. Schreibvorgänge benötigen normalerweise zwei vollständige Kopien. Windows und Docker Compose bleiben standalone. HA ersetzt keine Backups und schützt nicht vor dem Verlust des gesamten Standorts; Spiegel an einem zweiten Standort sind asynchron und erfordern manuelles Umschalten. Siehe [Cluster](../operate/cluster), [Backups](../operate/backups) und [Spiegel](../operate/mirrors).
 
 ### Funktioniert es offline? {#offline}
 
-Der Server funktioniert ohne Internetzugang. Das Windows-Installationsprogramm enthält Node.js und PostgreSQL und installiert offline. Die Linux-Pakete enthalten Node.js, und der Paketmanager installiert PostgreSQL. Die Skript-Installer und Docker laden Dateien herunter. Updates lassen sich aus einer lokalen Kopie eines Releases installieren. Ist der Update-Hub nicht erreichbar, schlägt die Update-Prüfung fehl und wird in der Konsole angezeigt; alles andere ist nicht betroffen. Siehe [Eine Installation wählen](../install/index) und [Updates](../install/updates).
+Der kostenlose Kern funktioniert ohne Internet. Der Windows-Installer enthält Node.js und PostgreSQL; Linux-Pakete enthalten Node.js und beziehen PostgreSQL über den Paketmanager. Skript-Installer und Docker benötigen möglicherweise Downloads. Updates können ein lokales Release verwenden. Ist der Hub unerreichbar, kann die Updatesuche auf GitHub zurückfallen; sind beide unerreichbar, schlägt sie fehl, ohne den Speicherbetrieb zu stoppen. Kostenpflichtige Module haben eine eigene Online- oder Offline-Lizenzlaufzeit: rechtzeitig verlängern. Siehe [Installation](../install/index), [Updates](../install/updates) und [Lizenzen](../operate/licenses).
 
 ## Speicher und Datenbank {#storage-and-database}
 
@@ -51,13 +51,15 @@ Der Server sucht alle 6 Stunden nach einem Release, auch wenn die automatische I
 
 ### Was sendet Arkvory an ProAnimaStudio? {#hub-traffic}
 
-Ihre Dateien und Daten bleiben auf Ihrem Server. Der Server kontaktiert den Hub von ProAnimaStudio (`hub.proanima.net`) und, wenn der Hub nicht erreichbar ist, GitHub, um drei Dinge zu erledigen:
+Gespeicherte Inhalte bleiben auf Ihrem Server. Die Installation kontaktiert den ProAnimaStudio-Hub (`hub.proanima.net`) für die folgenden Zwecke. GitHub ist eine Alternative zur Releasesuche, nicht zur Lizenzaktivierung:
 
 - **Update-Prüfungen.** Die Anfrage enthält den Projektnamen, das Betriebssystem, die Prozessorarchitektur, die installierte Version und den Update-Kanal. Ist die Statistik eingeschaltet, enthält sie außerdem eine zufällige Installations-ID.
 - **Anonyme Statistiken.** Ein Ereignis nach jedem installierten Update mit der Installations-ID, der Version, dem System, der Architektur und dem Kanal. Es werden keine Namen, Adressen, Inhalte oder IP-Adressen gespeichert. Statistiken sind standardmäßig eingeschaltet; schalten Sie sie mit [[ui:updateStatistics]] in [[ui:updates]] oder mit `arkvory configure --statistics off` aus. Ohne Statistiken erreicht Sie eine neue Version erst, wenn sie für alle ausgerollt wird.
 - **Feedback.** Nur wenn eine angemeldete Person es über [[ui:reportOpen]] sendet. Es enthält die Nachricht, eine optionale E-Mail-Adresse, bis zu 6 Screenshots und das Konsolenprotokoll. Ein Administrator kann das Serverprotokoll und eine Zusammenfassung von Versionen und Zuständen ohne Geheimnisse hinzufügen. [[ui:reportShow]] zeigt genau, was gesendet wird.
 
 `arkvory configure --hub-off` beendet den Kontakt mit dem Hub: Releases kommen dann nur noch von GitHub, und Feedback wird nach dem Neustart der Dienste ausgeschaltet. Eine leere `ARKVORY_HUB_URL` schaltet nur das Feedback aus. Siehe [Lizenz](https://github.com/ProAnima/Arkvory/blob/main/LICENSE.md), Abschnitt 7.
+
+Aktivierung und Verlängerung kostenpflichtiger Module kontaktieren ebenfalls den Hub und tauschen Lizenz- und Installationskennungen, Modulversionen und Aktivierungszugangsdaten aus. Ohne Aktivierung gibt es keinen Lizenzverkehr. Deaktivierte Statistik deaktiviert nicht die Lizenzierung. Mit `--hub-off` sind Online-Aktivierung und Verlängerung nicht verfügbar: Nutzen Sie das [Offline-Verfahren](../operate/licenses#offline) und beachten Sie den Ablauf. Kostenpflichtige Funktionen benötigen weiterhin eine Lizenz.
 
 ### Laufen Backups von selbst? {#automatic-backups}
 

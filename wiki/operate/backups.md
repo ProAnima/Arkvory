@@ -434,3 +434,5 @@ Read the agent log with `journalctl -u arkvory-backup` on Linux, in `logs\` of t
 ## Restore without the original storage {#restore-default-storage}
 
 Add `--to-default-storage` to the restore command to place all objects in the default storage without the original volumes or modules. Reserve space for the full object bytes. Without `--yes`, the command only checks and reports the plan. The database and storage must be empty. This mode clears placement rules and restores published content as ordinary blobs; configure new placement rules after recovery.
+
+Logical backups capture published object bytes through the installed module in its backup role; they do not copy the module directory, caches or private coordination state as a filesystem image. Keep the source modules installed and readable until capture finishes. A restore with [--to-default-storage](#restore-default-storage) can recover these objects as ordinary core blobs without the original module or paid licence; reserve their full logical size. Preserve installation secrets separately and follow the licence recovery procedure before enabling paid writes again.
