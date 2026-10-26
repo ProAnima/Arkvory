@@ -30,7 +30,15 @@ It is a standalone product with its own HTTP API, command-line client and TypeSc
 - **The whole cluster in one place.** Pair the other installations, mirrors and second sites with a one-time code over a pinned certificate, and see on one page whether each answers, its version, HA copies, read gateways, mirror lag and download queue.
 - **Mirrors and read gateways.** A second installation keeps a read-only copy of repositories and serves it when the first site is lost; extra download processes share one bandwidth budget.
 - **Runs by itself.** Windows services, Linux packages or Docker Compose. Services restart after a crash or a hang; signed stable updates install by hand or in a maintenance hour, behind a fresh verified backup, with rollback.
-- **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark. The documentation is in the same languages.
+- **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark. The documentation offers the same language selection; some Japanese and Arabic pages fall back to English.
+
+## Modules and Arkvory Pro
+
+Arkvory supports signed ProAnimaStudio modules for additional storage, transfer protocols and HTTP routes. Modules are installed on the host and loaded at service startup; Docker Compose does not load them. Third-party plugins cannot yet be installed or run; the host can only maintain their trusted author keys.
+
+**Arkvory Pro** is an optional paid module bundle for deduplication and delta transfers with compatible clients. Pro 0.1.0 works with Arkvory 0.6.3 on Windows/Linux x64. It reuses shared chunks in storage and transfers missing content or patches instead of always sending complete files. Savings depend on the data and client. Existing Pro data remains readable without an active licence; new uploads fall back to core storage and ordinary transfers when paid features are unavailable. The core remains free of charge under its existing licence.
+
+Obtain Pro packages and a licence from ProAnimaStudio. See [modules, Pro features and operating limits](https://proanima.github.io/Arkvory/operate/modules#pro) and [licence activation](https://proanima.github.io/Arkvory/operate/licenses) before deployment.
 
 ## Install
 
@@ -73,7 +81,7 @@ The full walkthrough: [Quick start](https://proanima.github.io/Arkvory/guide/qui
 
 ## Documentation
 
-**[proanima.github.io/Arkvory](https://proanima.github.io/Arkvory/)** — installation, everyday work, clients and protocols, operation (backups, mirrors, the high-availability cluster, storage, monitoring, security, troubleshooting) and the HTTP API reference generated from the contract the server enforces. With search, in the eleven languages of the console. The engineering documents (architecture, contracts, decisions) are in Russian in [`docs/`](docs/) and in the site's developers' section.
+**[proanima.github.io/Arkvory](https://proanima.github.io/Arkvory/)** — installation, everyday work, clients and protocols, operation (backups, mirrors, the high-availability cluster, storage, monitoring, security, troubleshooting) and the HTTP API reference generated from the contract the server enforces. With search and the eleven-language selector of the console; Japanese and Arabic still contain English fallback pages. The [current implementation and limits](docs/CURRENT_STATE.md) distinguish shipped features from historical plans. The engineering documents (architecture, contracts, decisions) are in Russian in [`docs/`](docs/) and in the site's developers' section.
 
 ## Limits
 

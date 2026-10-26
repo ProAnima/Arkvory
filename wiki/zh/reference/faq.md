@@ -17,11 +17,11 @@ Arkvory 默认最多保留 10 TiB 的内容（`ARKVORY_CAPACITY_BYTES`），计�
 
 ### Arkvory 是高可用的吗？ {#high-availability}
 
-不是。一个安装实例就是一台带一个 PostgreSQL 数据库和本地内容目录的服务器。如果服务器停止，客户端会等待，然后继续其传输；服务在崩溃或卡死后会自行重启。要防范服务器丢失，请使用[备份](../operate/backups)。要从第二个站点读取，请使用[镜像](../operate/mirrors)；切换到镜像是一个手动步骤，并且镜像尚未收到的更改会丢失。
+支持单站点 Linux 集群：ha-2 使用两个数据服务器和独立见证节点；ha-3 使用三个数据服务器。需要 DRBD 9、Pacemaker 和经过测试的 fencing。正常写入需要两份完整副本。Windows 和 Docker Compose 仍为 standalone。HA 不能替代备份，也不能防止整个站点丢失；第二站点镜像是异步的，需要手动切换。参见[集群](../operate/cluster)、[备份](../operate/backups)和[镜像](../operate/mirrors)。
 
 ### 它可以离线工作吗？ {#offline}
 
-服务器无需互联网访问即可工作。Windows 安装程序包含 Node.js 和 PostgreSQL，可离线安装。Linux 软件包包含 Node.js，包管理器会安装 PostgreSQL。脚本安装程序和 Docker 会下载文件。更新可以从发行版的本地副本安装。如果无法访问更新中心，更新检查会失败并在控制台中显示；其他任何内容都不受影响。参见[选择安装方式](../install/index)和[更新](../install/updates)。
+免费核心可以离线运行。Windows 安装程序包含 Node.js 和 PostgreSQL；Linux 包包含 Node.js，并通过包管理器获取 PostgreSQL。脚本安装程序和 Docker 可能需要下载。更新可使用本地发行版。中心不可达时，更新发现可回退到 GitHub；两者都不可达时，检查失败，但存储继续运行。付费模块的在线或离线许可证有单独有效期，请在过期前续期。参见[安装](../install/index)、[更新](../install/updates)和[许可证](../operate/licenses)。
 
 ## 存储与数据库 {#storage-and-database}
 
@@ -51,13 +51,15 @@ PostgreSQL，每个安装实例一个数据库。Windows 安装程序包含 Post
 
 ### Arkvory 会向 ProAnimaStudio 发送什么？ {#hub-traffic}
 
-您的文件和数据保留在您的服务器上。服务器联系 ProAnimaStudio 中心（`hub.proanima.net`），并在无法访问中心时联系 GitHub，用于三件事：
+存储的内容保留在您的服务器上。安装会为以下用途联系 ProAnimaStudio 中心（`hub.proanima.net`）。GitHub 是发行版发现的后备来源，不用于许可证激活：
 
 - **更新检查。** 请求携带项目名称、操作系统、处理器架构、已安装版本和更新渠道。开启统计后，它还会携带一个随机安装 ID。
 - **匿名统计。** 每次安装更新后有一个事件，包含安装 ID、版本、系统、架构和渠道。不会存储名称、地址、内容或 IP 地址。统计默认开启；通过 [[ui:updates]] 中的 [[ui:updateStatistics]] 或 `arkvory configure --statistics off` 关闭它们。没有统计时，新版本只有在向所有人推出时才会到达您这里。
 - **反馈。** 仅当已登录的人员从 [[ui:reportOpen]] 发送它时。它包含消息、可选的电子邮件地址、最多 6 张截图和控制台日志。管理员可以添加服务器日志以及不含机密的版本和状态摘要。[[ui:reportShow]] 会准确显示将要发送的内容。
 
 `arkvory configure --hub-off` 会停止联系中心：此后发行版仅来自 GitHub，反馈会在服务重启后关闭。空的 `ARKVORY_HUB_URL` 会仅关闭反馈。参见[许可证](https://github.com/ProAnima/Arkvory/blob/main/LICENSE.md)第 7 节。
+
+付费模块的激活和续期也会联系中心，交换许可证和安装标识、模块版本及激活凭据。未激活时没有许可证流量。关闭统计不会关闭许可证功能。使用 `--hub-off` 后，在线激活和续期不可用：请使用[离线流程](../operate/licenses#offline)，并注意有效期。付费功能仍然需要许可证。
 
 ### 备份会自行运行吗？ {#automatic-backups}
 

@@ -1,6 +1,6 @@
-# Запуск и использование первого ядра
+# Запуск и эксплуатация Arkvory
 
-Рабочий standalone backend: TypeScript → Node.js, Fastify, PostgreSQL, локальные неизменяемые файлы. Это версия для разработки и испытаний; границы гарантий описаны в [ADR 0004](adr/0004-native-standalone-core.md).
+Документ описывает запуск из исходников, standalone-эксплуатацию и операторские команды. Выпущенные пакеты устанавливаются по [wiki](../wiki/ru/install/index.md); возможности текущего выпуска — [CURRENT_STATE](CURRENT_STATE.md). HA требует отдельной [инструкции кластера](../wiki/ru/operate/cluster.md), а не запуска нескольких API. Границы гарантий — [RELIABILITY](RELIABILITY.md#profiles).
 
 ## Быстрый старт
 

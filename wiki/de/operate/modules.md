@@ -9,6 +9,24 @@ Ein Modulpaket fügt Arkvory eine Funktion hinzu. Arkvory installiert nur Pakete
 
 Die Dienste prüfen die installierten Module bei jedem Start erneut und laden sie. Ein Modul läuft erst, nachdem Sie es eingeschaltet haben.
 
+## Arkvory Pro {#pro}
+
+Arkvory Pro ist ein optionales Paket kostenpflichtiger, signierter ProAnimaStudio-Module für den kostenlosen Arkvory-Kern. Pro 0.1.0 läuft mit Arkvory 0.6.3 auf Windows/Linux x64. Pakete und Lizenz erhalten Sie von ProAnimaStudio; die Module werden getrennt vom Kern installiert. Siehe [Installation](#install) und [Lizenzen](licenses).
+
+- **Deduplizierung:** speichert gemeinsame Chunks einmal und verwendet sie für mehrere Objekte. Der gemeinsame Katalog stimmt die Speicherbereinigung mit Veröffentlichung, Lesern und Backups ab.
+- **Delta-Übertragungen:** verwenden Inhalte eines kompatiblen Clients erneut und übertragen fehlende Daten oder Patches. Das Paket enthält serverseitige Speicher- und Übertragungsmodule sowie ein Delta-Client-Modul. Die Einsparung hängt von Daten und Client ab; gewöhnliche HTTP-Downloads werden nicht automatisch zu Delta-Übertragungen.
+- **Lizenzierung:** steuert kostenpflichtige Schreibvorgänge und Optimierungen. Bestehende Daten bleiben bei abgelaufener oder nicht verfügbarer Lizenz lesbar; neue Uploads nutzen Kernspeicher und gewöhnliche Übertragungen. Die Pro-Quote zählt logische Pro-Daten einschließlich angenommener, unvollständiger Uploads ohne Deduplizierungsrabatt. updatesUntil begrenzt den Anspruch auf neuere Modul-Builds.
+
+Module laden beim Dienststart; Docker Compose lädt keine Module. Sichern Sie Metadaten und Moduldaten vor Updates. Stoppen Sie bei der ersten Einführung des gemeinsamen Katalogs ältere schreibende API/worker-Prozesse; gemischte alte und neue Schreiber werden nicht unterstützt. Stellen Sie Daten und Lizenzzustand gemeinsam wieder her, warten Sie auf die Wiederherstellung und prüfen Sie einen neuen Pro-Upload vor dem normalen Schreibbetrieb.
+
+Große Kataloge brauchen Zeit: Im Abnahmetest waren 4 Millionen Chunks bei bereits wiederhergestelltem gemeinsamen Katalog nach 32 Minuten 43 Sekunden ohne Neustart beschreibbar. Dies garantiert keine Wiederherstellungszeit und misst keinen Durchsatz für 4 TB. HA-Tests auf einem physischen Host ersetzen keine Fencing- und Ausfalldomänentests am Einsatzort. Pro ändert die Lizenzbedingungen des Kerns nicht.
+
+## Modulfunktionen und Drittanbieter-Plugins {#module-capabilities}
+
+Signierte ProAnimaStudio-Module können Speicher, Übertragungsprotokolle und HTTP-Routen ergänzen und je nach Rolle Dienste für Hintergrundarbeit, begrenzte Berechnungen und koordinierte Bereinigung nutzen. Kostenlose Module benötigen keine Lizenz für kostenpflichtige Funktionen; kostenpflichtige Module deklarieren ihre Anforderungen. Jedes Paket muss zur extension API des Kerns passen und Signatur- und Integritätsprüfungen bestehen.
+
+Installation und Ausführung von Drittanbieter-Plugins sind in dieser Version nicht verfügbar. Sie können [vertrauenswürdige Autorenschlüssel](#trust) verwalten, aber ein hinzugefügter Schlüssel aktiviert keine Plugin-Installation. Die Modulschnittstelle ist keine Sandbox für beliebigen Code.
+
 ## Ein Paket installieren {#install}
 
 1. Kopieren Sie die Paketdatei `arkvory-module-<id>-<version>.tgz` auf den Host.
@@ -82,7 +100,7 @@ Um ein geändertes oder fehlendes Paket zu reparieren, installieren Sie es erneu
 
 Ein Modul, das eigene Indizes, Caches oder einen eigenen Zustand speichert, erhält ein Verzeichnis auf dem Daten-Volume: `module-data/<id>/` im Speicherverzeichnis von `default`. Sein Teil `data` ist für Backups gedacht, sein Teil `cache` nicht. Arkvory rechnet jeden Schreibvorgang auf die genehmigte Größe an, in MiB und in Dateien, für beide Teile zusammen. Ein Schreibvorgang darüber hinaus wird abgelehnt (`module_quota_exceeded`), und das Modul läuft weiter. Ohne genehmigte Größe kann das Modul nur lesen. Die [Reserve des Volumes](./storage#disk) gilt ebenfalls. Auf einem Lese-Gateway liest das Modul dieselben Dateien und kann sie nicht ändern.
 
-Wenn Sie ein Modul entfernen, bleibt sein Verzeichnis erhalten. Löschen Sie `module-data/<id>/` selbst, wenn Sie die Daten nicht mehr brauchen. Backups enthalten Modulverzeichnisse noch nicht.
+Logische Backups lesen veröffentlichte Objektbytes über das installierte Modul in seiner backup-Rolle; Modulverzeichnisse, Caches und privater Koordinationszustand werden nicht als Dateisystemabbild kopiert. Lassen Sie die Quellmodule bis zum Abschluss installiert und lesbar. [--to-default-storage](backups#restore-default-storage) stellt diese Objekte als gewöhnliche Kern-Blobs ohne Ursprungsmodul oder kostenpflichtige Lizenz wieder her; reservieren Sie deren volle logische Größe. Sichern Sie Installationsgeheimnisse separat und führen Sie vor erneuten kostenpflichtigen Schreibvorgängen die Lizenzwiederherstellung durch. Das Entfernen eines Moduls löscht nicht sein Datenverzeichnis; löschen Sie keine Dateien, auf die veröffentlichte Objekte verweisen.
 
 Stoppen Sie vor dem Wechsel auf Extension API 0.7.0 alle älteren API- und Worker-Prozesse, die Moduldaten schreiben. Alle neuen Schreiber teilen die Kontingentverwaltung über den PostgreSQL-Koordinator der Installation; auch temporäre Dateien zählen zum Kontingent. Gleichzeitiges Schreiben mit alten und neuen Prozessen wird nicht unterstützt. Nach einem Absturz baut Arkvory die Abrechnung bei Bedarf neu auf und entfernt temporäre Verzeichnisse des neuen Protokolls erst nach Erwerb der Datenbanksperre des vorherigen Besitzers. Alte temporäre Dateien werden nicht automatisch gelöscht und zählen weiter zum Kontingent; prüfen Sie sie separat bei gestoppten Schreibern. Backup-Prozesse haben nur Lesezugriff.
 

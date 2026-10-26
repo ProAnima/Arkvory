@@ -434,3 +434,5 @@ Leia o log do agente com `journalctl -u arkvory-backup` no Linux, em `logs\` na 
 ## Restaurar sem o armazenamento original {#restore-default-storage}
 
 Adicione `--to-default-storage` ao comando de restauração para colocar todos os objetos no armazenamento padrão sem os volumes ou módulos originais. Reserve espaço para os bytes completos dos objetos. Sem `--yes`, o comando apenas verifica e apresenta o plano. O banco de dados e o armazenamento devem estar vazios. Este modo remove as regras de posicionamento e restaura o conteúdo publicado como blobs comuns; configure novas regras após a recuperação.
+
+Backups lógicos capturam os bytes dos objetos publicados pelo módulo instalado no papel backup; não copiam diretórios de módulos, caches e estado privado de coordenação como imagem do sistema de arquivos. Mantenha os módulos de origem instalados e legíveis até terminar a cópia. [--to-default-storage](#restore-default-storage) restaura esses objetos como blobs normais do núcleo sem o módulo original ou licença paga; reserve o tamanho lógico completo. Guarde segredos da instalação separadamente e siga a recuperação da licença antes de reativar gravações pagas.

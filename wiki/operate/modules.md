@@ -9,6 +9,24 @@ A module package adds a feature to Arkvory. Arkvory installs only packages whose
 
 The services check the installed modules again and load them each time they start. A module runs only after you enable it.
 
+## Arkvory Pro {#pro}
+
+Arkvory Pro is an optional set of paid, signed ProAnimaStudio modules for the free Arkvory core. Pro 0.1.0 works with Arkvory 0.6.3 on Windows/Linux x64. Obtain the module packages and licence from ProAnimaStudio; they are installed separately from the core. See [installation](#install) and [licences](licenses).
+
+- **Deduplication** stores shared chunks once and reuses them across objects. The shared catalog coordinates garbage collection with publication, readers and backups.
+- **Delta transfers** reuse content already available to a compatible client and transfer the missing data or patches. The bundle contains server storage/transfer modules and a delta client module. Savings depend on the data and client; ordinary HTTP downloads do not automatically become delta transfers.
+- **Licensing** controls paid writes and optimizations. Existing data remains readable when the licence expires or is unavailable; new uploads fall back to core storage and ordinary transfers. The Pro quota counts logical Pro data, including accepted unfinished uploads, without a deduplication discount. A licence's updatesUntil limits eligibility for newer module builds.
+
+Modules load at service startup; Docker Compose installations do not load them. Back up metadata and module data before an upgrade. For the first adoption of the shared catalog, stop older API/worker writers; mixed old/new writers are unsupported. Restore data and licence state together, wait for recovery, and verify a new Pro upload before resuming normal writes.
+
+Recovery of a large catalog can take time: on the acceptance stand, 4 million chunks with an already restored shared catalog became writable after 32 minutes 43 seconds, without restarting. This is not a restore-time guarantee or a 4 TB throughput measurement. HA acceptance on one physical host does not replace fencing and failure-domain checks on your site. Pro does not change the core's licence terms.
+
+## Module capabilities and third-party plugins {#module-capabilities}
+
+Signed ProAnimaStudio modules can add storage, transfer protocols and HTTP routes, with services for background work, bounded computation and coordinated data cleanup according to their roles. Free modules need no paid feature licence; paid modules declare their licence requirements. Each package must match the core's extension API and pass signature and integrity checks.
+
+Third-party plugin installation and execution are not available in this release. You can maintain the [trusted author keys](#trust), but adding a key does not enable plugin installation. Do not treat the module interface as a sandbox for arbitrary code.
+
 ## Install a package {#install}
 
 1. Copy the package file `arkvory-module-<id>-<version>.tgz` to the host.
@@ -82,7 +100,7 @@ Install the package again to repair a changed or missing package. Every service 
 
 A module that keeps indexes, caches or state of its own gets a directory on the data volume: `module-data/<id>/` in the storage directory of `default`. Its `data` part is meant for backups, its `cache` part is not. Arkvory counts every write against the approved size, in MiB and in files, for both parts together. A write beyond it is refused (`module_quota_exceeded`) and the module keeps running. Without an approved size, the module can only read. The [reserve of the volume](./storage#disk) applies too. On a read gateway the module reads the same files and cannot change them.
 
-Removing a module keeps its directory. Delete `module-data/<id>/` yourself when you no longer need the data. Backups do not include module directories yet.
+Logical backups capture published object bytes through the installed module in its backup role; they do not copy the module directory, caches or private coordination state as a filesystem image. Keep the source modules installed and readable until capture finishes. A restore with [--to-default-storage](backups#restore-default-storage) can recover these objects as ordinary core blobs without the original module or paid licence; reserve their full logical size. Preserve installation secrets separately and follow the licence recovery procedure before enabling paid writes again. Removing a module does not delete its data directory; do not delete files still referenced by published objects.
 
 Before upgrading to extension API 0.7.0, stop all older API and worker processes that write module data. All new writers share quota accounting through the installation’s PostgreSQL coordinator; temporary files also count toward the quota. Mixed old and new writers are unsupported. After a crash, Arkvory rebuilds accounting when needed and reclaims temporary directories of the new protocol only after acquiring the previous owner’s database lock. Legacy temporary files are not removed automatically and continue to count toward the quota; review them separately with writers stopped. Backup processes have read-only access.
 

@@ -17,11 +17,11 @@ Arkvory reserva hasta 10 TiB de contenido por defecto (`ARKVORY_CAPACITY_BYTES`)
 
 ### ¿Arkvory tiene alta disponibilidad? {#high-availability}
 
-No. Una instalación es un servidor con una base de datos PostgreSQL y un directorio de contenido local. Si el servidor se detiene, los clientes esperan y luego reanudan sus transferencias; los servicios se reinician solos tras un fallo o un bloqueo. Para protegerse de la pérdida del servidor, use [copias de seguridad](../operate/backups). Para leer desde una segunda sede, use [espejos](../operate/mirrors); el cambio a un espejo es un paso manual, y los cambios que el espejo aún no había recibido se pierden.
+Sí, con un clúster Linux en una sede: ha-2 usa dos servidores de datos y un testigo separado; ha-3 usa tres servidores de datos. Requiere DRBD 9, Pacemaker y fencing probado. Normalmente las escrituras requieren dos copias completas. Windows y Docker Compose siguen siendo standalone. HA no sustituye los backups ni protege contra la pérdida de toda la sede; los espejos en otra sede son asíncronos y requieren un cambio manual. Véase [Clúster](../operate/cluster), [Backups](../operate/backups) y [Espejos](../operate/mirrors).
 
 ### ¿Funciona sin conexión? {#offline}
 
-El servidor funciona sin acceso a internet. El instalador de Windows incluye Node.js y PostgreSQL y se instala sin conexión. Los paquetes de Linux incluyen Node.js, y el gestor de paquetes instala PostgreSQL. Los instaladores por script y Docker descargan archivos. Las actualizaciones pueden instalarse desde una copia local de una versión. Si no se puede alcanzar el hub de actualizaciones, la comprobación de actualizaciones falla y se muestra en la consola; nada más se ve afectado. Véase [Elegir una instalación](../install/index) y [Actualizaciones](../install/updates).
+El núcleo gratuito funciona sin internet. El instalador Windows incluye Node.js y PostgreSQL; los paquetes Linux incluyen Node.js y obtienen PostgreSQL del gestor de paquetes. Los instaladores por script y Docker pueden necesitar descargas. Puede actualizar desde una versión local. Si el hub es inaccesible, la búsqueda de actualizaciones puede recurrir a GitHub; si ambos fallan, la comprobación falla sin detener el almacenamiento. Los módulos de pago tienen su propia vigencia de licencia en línea o sin conexión: renuévela antes de caducar. Véase [Instalación](../install/index), [Actualizaciones](../install/updates) y [Licencias](../operate/licenses).
 
 ## Almacenamiento y base de datos {#storage-and-database}
 
@@ -51,13 +51,15 @@ El servidor busca una versión cada 6 horas incluso cuando la instalación autom
 
 ### ¿Qué envía Arkvory a ProAnimaStudio? {#hub-traffic}
 
-Sus archivos y datos permanecen en su servidor. El servidor contacta con el hub de ProAnimaStudio (`hub.proanima.net`), y con GitHub cuando no se puede alcanzar el hub, por tres cosas:
+El contenido almacenado permanece en su servidor. La instalación contacta con el hub ProAnimaStudio (`hub.proanima.net`) para los fines siguientes. GitHub es una alternativa para encontrar versiones, no para activar licencias:
 
 - **Comprobaciones de actualizaciones.** La solicitud lleva el nombre del proyecto, el sistema operativo, la arquitectura del procesador, la versión instalada y el canal de actualizaciones. Con las estadísticas activadas, también lleva un ID de instalación aleatorio.
 - **Estadísticas anónimas.** Un evento tras cada actualización instalada, con el ID de instalación, la versión, el sistema, la arquitectura y el canal. No se almacenan nombres, direcciones, contenido ni direcciones IP. Las estadísticas están activadas por defecto; desactívelas con [[ui:updateStatistics]] en [[ui:updates]] o con `arkvory configure --statistics off`. Sin estadísticas, una versión nueva le llega solo cuando se despliega para todos.
 - **Comentarios.** Solo cuando una persona con sesión iniciada los envía desde [[ui:reportOpen]]. Contiene el mensaje, una dirección de correo opcional, hasta 6 capturas de pantalla y el registro de la consola. Un administrador puede añadir el registro del servidor y un resumen de versiones y estados sin secretos. [[ui:reportShow]] muestra exactamente lo que se enviará.
 
 `arkvory configure --hub-off` deja de contactar con el hub: entonces las versiones llegan solo desde GitHub, y los comentarios se desactivan tras reiniciar los servicios. Un `ARKVORY_HUB_URL` vacío desactiva solo los comentarios. Véase [Licencia](https://github.com/ProAnima/Arkvory/blob/main/LICENSE.md), sección 7.
+
+La activación y renovación de módulos de pago también contactan con el hub e intercambian identificadores de licencia e instalación, versiones de módulos y credenciales de activación. Sin activación no hay tráfico de licencias. Desactivar estadísticas no desactiva las licencias. Con `--hub-off`, la activación y renovación en línea no están disponibles: siga el [procedimiento sin conexión](../operate/licenses#offline) y controle su caducidad. Las funciones de pago siguen necesitando licencia.
 
 ### ¿Las copias de seguridad se ejecutan solas? {#automatic-backups}
 

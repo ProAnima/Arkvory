@@ -17,11 +17,11 @@ Arkvory reserves up to 10 TiB of content by default (`ARKVORY_CAPACITY_BYTES`), 
 
 ### Is Arkvory highly available? {#high-availability}
 
-No. One installation is one server with one PostgreSQL database and a local content directory. If the server stops, clients wait and then resume their transfers; the services restart by themselves after a crash or a hang. For protection against the loss of the server, use [backups](../operate/backups). For reading from a second site, use [mirrors](../operate/mirrors); switching to a mirror is a manual step, and changes the mirror had not yet received are lost.
+Yes, with a Linux cluster on one site: ha-2 uses two data servers and a separate witness; ha-3 uses three data servers. DRBD 9, Pacemaker and tested fencing are required. Normally writes require two complete copies. Windows and Docker Compose remain standalone. HA does not replace backups or protect against losing the whole site; mirrors on a second site are asynchronous and require a manual switch. See [Cluster](../operate/cluster), [Backups](../operate/backups) and [Mirrors](../operate/mirrors).
 
 ### Does it work offline? {#offline}
 
-The server works without internet access. The Windows installer includes Node.js and PostgreSQL and installs offline. The Linux packages include Node.js, and the package manager installs PostgreSQL. The script installers and Docker download files. Updates can be installed from a local copy of a release. If the update hub cannot be reached, the update check fails and is shown in the console; nothing else is affected. See [Choose an installation](../install/index) and [Updates](../install/updates).
+The free core works without internet access. The Windows installer includes Node.js and PostgreSQL; Linux packages include Node.js and obtain PostgreSQL through the package manager. Script installers and Docker may need downloads. Updates can use a local release. If the hub is unreachable, update discovery can fall back to GitHub; if both are unreachable, it fails without stopping storage. Paid modules have separate online or offline licence validity: plan renewal before expiry. See [Installation](../install/index), [Updates](../install/updates) and [Licences](../operate/licenses).
 
 ## Storage and database {#storage-and-database}
 
@@ -51,13 +51,15 @@ The server checks for a release every 6 hours even when automatic installation i
 
 ### What does Arkvory send to ProAnimaStudio? {#hub-traffic}
 
-Your files and data stay on your server. The server contacts the ProAnimaStudio hub (`hub.proanima.net`), and GitHub when the hub cannot be reached, for three things:
+Your stored content stays on your server. The installation contacts the ProAnimaStudio hub (`hub.proanima.net`) for the purposes below. GitHub is a fallback for release discovery, not for licence activation:
 
 - **Update checks.** The request carries the project name, the operating system, the processor architecture, the installed version and the update channel. With statistics on, it also carries a random installation ID.
 - **Anonymous statistics.** One event after each installed update, with the installation ID, the version, the system, the architecture and the channel. No names, addresses, content or IP addresses are stored. Statistics are on by default; turn them off with [[ui:updateStatistics]] in [[ui:updates]] or with `arkvory configure --statistics off`. Without statistics, a new version reaches you only when it is rolled out to everyone.
 - **Feedback.** Only when a signed-in person sends it from [[ui:reportOpen]]. It contains the message, an optional email address, up to 6 screenshots and the console log. An administrator can add the server log and a summary of versions and states without secrets. [[ui:reportShow]] shows exactly what will be sent.
 
 `arkvory configure --hub-off` stops contacting the hub: releases then come from GitHub only, and feedback turns off after the services restart. An empty `ARKVORY_HUB_URL` turns off feedback alone. See [License](https://github.com/ProAnima/Arkvory/blob/main/LICENSE.md), section 7.
+
+Paid-module activation and refresh also contact the hub and exchange licence/installation identifiers, module versions and activation credentials. Without activation there is no licence traffic. Disabling statistics does not disable licensing. With `--hub-off`, online activation and renewal are unavailable: use the [offline licence procedure](../operate/licenses#offline) and track its expiry. This does not remove the need for a licence for paid features.
 
 ### Do backups run by themselves? {#automatic-backups}
 

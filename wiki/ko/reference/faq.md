@@ -17,11 +17,11 @@ Arkvory는 기본적으로 최대 10 TiB의 콘텐츠(`ARKVORY_CAPACITY_BYTES`)�
 
 ### Arkvory는 고가용성을 지원하나요? {#high-availability}
 
-아니요. 하나의 설치는 PostgreSQL 데이터베이스 하나와 로컬 콘텐츠 디렉터리 하나를 가진 서버 한 대입니다. 서버가 멈추면 클라이언트는 기다렸다가 전송을 재개합니다. 서비스는 충돌이나 중단 후 스스로 다시 시작합니다. 서버 손실에 대비하려면 [백업](../operate/backups)을 사용하세요. 두 번째 사이트에서 읽으려면 [미러](../operate/mirrors)를 사용하세요. 미러로 전환하는 것은 수동 단계이며, 미러가 아직 받지 못한 변경 사항은 손실됩니다.
+단일 사이트 Linux 클러스터에서 가능합니다. ha-2는 데이터 서버 두 대와 별도 witness를, ha-3는 데이터 서버 세 대를 사용합니다. DRBD 9, Pacemaker와 검증된 fencing이 필요합니다. 일반적으로 쓰기에는 완전한 복사본 두 개가 필요합니다. Windows와 Docker Compose는 standalone입니다. HA는 백업을 대체하거나 사이트 전체 손실을 보호하지 않습니다. 다른 사이트의 미러는 비동기이며 수동 전환이 필요합니다. [클러스터](../operate/cluster), [백업](../operate/backups), [미러](../operate/mirrors)를 보세요.
 
 ### 오프라인에서도 동작하나요? {#offline}
 
-서버는 인터넷 접속 없이 동작합니다. Windows 설치 프로그램에는 Node.js와 PostgreSQL이 포함되어 있어 오프라인으로 설치합니다. Linux 패키지에는 Node.js가 포함되어 있고, 패키지 관리자가 PostgreSQL을 설치합니다. 스크립트 설치 프로그램과 Docker는 파일을 다운로드합니다. 업데이트는 릴리스의 로컬 복사본에서 설치할 수 있습니다. 업데이트 허브에 연결할 수 없으면 업데이트 확인이 실패하고 콘솔에 표시되며, 그 밖에는 아무 영향이 없습니다. [설치 선택](../install/index) 및 [업데이트](../install/updates)를 참조하세요.
+무료 코어는 인터넷 없이 작동합니다. Windows 설치 프로그램에는 Node.js와 PostgreSQL이 포함되고 Linux 패키지는 Node.js를 포함하며 PostgreSQL은 패키지 관리자로 받습니다. 스크립트 설치와 Docker는 다운로드가 필요할 수 있습니다. 로컬 릴리스로 업데이트할 수 있습니다. 허브에 연결할 수 없으면 업데이트 검색은 GitHub로 대체할 수 있으며 둘 다 불가능하면 저장소를 중단하지 않고 검사만 실패합니다. 유료 모듈에는 별도의 온라인·오프라인 라이선스 유효기간이 있으므로 만료 전에 갱신하세요. [설치](../install/index), [업데이트](../install/updates), [라이선스](../operate/licenses)를 참고하세요.
 
 ## 스토리지 및 데이터베이스 {#storage-and-database}
 
@@ -51,13 +51,15 @@ PostgreSQL이며, 설치마다 데이터베이스 하나를 사용합니다. Win
 
 ### Arkvory는 ProAnimaStudio로 무엇을 전송하나요? {#hub-traffic}
 
-파일과 데이터는 서버에 남아 있습니다. 서버는 세 가지 목적으로 ProAnimaStudio 허브(`hub.proanima.net`)에 연결하고, 허브에 연결할 수 없으면 GitHub에 연결합니다.
+저장된 콘텐츠는 서버에 남습니다. 설치는 아래 목적으로 ProAnimaStudio 허브(`hub.proanima.net`)에 연결합니다. GitHub는 릴리스 검색의 대체 경로이며 라이선스 활성화용이 아닙니다.
 
 - **업데이트 확인.** 요청에는 프로젝트 이름, 운영 체제, 프로세서 아키텍처, 설치된 버전, 업데이트 채널이 포함됩니다. 통계가 켜져 있으면 무작위 설치 ID도 포함됩니다.
 - **익명 통계.** 업데이트가 설치된 후 한 번 이벤트를 보내며, 여기에는 설치 ID, 버전, 시스템, 아키텍처, 채널이 포함됩니다. 이름, 주소, 콘텐츠, IP 주소는 저장되지 않습니다. 통계는 기본적으로 켜져 있으며, [[ui:updates]]의 [[ui:updateStatistics]] 또는 `arkvory configure --statistics off`로 끌 수 있습니다. 통계가 없으면 새 버전은 모든 사용자에게 배포될 때만 도달합니다.
 - **피드백.** 로그인한 사람이 [[ui:reportOpen]]에서 보낼 때만 전송됩니다. 여기에는 메시지, 선택적 이메일 주소, 최대 6개의 스크린샷, 콘솔 로그가 포함됩니다. 관리자는 시크릿을 제외한 서버 로그와 버전 및 상태 요약을 추가할 수 있습니다. [[ui:reportShow]]는 전송될 내용을 정확히 보여 줍니다.
 
 `arkvory configure --hub-off`는 허브 연결을 중단합니다. 그러면 릴리스는 GitHub에서만 오고, 피드백은 서비스 재시작 후 꺼집니다. `ARKVORY_HUB_URL`을 비우면 피드백만 꺼집니다. [라이선스](https://github.com/ProAnima/Arkvory/blob/main/LICENSE.md) 섹션 7을 참조하세요.
+
+유료 모듈 활성화와 갱신도 허브에 연결하며 라이선스·설치 식별자, 모듈 버전, 활성화 자격 증명을 교환합니다. 활성화하지 않으면 라이선스 트래픽은 없습니다. 통계를 꺼도 라이선스 기능은 꺼지지 않습니다. `--hub-off`에서는 온라인 활성화와 갱신이 불가능하므로 [오프라인 절차](../operate/licenses#offline)를 사용하고 만료를 관리하세요. 유료 기능에는 여전히 라이선스가 필요합니다.
 
 ### 백업은 스스로 실행되나요? {#automatic-backups}
 

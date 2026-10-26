@@ -9,6 +9,24 @@ Un paquet de module ajoute une fonction à Arkvory. Arkvory n'installe que les p
 
 Les services vérifient de nouveau les modules installés et les chargent à chaque démarrage. Un module ne s’exécute qu’une fois que vous l’avez activé.
 
+## Arkvory Pro {#pro}
+
+Arkvory Pro est un ensemble facultatif de modules payants signés par ProAnimaStudio pour le cœur gratuit d’Arkvory. Pro 0.1.0 fonctionne avec Arkvory 0.6.3 sur Windows/Linux x64. Obtenez les paquets et la licence auprès de ProAnimaStudio ; ils s’installent séparément du cœur. Voir [Installation](#install) et [Licences](licenses).
+
+- **Déduplication :** stocke une seule fois les blocs partagés et les réutilise entre objets. Le catalogue partagé coordonne le ramasse-miettes avec la publication, les lecteurs et les sauvegardes.
+- **Transferts delta :** réutilisent le contenu disponible sur un client compatible et transfèrent les données manquantes ou des correctifs. L’ensemble comprend les modules serveur de stockage et de transfert, ainsi qu’un module client delta. Le gain dépend des données et du client ; un téléchargement HTTP ordinaire ne devient pas automatiquement un transfert delta.
+- **Licences :** contrôlent les écritures et optimisations payantes. Les données existantes restent lisibles si la licence expire ou devient indisponible ; les nouveaux envois utilisent le stockage du cœur et les transferts ordinaires. Le quota Pro compte les données logiques Pro, y compris les envois acceptés non terminés, sans réduction pour la déduplication. updatesUntil limite le droit aux nouvelles versions compilées des modules.
+
+Les modules se chargent au démarrage des services ; Docker Compose ne les charge pas. Sauvegardez les métadonnées et les données des modules avant une mise à jour. Lors de la première adoption du catalogue partagé, arrêtez les anciens processus API/worker qui écrivent ; leur coexistence avec les nouveaux n’est pas prise en charge. Restaurez ensemble les données et l’état de licence, attendez la récupération et vérifiez un nouvel envoi Pro avant de reprendre les écritures normales.
+
+Un grand catalogue peut être long à récupérer : sur le banc d’essai, 4 millions de blocs avec le catalogue partagé déjà restauré ont permis l’écriture après 32 minutes et 43 secondes, sans redémarrage. Ce n’est ni une garantie de délai ni une mesure de débit sur 4 To. La validation HA sur un seul hôte physique ne remplace pas les tests de fencing et de domaines de panne sur votre site. Pro ne change pas la licence du cœur.
+
+## Capacités des modules et plugins tiers {#module-capabilities}
+
+Les modules signés ProAnimaStudio peuvent ajouter du stockage, des protocoles de transfert et des routes HTTP, avec des services de tâches de fond, de calcul borné et de nettoyage coordonné selon leurs rôles. Les modules gratuits ne nécessitent pas de licence de fonctions payantes ; les modules payants déclarent leurs exigences. Chaque paquet doit correspondre à l’extension API du cœur et passer les contrôles de signature et d’intégrité.
+
+Cette version ne permet pas l’installation ni l’exécution de plugins tiers. Vous pouvez gérer les [clés des auteurs de confiance](#trust), mais ajouter une clé n’active pas l’installation de plugins. L’interface des modules n’est pas un bac à sable pour du code arbitraire.
+
 ## Installer un paquet {#install}
 
 1. Copiez le fichier du paquet `arkvory-module-<id>-<version>.tgz` sur l'hôte.
@@ -82,7 +100,7 @@ Pour réparer un paquet modifié ou absent, installez-le de nouveau. Tous les se
 
 Un module qui conserve ses propres index, caches ou état obtient un répertoire sur le volume de données : `module-data/<id>/` dans le répertoire de stockage `default`. Sa partie `data` est destinée aux sauvegardes, sa partie `cache` ne l’est pas. Arkvory compte chaque écriture dans la taille approuvée, en Mio et en fichiers, pour les deux parties ensemble. Une écriture au-delà est refusée (`module_quota_exceeded`) et le module continue de fonctionner. Sans taille approuvée, le module peut seulement lire. La [réserve du volume](./storage#disk) s’applique aussi. Sur une passerelle de lecture, le module lit les mêmes fichiers et ne peut pas les modifier.
 
-La suppression d’un module conserve son répertoire. Supprimez `module-data/<id>/` vous-même lorsque vous n’avez plus besoin des données. Les sauvegardes n’incluent pas encore les répertoires des modules.
+Les sauvegardes logiques lisent les octets des objets publiés via le module installé dans son rôle backup ; elles ne copient pas le répertoire du module, les caches et l’état privé de coordination comme une image du système de fichiers. Gardez les modules source installés et lisibles jusqu’à la fin de la copie. [--to-default-storage](backups#restore-default-storage) restaure ces objets comme des blobs ordinaires du cœur sans module d’origine ni licence payante ; prévoyez leur taille logique complète. Conservez les secrets d’installation séparément et suivez la récupération de licence avant de réactiver les écritures payantes. Retirer un module ne supprime pas son répertoire de données ; ne supprimez pas les fichiers référencés par des objets publiés.
 
 Avant de passer à extension API 0.7.0, arrêtez tous les anciens processus API et worker qui écrivent des données de modules. Les nouveaux processus partagent le suivi des quotas via le coordinateur PostgreSQL de l’installation ; les fichiers temporaires comptent aussi. L’écriture simultanée par des anciens et des nouveaux processus n’est pas prise en charge. Après un arrêt brutal, Arkvory reconstruit le suivi si nécessaire et ne supprime les répertoires temporaires du nouveau protocole qu’après avoir acquis le verrou en base de données de leur ancien propriétaire. Les anciens fichiers temporaires ne sont pas supprimés automatiquement et restent comptabilisés ; examinez-les séparément, une fois les processus d’écriture arrêtés. Les processus backup ont uniquement accès en lecture.
 

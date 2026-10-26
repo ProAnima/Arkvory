@@ -5,7 +5,7 @@ description: Active la licencia de un módulo de pago en línea o sin conexión,
 
 # Licencias
 
-El núcleo gratuito de Arkvory no necesita licencia. Todas las funciones de esta documentación funcionan sin ella, y ningún estado de licencia las desactiva ni deja los datos ilegibles. Una licencia habilita un módulo de pago de ProAnimaStudio (consulte [Módulos](modules)). Hasta que active una licencia, Arkvory no envía nada sobre licencias a ninguna parte.
+El núcleo gratuito de Arkvory funciona sin licencia de módulos de pago. Una licencia habilita funciones de pago de ProAnimaStudio, incluido [Arkvory Pro](modules#pro). Su caducidad no impide leer los datos Pro existentes; si las funciones de pago no están disponibles, las nuevas cargas usan el almacenamiento del núcleo y las transferencias normales. Hasta que active una licencia, Arkvory no envía nada sobre licencias a ninguna parte.
 
 Los comandos de esta página se ejecutan en el host de la instalación, como root en Linux o como administrador en Windows. Las instalaciones con Docker Compose no cargan módulos, así que rechazan estos comandos.
 
