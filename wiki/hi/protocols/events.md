@@ -66,13 +66,13 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
 - मेटाडेटा के मान, परिवर्तन करने वाला उपयोगकर्ता, सीक्रेट और फ़ाइलों की सामग्री कभी इवेंट में नहीं होते। अगर लेबल के कारण `data` 8 KiB से बड़ा हो जाता, तो लेबल छोड़ दिए जाते हैं और `truncated` का मान `true` होता है।
 - `GET /api/v1/events/types` हर टाइप को उसके `data` के JSON Schema के साथ सूचीबद्ध करता है।
 
-| समूह             | टाइप                                                                                |
-| ---------------- | ----------------------------------------------------------------------------------- |
-| आर्टिफ़ैक्ट      | `artifact.published`, `artifact.deleted`, `artifact.promoted`, `artifact.received`  |
-| फ़ाइलें और पैकेज | `asset.revision.created`, `asset.restored`, `package.registered`                    |
-| विवरण            | `annotation.updated`, `attachments.updated`, `stage.added`, `stage.removed`         |
-| कंटेनर इमेज      | `oci.manifest.pushed`, `oci.manifest.deleted`, `oci.tag.updated`, `oci.tag.deleted` |
-| npm और Git LFS   | `npm.version.published`, `npm.tag.updated`, `npm.tag.deleted`, `lfs.object.stored`  |
+| समूह            | टाइप                                                                                |
+| -------------- | ----------------------------------------------------------------------------------- |
+| आर्टिफ़ैक्ट        | `artifact.published`, `artifact.deleted`, `artifact.promoted`, `artifact.received`  |
+| फ़ाइलें और पैकेज    | `asset.revision.created`, `asset.restored`, `package.registered`                    |
+| विवरण          | `annotation.updated`, `attachments.updated`, `stage.added`, `stage.removed`         |
+| कंटेनर इमेज       | `oci.manifest.pushed`, `oci.manifest.deleted`, `oci.tag.updated`, `oci.tag.deleted` |
+| npm और Git LFS | `npm.version.published`, `npm.tag.updated`, `npm.tag.deleted`, `lfs.object.stored`  |
 
 ## क्रम और अनुमतियाँ {#order}
 
@@ -86,9 +86,9 @@ curl -H "Authorization: Bearer $ARKVORY_TOKEN" \
 
 सर्वर इवेंट को 168 घंटे और अधिकतम 5 000 000 तक रखता है (`ARKVORY_EVENTS_RETENTION_HOURS`, `ARKVORY_EVENTS_MAX_ROWS`, देखें [एनवायरनमेंट वेरिएबल](../reference/environment))। फ़ीड एक खिड़की है, इतिहास नहीं: इतिहास कैटलॉग ऑडिट रखता है। इवेंट बैकअप का हिस्सा नहीं होते।
 
-| उत्तर                                  | क्या हुआ                                                                   | क्या करें                                                      |
-| -------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `410`, `gone/events_cursor_expired`    | आपका कर्सर `oldest` से पुराना है                                           | API से वर्तमान स्थिति पढ़ें, फिर `oldest` से जारी रखें         |
+| उत्तर                                   | क्या हुआ                                                         | क्या करें                                              |
+| -------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------- |
+| `410`, `gone/events_cursor_expired`    | आपका कर्सर `oldest` से पुराना है                                   | API से वर्तमान स्थिति पढ़ें, फिर `oldest` से जारी रखें       |
 | `409`, `conflict/events_epoch_changed` | सर्वर बैकअप से पुनर्स्थापित हुआ और उसकी स्थितियों ने नया `epoch` शुरू किया | वर्तमान स्थिति पढ़ें, फिर बिना कर्सर के या नए हेड से जारी रखें |
 
 दोनों उत्तर `events` में वर्तमान `epoch`, `oldest` और `head` देते हैं; कर्सर `<epoch>:<position>` होता है। `arkvoryctl events tail` एग्ज़िट कोड 6 के साथ समाप्त होती है, और SDK उन्हीं फ़ील्ड के साथ त्रुटि फेंकता है।

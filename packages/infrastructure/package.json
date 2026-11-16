@@ -20,7 +20,7 @@
     "@proanima/arkvory-domain": "0.0.0",
     "@proanima/arkvory-extension-api": "0.13.0",
     "@proanima/arkvory-signing": "0.0.0",
-    "pg": "8.23.0",
+    "pg": "8.23.1",
     "yauzl": "3.4.0",
     "@proanima/arkvory-resolution": "0.0.0"
   }

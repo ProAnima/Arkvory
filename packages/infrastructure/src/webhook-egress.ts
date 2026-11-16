@@ -92,7 +92,7 @@ export function createEgressPolicy(allowed: readonly string[]): EgressPolicy {
 
 /** Every address of the name, in the order the system resolver returns them. */
 const systemResolver: Resolver = async (hostname) => {
-  const records = await dnsLookup(hostname, { all: true, verbatim: true });
+  const records = await dnsLookup(hostname, { all: true, order: 'verbatim' });
   return records.flatMap((record) =>
     record.family === 4 || record.family === 6
       ? [{ address: record.address, family: record.family }]
