@@ -132,10 +132,28 @@ Une seule plage par requête est prise en charge. Une requête avec plusieurs pl
 
 Un chemin peut recevoir une nouvelle version à tout moment, et un `GET` résout à nouveau le chemin. Pour reprendre un téléchargement en toute sécurité, mémorisez l’`ETag` de la première réponse et envoyez-le comme `If-Range` :
 
+Enregistrez l’`ETag` du `GET` initial dans `GameSetup.etag` ; ne récupérez pas une nouvelle valeur avec `HEAD`. Cet exemple calcule le décalage à partir du fichier partiel existant et n’ajoute la réponse temporaire qu’après un `206`. En cas de `200` ou d’échec de la requête, le fichier partiel reste intact : lancez un nouveau téléchargement séparément. Vérifiez le SHA-256 final avant d’utiliser le fichier.
+
 ```bash
-etag=$(curl -sSI -H "Authorization: Bearer $ARKVORY_KEY" "$URL" | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
-curl -sS -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
-  -H "Range: bytes=1048576-" "$URL" >> GameSetup.part
+etag=$(cat GameSetup.etag) || exit 1
+test -n "$etag" || exit 1
+offset=$(wc -c < GameSetup.part) || exit 1
+offset=$(printf '%s' "$offset" | tr -d '[:space:]')
+segment=$(mktemp) || exit 1
+status=$(curl -fsS -o "$segment" -w '%{http_code}' \
+  -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
+  -H "Range: bytes=$offset-" "$URL") || {
+  rm -f "$segment"
+  exit 1
+}
+if [ "$status" != 206 ]; then
+  rm -f "$segment"
+  exit 1
+fi
+cat "$segment" >> GameSetup.part
+result=$?
+rm -f "$segment"
+test "$result" -eq 0
 ```
 
 Pour éviter un téléchargement lorsque le fichier n’a pas changé, envoyez l’ETag que vous avez stocké la dernière fois :
@@ -189,7 +207,7 @@ Une [passerelle de lecture](../operate/read-gateways) n’accepte que `GET` et `
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Taille du fichier          | La taille maximale d’objet de l’installation, `ARKVORY_MAX_OBJECT_BYTES` (environ 10 TiB par défaut)                                                                                         |
 | Une requête `PUT`          | Doit se terminer en 30 minutes et ne pas s’interrompre plus de 30 secondes (`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`). Ce sont aussi les valeurs maximales autorisées. |
-| Téléversements simultanés  | 2 par serveur et 1 par clé par défaut (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). Une requête en attente abandonne après 20 secondes avec `503`.                           |
+| Téléversements simultanés  | 8 par serveur et 4 par clé par défaut (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). Une requête en attente abandonne après 20 secondes avec `503`.                           |
 | Téléchargements simultanés | 16 par serveur et 4 par clé par défaut                                                                                                                                                       |
 | Quota                      | Le fichier compte dans le quota du dépôt et la capacité de l’installation                                                                                                                    |
 

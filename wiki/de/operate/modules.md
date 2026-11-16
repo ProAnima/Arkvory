@@ -74,7 +74,7 @@ Ein installiertes Modul bleibt abgeschaltet, bis Sie es einschalten. Die Dienste
 3. Starten Sie die Dienste neu, wie unter [Eine Änderung anwenden](../install/configuration#apply-change).
 4. Prüfen Sie das Modul als globaler Administrator: `GET /api/v1/system/modules` zeigt es auf der API und auf jedem Lese-Gateway mit `running: true` und `health.status` `ok`.
 
-Signierte Module laufen entsprechend ihren deklarierten Rollen in API, Lesegateway, Worker und Backup-Agent. Jeder Prozess stellt nur die für seine Rolle verfügbaren und in `uses` angegebenen Dienste bereit. Routen erfordern `routes`. Docker Compose lädt noch keine Module.
+Signierte Module laufen entsprechend ihren deklarierten Rollen in API, Lesegateway, Worker und Backup-Agent. Jeder Prozess stellt nur die für seine Rolle verfügbaren und in `uses` angegebenen Dienste bereit. Routenpräfixe erfordern den Dienst `routes` (`routes_unsupported`, wenn er nicht verfügbar ist). Docker Compose lädt noch keine Module.
 
 Modulspeicher werden als `<module>.<name>` registriert und können für neue Uploads ausgewählt werden. Nimmt ein Speicher keine neuen Schreibvorgänge mehr an, fallen neue Uploads auf `default` zurück. Der Kern prüft alle Bytes vor der Veröffentlichung zusammengesetzter Objekte. Die Bereinigung wartet auf aktive Leser, sämtliche Backup-Pins und die Kopierbarriere. Berechnungen laufen in begrenzten Threads. Abonnements bestätigen Ereignisse erst nach erfolgreicher Verarbeitung; nach Fehlern ist eine erneute Zustellung möglich.
 

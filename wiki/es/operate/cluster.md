@@ -239,7 +239,7 @@ Cuando un servidor de datos se pierde definitivamente, sustitúyalo por uno nuev
 Cuando un servidor de datos permanece ausente mucho tiempo (por ejemplo, por la sustitución de un disco) y las escrituras detenidas cuestan más que el riesgo, un operador puede aceptar escrituras con una copia durante un tiempo limitado:
 
 ```bash
-arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
+arkvory cluster-single-copy --root /opt/proanima-arkvory --until "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --reason "disk replacement on node-b"
 ```
 
 - La hora debe estar dentro de los próximos 7 días y llevar su zona: `Z` para UTC o un desfase como `+03:00`. Sin zona el comando se niega, porque el servidor activo la interpretaría en su propia hora local. El comando solo funciona mientras faltan copias.
@@ -275,4 +275,4 @@ El agente de copias de seguridad se ejecuta solo en el servidor activo, como par
 - Cada escritura espera a los demás servidores de datos, así que la latencia del enlace se suma a cada escritura.
 - Arkvory nunca vuelve por sí mismo a un servidor reparado.
 
-En ha-2, el plan retrasa 15 segundos el fencing del nodo con el menor ID de DRBD (`pcmk_delay_base`); el otro destino no tiene retraso. Compruebe que este margen supera el tiempo de fencing y la diferencia en la detección del fallo. En clústeres existentes, aplique los comandos `pcs stonith update` correspondientes y pruebe fallos en ambas direcciones. Regenerar el plan no actualiza el clúster. El cuórum y el fencing siguen siendo obligatorios.
+En ha-2, el plan generado retrasa 15 segundos el fencing del nodo con el menor ID de nodo DRBD (`pcmk_delay_base`); el otro destino no tiene retraso. Esto evita que las solicitudes de fencing simultáneas apaguen ambos nodos cuando el retraso supera el tiempo de fencing medido y el desfase en la detección de fallos. Valide este margen con el agente de fencing que utiliza realmente. Los clústeres existentes deben aplicar los comandos `pcs stonith update` correspondientes y repetir las pruebas de fallo en ambas direcciones; regenerar el plan por sí solo no actualiza el clúster. El quórum y el fencing obligatorio permanecen habilitados.

@@ -16,31 +16,31 @@ Esta página mostra onde estão os arquivos, quais comandos existem e como funci
 
 A raiz da instalação contém tudo. É `C:\ProgramData\ProAnima\Arkvory` no Windows e `/opt/proanima-arkvory` no Linux. Uma instalação Compose usa a mesma raiz no host. Os caminhos abaixo são relativos à raiz.
 
-| Arquivo                                                                        | Conteúdo                                                                                                                    | Como alterar                                                           |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `config/runtime.json`                                                          | As configurações do servidor. As chaves começam com `ARKVORY_`, e todo valor é uma string. Contém a senha do banco de dados | Manualmente, ou com `configure`                                        |
-| `config/keys.json`                                                             | Hashes SHA-256 da chave de recuperação e da chave de prontidão. Nunca contém uma chave                                      | Apenas para [substituir a chave de recuperação](#replace-recovery-key) |
-| `config/bootstrap-token.txt`                                                   | A chave de recuperação                                                                                                      | Apenas para substituí-la                                               |
-| `config/health-token.txt`                                                      | A chave que as ferramentas de instalação usam para a verificação de prontidão                                               | Não altere                                                             |
-| `config/hub.json`                                                              | O endereço do hub, o canal de atualização e a configuração de estatísticas                                                  | Com `configure`                                                        |
-| `config/install-id`                                                            | Um ID de instalação aleatório, enviado ao hub somente com as estatísticas ativadas                                          | Não altere                                                             |
-| `config/mirrors/`                                                              | A lista de espelhos e as chaves que o worker usa para as origens                                                            | Com `configure --mirror`                                               |
-| `config/webhooks/`                                                             | A lista de assinaturas, os segredos de assinatura e as autoridades dos receptores que o worker usa                          | Com `configure --webhook`                                              |
-| `installation.json`                                                            | O modo, o motor, a configuração de atualização automática, a fixação de versão e a versão instalada                         | Apenas com comandos                                                    |
-| `github-token.txt`                                                             | Token opcional do GitHub para downloads de versões. Consulte [Atualizações](./updates#hub-unreachable)                      | Manualmente                                                            |
-| `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | Apenas Compose: a imagem, a montagem do vault e a montagem do espelho                                                       | Apenas com comandos                                                    |
+| Arquivo                                                                        | Conteúdo                                                                                                                           | Como alterar                                                           |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `config/runtime.json`                                                          | As configurações do servidor. As chaves começam com `ARKVORY_`, e todo valor é uma string. Contém a senha do banco de dados        | Manualmente, ou com `configure`                                        |
+| `config/keys.json`                                                             | Hashes SHA-256 da chave de recuperação e da chave de prontidão. Nunca contém uma chave                                             | Apenas para [substituir a chave de recuperação](#replace-recovery-key) |
+| `config/bootstrap-token.txt`                                                   | A chave de recuperação                                                                                                             | Apenas para substituí-la                                               |
+| `config/health-token.txt`                                                      | A chave que as ferramentas de instalação usam para a verificação de prontidão                                                      | Não altere                                                             |
+| `config/hub.json`                                                              | O endereço do hub, o canal de atualização e a configuração de estatísticas                                                         | Com `configure`                                                        |
+| `config/install-id`                                                            | Um ID de instalação aleatório, enviado ao hub somente com as estatísticas ativadas                                                 | Não altere                                                             |
+| `config/mirrors/`                                                              | A lista de espelhos e as chaves que o worker usa para as origens                                                                   | Com `configure --mirror`                                               |
+| `config/webhooks/`                                                             | A lista de assinaturas, os segredos de assinatura e os certificados das autoridades certificadoras dos receptores que o worker usa | Com `configure --webhook`                                              |
+| `installation.json`                                                            | O modo, o motor, a configuração de atualização automática, a fixação de versão e a versão instalada                                | Apenas com comandos                                                    |
+| `github-token.txt`                                                             | Token opcional do GitHub para downloads de versões. Consulte [Atualizações](./updates#hub-unreachable)                             | Manualmente                                                            |
+| `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | Apenas Compose: a imagem, a montagem do vault e a montagem do espelho                                                              | Apenas com comandos                                                    |
 
 Em uma instalação Linux nativa, `runtime.json` e `keys.json` são `root:arkvory` com modo `0640`, e os arquivos de credenciais em `config/` são legíveis apenas por `root`. Uma instalação Compose usa o modo `0644` para os arquivos que os contêineres leem: consulte [Docker Compose](./docker#owners). Mantenha os proprietários e os modos definidos pelo instalador.
 
 ## Comandos de ciclo de vida {#lifecycle-commands}
 
-Todos os comandos exigem direitos de administrador e a opção `--root` com a raiz da instalação.
+Nos comandos que gerenciam uma instalação existente, informe sua raiz com `--root`. Alterações nos serviços nativos exigem privilégios de administrador. Para Compose, use uma conta com acesso à raiz da instalação e ao mecanismo de contêineres. As exceções `help` e `volume-init` são descritas abaixo.
 
 | Instalação                     | Como executar um comando                                                                                                                                   |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pacote Linux                   | `sudo arkvory <command> --root /opt/proanima-arkvory`                                                                                                      |
 | Windows, instalador gráfico    | Em um PowerShell elevado: `& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' <command> --root C:\ProgramData\ProAnima\Arkvory`                             |
-| Instalação por script, Compose | `sudo <root>/runtime/node-v24.21.0-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`. No Windows, use `runtime\node-v24.21.0-win-x64\node.exe` |
+| Instalação por script, Compose | `sudo <root>/runtime/node-v24.22.3-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`. No Windows, use `runtime\node-v24.22.3-win-x64\node.exe` |
 
 `arkvory help` lista os comandos sem direitos especiais. Os exemplos neste site usam a forma curta `arkvory <command>`.
 
@@ -108,9 +108,11 @@ Não há configuração para uma URL pública. O servidor monta links absolutos,
 | Variável                     | Padrão                   | Significado                                                                                                                |
 | ---------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | `ARKVORY_DATABASE_URL`       | definido pelo instalador | A URL de conexão do PostgreSQL. Um banco de dados gerenciado escuta em `127.0.0.1` na porta escolhida durante a instalação |
-| `ARKVORY_DATABASE_POOL_SIZE` | `10`                     | O tamanho do pool de conexões da API, de 4 a 200                                                                           |
+| `ARKVORY_DATABASE_POOL_SIZE` | `20`                     | O tamanho do pool de conexões para consultas da API, de 4 a 200                                                            |
 
-Não aponte uma instalação para outro banco de dados. Os arquivos armazenados e o catálogo pertencem um ao outro. Mudar para um novo banco de dados é uma restauração a partir de um backup: consulte [Backups](../operate/backups). Para um PostgreSQL externo, defina `max_connections` alto o suficiente para o pool da API, uma conexão por upload simultâneo para bloqueios de escrita, 5 para o worker e as conexões do agente de backup.
+Não aponte uma instalação para outro banco de dados. Os arquivos armazenados e o catálogo pertencem um ao outro. Mudar para um novo banco de dados é uma restauração a partir de um backup: consulte [Backups](../operate/backups).
+
+Para um PostgreSQL externo, dimensione `max_connections` pela soma dos limites máximos dos pools de todos os processos. Cada processo da API, incluindo cada gateway de leitura, tem três pools separados: até `ARKVORY_DATABASE_POOL_SIZE` conexões para consultas (20 por padrão), 8 conexões para sessões de longa duração e até `ARKVORY_MAX_UPLOADS` conexões para bloqueios de escrita dos uploads (8 por padrão). O worker tem pools separados de 5 conexões para consultas, 8 para sessões e `2 + min(N, 16)` para bloqueios de escrita, em que N é o número de espelhos configurados. O agente de backup tem seu próprio pool de 6 conexões e abre outro pool de 6 enquanto captura um backup. Esses são limites máximos, não conexões ocupadas permanentemente. Reserve capacidade adicional para ferramentas de licenciamento, manutenção e administração do banco de dados.
 
 ### Diretório de armazenamento e espaço livre {#storage}
 
@@ -127,17 +129,17 @@ Mantenha `ARKVORY_DATA_DIR` onde o instalador o colocou. As unidades do Linux po
 
 Os limites pertencem a um processo da API. Uma taxa de `0` significa sem limite.
 
-| Variável                              | Padrão    | Significado                                                                                                        |
-| ------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------ |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | Uploads simultâneos, 1 a 32                                                                                        |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | Downloads simultâneos, 1 a 256                                                                                     |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | Uploads simultâneos de uma conta ou chave                                                                          |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | Downloads simultâneos de uma conta ou chave                                                                        |
-| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | Ordem da fila de downloads: `ordered` (classes e revezamento), `smallest-first` ou `shared` (sem fila, como antes) |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | Taxa total de upload em bytes por segundo                                                                          |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | Taxa total de download em bytes por segundo                                                                        |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | O tempo máximo de uma solicitação de upload, 30 minutos                                                            |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | Uma solicitação de upload que não envia dados por esse tempo para                                                  |
+| Variável                              | Padrão                          | Significado                                                                                                        |
+| ------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `ARKVORY_MAX_UPLOADS`                 | `8`                             | Uploads simultâneos, 1 a 32                                                                                        |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`                            | Downloads simultâneos, 1 a 256                                                                                     |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `min(4, ARKVORY_MAX_UPLOADS)`   | Uploads simultâneos de uma conta ou chave                                                                          |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `min(4, ARKVORY_MAX_DOWNLOADS)` | Downloads simultâneos de uma conta ou chave                                                                        |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered`                       | Ordem da fila de downloads: `ordered` (classes e revezamento), `smallest-first` ou `shared` (sem fila, como antes) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`                             | Taxa total de upload em bytes por segundo                                                                          |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`                             | Taxa total de download em bytes por segundo                                                                        |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`                       | O tempo máximo de uma solicitação de upload, 30 minutos                                                            |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`                         | Uma solicitação de upload que não envia dados por esse tempo para                                                  |
 
 Um proxy na frente da API deve permitir uma solicitação pelo menos tão longa quanto `ARKVORY_UPLOAD_DEADLINE_MS`. Consulte [HTTPS](./https#reverse-proxy). Todos os outros limites, como a fila de espera e as taxas por conta, estão em [Variáveis de ambiente](../reference/environment#transfers-and-bandwidth).
 
@@ -221,7 +223,7 @@ Substitua a chave de recuperação se você suspeitar que alguém leu `config/bo
    & 'C:\ProgramData\ProAnima\Arkvory\runtime\node.exe' .\replace-recovery-key.mjs 'C:\ProgramData\ProAnima\Arkvory\config'
    ```
 
-   Após uma instalação por script, use o Node.js em `runtime\node-v24.21.0-…` em vez disso.
+   Após uma instalação por script, use o Node.js em `runtime\node-v24.22.3-…` em vez disso.
 
 4. Reinicie os serviços conforme mostrado em [Aplicar uma alteração](#apply-change).
 5. Leia a nova chave em `config/bootstrap-token.txt` e exclua o script e a cópia de `keys.json`.

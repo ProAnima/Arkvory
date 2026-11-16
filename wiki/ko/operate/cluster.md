@@ -54,7 +54,7 @@ Arkvory 클러스터는 사이트의 서버 한 대가 장애를 일으켜도 �
 
 ## 클러스터 구축 {#build}
 
-아래 명령은 기본 리소스 이름 `arkvory`, 설치 디렉터리 `/opt/proanima-arkvory`, 그리고 백업 디스크로 `/dev/vg0/arkvory`를 사용합니다. root로 실행하십시오.
+아래 명령은 기본 리소스 이름 `arkvory`, 설치 디렉터리 `/opt/proanima-arkvory`, 그리고 볼륨의 기반 디스크로 `/dev/vg0/arkvory`를 사용합니다. root로 실행하십시오.
 
 1. 모든 데이터 서버에서 Arkvory 패키지를 설치하지 않고 압축만 풉니다. 이렇게 하면 파일과 `arkvory` 명령이 추가되며 `/opt/proanima-arkvory`에는 아무것도 만들어지지 않습니다.
 
@@ -239,7 +239,7 @@ root로 다음 명령을 실행하십시오. `cluster-status`, `cluster-single-c
 데이터 서버가 오랫동안 빠져 있고(예: 디스크 교체) 쓰기 중단의 비용이 위험보다 클 때, 운영자는 제한된 시간 동안 복사본 하나로 쓰기를 허용할 수 있습니다.
 
 ```bash
-arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
+arkvory cluster-single-copy --root /opt/proanima-arkvory --until "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --reason "disk replacement on node-b"
 ```
 
 - 시각은 앞으로 7일 이내여야 하며 시간대를 포함해야 합니다. UTC는 `Z`, 또는 `+03:00` 같은 오프셋입니다. 시간대가 없으면 활성 서버가 자신의 현지 시각으로 해석하게 되므로 명령이 거부됩니다. 이 명령은 복사본이 부족한 동안에만 동작합니다.

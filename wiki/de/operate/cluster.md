@@ -239,7 +239,7 @@ Ist ein Datenserver endgültig verloren, ersetzen Sie ihn durch einen neuen mit 
 Bleibt ein Datenserver lange aus (zum Beispiel bei einem Datenträgertausch) und kosten gestoppte Schreibvorgänge mehr als das Risiko, kann ein Operator für begrenzte Zeit Schreibvorgänge mit einer Kopie akzeptieren:
 
 ```bash
-arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
+arkvory cluster-single-copy --root /opt/proanima-arkvory --until "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --reason "disk replacement on node-b"
 ```
 
 - Der Zeitpunkt muss innerhalb der nächsten 7 Tage liegen und seine Zeitzone angeben: `Z` für UTC oder einen Versatz wie `+03:00`. Ohne Zeitzone lehnt der Befehl ab, weil der aktive Server den Zeitpunkt sonst in seiner eigenen Ortszeit lesen würde. Der Befehl funktioniert nur, solange Kopien fehlen.
@@ -275,4 +275,4 @@ Der Backup-Agent läuft nur auf dem aktiven Server, als Teil der Gruppe. Halten 
 - Jeder Schreibvorgang wartet auf die anderen Datenserver, daher kommt die Latenz der Verbindung zu jedem Schreibvorgang hinzu.
 - Arkvory wechselt nie von selbst auf einen reparierten Server zurück.
 
-Bei ha-2 verzögert der Plan das Fencing des Knotens mit der kleinsten DRBD-Knoten-ID um 15 Sekunden (`pcmk_delay_base`); das andere Ziel hat keine Verzögerung. Prüfen Sie, dass diese Zeit die gemessene Fencing-Dauer und die Unterschiede der Fehlererkennung übersteigt. Bestehende Cluster müssen die entsprechenden `pcs stonith update`-Befehle anwenden und Ausfälle in beiden Richtungen testen. Das erneute Erzeugen des Plans ändert den Cluster nicht. Quorum und Fencing bleiben verpflichtend.
+Bei ha-2 verzögert der erzeugte Plan das Fencing des Knotens mit der kleinsten DRBD-Knoten-ID um 15 Sekunden (`pcmk_delay_base`); das andere Ziel hat keine Verzögerung. Dies verhindert, dass gleichzeitige Fencing-Anfragen beide Knoten ausschalten, wenn die Verzögerung die gemessene Fencing-Dauer und den Zeitversatz der Fehlererkennung übersteigt. Prüfen Sie diesen Sicherheitsabstand mit Ihrem tatsächlich eingesetzten Fencing-Agenten. Bestehende Cluster müssen die entsprechenden `pcs stonith update`-Befehle anwenden und Ausfalltests in beiden Richtungen wiederholen; allein das erneute Erzeugen des Plans aktualisiert den Cluster nicht. Quorum und verpflichtendes Fencing bleiben aktiviert.

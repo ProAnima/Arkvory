@@ -25,7 +25,7 @@ Das größte Objekt ist 10.000 GiB (10 737 418 240 000 Byte), es sei denn, der A
 
 ## Authentifizierung {#authentication}
 
-Jeder Vorgang außer der Anmeldung, den öffentlichen Health-Checks und den Anmeldeoptionen benötigt Anmeldedaten im Header `Authorization: Bearer <credential>`. Die Anmeldedaten sind eine Konsolensitzung, ein persönliches Zugriffstoken, ein Dienstschlüssel oder der Wiederherstellungsschlüssel. Was Anmeldedaten tun dürfen, hängt von ihrer Art und von der **Zugriffsregel** jedes Vorgangs ab. Lesen Sie [Authentifizierung](./authentication), bevor Sie die Integration entwerfen, und geben Sie der Automatisierung einen Dienstschlüssel mit nur den Aktionen, die sie braucht.
+Jeder Vorgang außer der Anmeldung, der Selbstregistrierung, den öffentlichen Health-Checks und den Anmeldeoptionen benötigt Anmeldedaten im Header `Authorization: Bearer <credential>`. Die Selbstregistrierung (`POST /api/v1/auth/register`, `registerAccount`) benötigt keine Anmeldedaten und kann nur erfolgreich sein, wenn der Administrator `ARKVORY_ALLOW_REGISTRATION=true` setzt; andernfalls gibt sie `403` mit dem Grund `registration_disabled` zurück. Die Anmeldedaten sind eine Konsolensitzung, ein persönliches Zugriffstoken, ein Dienstschlüssel oder der Wiederherstellungsschlüssel. Was Anmeldedaten tun dürfen, hängt von ihrer Art und von der **Zugriffsregel** jedes Vorgangs ab. Lesen Sie [Authentifizierung](./authentication), bevor Sie die Integration entwerfen, und geben Sie der Automatisierung einen Dienstschlüssel mit nur den Aktionen, die sie braucht.
 
 ## Erkundung {#discovery}
 

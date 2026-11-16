@@ -38,7 +38,7 @@ Cada arquivo armazenado é um **artefato** imutável com uma soma de verificaç�
 - **Estágios e promoção.** Marque um build como `qa`, `release` ou `prod`, ou publique-o em outro repositório sem um novo upload. Um agente de implantação pode pedir "o build `release` mais recente no intervalo `^1.4`".
 - **Metadados.** Rótulos, metadados em texto, coleções e arquivos anexados, como manifestos, SBOMs e assinaturas.
 - **Retenção.** Mantenha os últimos N builds de cada pacote, defina cotas e remova conteúdo antigo em segundo plano.
-- **Backups.** Um agente de backup copia o banco de dados e todo o conteúdo para um armazenamento de backups (vault) em outro disco ou NAS, em um horário diário, e verifica as cópias.
+- **Backups.** Um agente de backup copia o banco de dados e todo o conteúdo para um armazenamento de backups (vault) em outro disco ou NAS, em uma programação diária que um administrador ativa, e verifica as cópias.
 - **Espelhos.** Uma segunda instalação pode manter uma cópia somente leitura de um repositório e servi-la quando o servidor principal não está disponível.
 - **Gateways de leitura.** Processos de download extras no mesmo armazenamento compartilhado dividem um único limite de taxa de download.
 - **Autorrecuperação.** Os serviços reiniciam depois de uma falha ou de um travamento. Transferências longas podem continuar após a reinicialização.
@@ -65,7 +65,7 @@ Você pode instalá-lo de três maneiras:
 
 Por padrão, o servidor escuta somente em `127.0.0.1:8080`. Antes de outras máquinas se conectarem, configure o [HTTPS](../install/https).
 
-Uma instalação é um único servidor: se ele parar, os clientes esperam até que volte. No Linux, um [cluster de alta disponibilidade](../operate/cluster) de dois ou três servidores assume o lugar quando um deles falha. Use [backups](../operate/backups) e, se necessário, [espelhos](../operate/mirrors) em um segundo site.
+Uma instalação padrão é um único servidor: se ele parar, os clientes esperam até que volte. No Linux, um [cluster de alta disponibilidade](../operate/cluster) de dois ou três servidores assume o lugar quando um deles falha. Use [backups](../operate/backups) e, se necessário, [espelhos](../operate/mirrors) em um segundo site.
 
 ## Para onde ir em seguida {#where-to-go-next}
 

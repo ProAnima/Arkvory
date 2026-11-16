@@ -194,7 +194,7 @@ Ein Server ohne Internetzugang kann nicht auf Releases prüfen. Die Seite [[ui:u
 
 Der Updater prüft den SHA-256 des Archivs gegen das Manifest. Die Signatur prüft er nur, wenn `arkvory-release.json.sig` neben dem Manifest liegt. Ein lokales Verzeichnis ist Ihre eigene Wahl, daher verlangt das Update die Signatur nicht. Ohne sie ist der Vergleich des Kits mit `release-checksums.json` in Schritt 1 Ihr einziger Herkunftsnachweis. Dieselben Regeln für eine Schemaänderung gelten: Sie brauchen zuerst ein verifiziertes Backup.
 
-Ein natives Paket oder `Arkvory-Setup-x64.exe` enthält sein Release und braucht keinen Internetzugang. Ein Compose-Update baut das Image auf dem Host. Es braucht Docker Hub nur, wenn das Basis-Image `node:24.21.0-bookworm-slim` noch nicht auf dem Host liegt.
+Ein natives Paket oder `Arkvory-Setup-x64.exe` enthält sein Release und braucht keinen Internetzugang. Ein Compose-Update baut das Image auf dem Host. Es braucht Docker Hub nur, wenn das Basis-Image `node:24.22.3-bookworm-slim` noch nicht auf dem Host liegt.
 
 ## Update nach Plattform {#platforms}
 
@@ -242,3 +242,5 @@ Aktualisieren Sie über die Konsole oder mit `manage.mjs update`. Der Updater ba
 | `Interrupted update request; inspect installation and use updates-reset` | Eine Anfrage aus der Konsole wurde angenommen, aber nicht abgeschlossen. Prüfen Sie den Zustand und führen Sie dann `updates-reset` aus                                                                                                                                |
 
 Weitere Hinweise stehen unter [Fehlerbehebung](../operate/troubleshooting) und [Selbstheilung](../operate/self-healing).
+
+Lesen Sie vor dem Aktualisieren einer bestehenden Datenbank auf PostgreSQL 18.7 [die Nacharbeiten des Anbieters](https://www.postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/).

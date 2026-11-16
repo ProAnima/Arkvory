@@ -48,7 +48,7 @@ After you sign in with a password, you can use [[ui:changeOwnPassword]] and [[ui
 
 ### The first owner {#the-first-owner}
 
-A new installation has no accounts. On Windows, Setup creates the owner. On other installations, create the owner in the console:
+A new installation has no accounts. The Windows graphical installer `Arkvory-Setup-x64.exe` creates the owner. With the Windows PowerShell script, Linux or Docker, create the owner in the console:
 
 1. Open [[ui:navStart]] and expand [[ui:welcomeOwner]].
 2. Paste the recovery key from `config/bootstrap-token.txt` in the installation directory.

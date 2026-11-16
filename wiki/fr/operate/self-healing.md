@@ -137,7 +137,7 @@ L’autoréparation couvre les défaillances d’un processus. Celles-ci nécess
 - **Les certificats.** Arkvory relit les fichiers de certificat renouvelés sans redémarrage (toutes les 300 secondes par défaut), mais vos outils doivent les renouveler.
 - **Un service arrêté.** Un service que vous avez arrêté reste arrêté.
 - **La plateforme.** Docker doit démarrer au lancement. Les versions majeures de PostgreSQL, Node.js et le système d’exploitation sont mis à jour par vous.
-- **Un serveur ou un disque perdu.** Il n’y a pas de basculement. Restaurez depuis une sauvegarde. Voir [Sauvegardes](./backups).
+- **Perte d’un serveur ou d’un disque.** Une installation autonome n’a pas de basculement : restaurez une sauvegarde. Un cluster haute disponibilité peut basculer vers un autre serveur de données selon ses règles de réplication et de fencing. Voir [Sauvegardes](./backups) et [Cluster haute disponibilité](./cluster).
 
 ## Pages associées {#related-pages}
 

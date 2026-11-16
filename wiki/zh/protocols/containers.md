@@ -220,7 +220,7 @@ curl -fsS -X DELETE -H "Authorization: Bearer $ARKVORY_CLEANUP_KEY" \
 | 单个上传请求     | 必须在 30 分钟内完成，且停顿不得超过 30 秒（`ARKVORY_UPLOAD_DEADLINE_MS`、`ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`）。30 分钟也是允许的最大值。                               |
 | 未完成的上传     | 24 小时无活动后，连同其字节一并移除                                                                                                                                   |
 | 临时磁盘空间     | 上传期间最多为镜像层大小的两倍                                                                                                                                        |
-| 同时进行的上传   | 默认每个密钥 1 个、每台服务器 2 个（`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`、`ARKVORY_MAX_UPLOADS`）。等待中的请求在 20 秒后放弃（`ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`）。 |
+| 同时进行的上传   | 默认每个密钥 4 个、每台服务器 8 个（`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`、`ARKVORY_MAX_UPLOADS`）。等待中的请求在 20 秒后放弃（`ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`）。 |
 | 同时进行的下载   | 默认每个密钥 4 个、每台服务器 16 个                                                                                                                                   |
 | 每页的镜像标签数 | 1000                                                                                                                                                                  |
 | 配额             | 镜像层、manifest 和未完成上传的字节都计入仓库配额和安装容量                                                                                                           |

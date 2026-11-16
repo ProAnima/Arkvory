@@ -30,7 +30,7 @@ Les autorisations de dépôt sont vérifiées à chaque lecture, comme sur le pr
 - **Les mêmes clés de service.** Donnez à chaque processus le même contenu de `ARKVORY_KEYS_FILE`, afin que les clés de fichier et leurs ID correspondent. Les clés de service gérées vivent dans la base de données, elles correspondent donc d’elles-mêmes.
 - **Son propre port.** Chaque processus sur le même hôte a besoin de son propre `ARKVORY_PORT`.
 - **Une vue en lecture seule des fichiers.** Lorsque vous le pouvez, montez le répertoire de stockage en lecture seule pour la passerelle. Le refus HTTP ne remplace pas les droits du système d’exploitation. Notez que la passerelle écrit quand même dans la base de données : les baux, les diagnostics de stockage, l’heure de dernière utilisation des jetons d’accès personnels et les verrous qui protègent les fichiers en cours de lecture.
-- **Connexions à la base de données.** Chaque passerelle a besoin de trois connexions de plus que `ARKVORY_DATABASE_POOL_SIZE`. Comptez-les dans `max_connections` de PostgreSQL.
+- **Connexions à la base de données.** Chaque passerelle utilise le pool de requêtes dont la taille est définie par `ARKVORY_DATABASE_POOL_SIZE` et un pool distinct de 8 connexions au maximum pour les sessions de longue durée (possession du stockage, protection des fichiers pendant leur téléchargement et bail de la passerelle). Comptez les deux pools dans `max_connections` de PostgreSQL.
 
 ## Exécuter une passerelle {#run}
 
@@ -102,7 +102,7 @@ La base de données réserve un emplacement pendant 10 secondes. Un processus le
 - **Horloges.** Les baux reposent sur des horloges stables. Un saut de l’horloge du serveur de base de données, ou une machine virtuelle arrêtée, peut laisser un processus servir au-delà de son bail. Dans ce cas, arrêtez les anciens processus avant de démarrer un remplaçant.
 - **Défaillance de la base de données.** La base de données est le point faible. Si elle devient injoignable, les baux expirent et tous les processus cessent de servir des données utiles.
 
-Le serveur ne peut remarquer un processus mort qui a perdu son réseau que par le keepalive TCP. Définissez `tcp_keepalives_idle`, `tcp_keepalives_interval` et `tcp_keepalives_count` sur PostgreSQL, par exemple à 10, 5 et 3 secondes, ou définissez `tcp_user_timeout`. Sans eux, un nouveau processus d’écriture ou de traitement peut attendre le long délai d’expiration par défaut du système d’exploitation.
+Le serveur ne peut remarquer un processus mort qui a perdu son réseau que par le keepalive TCP. Par exemple, définissez `tcp_keepalives_idle` à 10 secondes, `tcp_keepalives_interval` à 5 secondes et `tcp_keepalives_count` à 3 sondes dans PostgreSQL, ou définissez `tcp_user_timeout`. Sans eux, un nouveau processus d’écriture ou de traitement peut attendre le long délai d’expiration par défaut du système d’exploitation.
 
 ## Superviser les passerelles {#monitoring}
 

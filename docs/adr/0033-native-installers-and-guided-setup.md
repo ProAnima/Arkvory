@@ -4,7 +4,7 @@
 
 ## Решение
 
-Основной Windows-дистрибутив — EXE Inno Setup 6.7.3, RU/EN, системная светлая/тёмная тема, отдельная бренд-панель. В комплекте проверенные SHA-256 Node.js 24, PostgreSQL 18, WinSW и Microsoft VC++ runtime. На целевой машине не выполняются npm, сборка или скачивание исполняемого кода. UAC и создание пароля владельца остаются необходимыми действиями пользователя. Перезагрузка, запрошенная Microsoft runtime, не маскируется успешной установкой.
+Основной Windows-дистрибутив — EXE Inno Setup 6.7.4, RU/EN, системная светлая/тёмная тема, отдельная бренд-панель. В комплекте проверенные SHA-256 Node.js 24, PostgreSQL 18, WinSW и Microsoft VC++ runtime. На целевой машине не выполняются npm, сборка или скачивание исполняемого кода. UAC и создание пароля владельца остаются необходимыми действиями пользователя. Перезагрузка, запрошенная Microsoft runtime, не маскируется успешной установкой.
 
 Linux получает DEB/RPM с готовыми Node.js/Arkvory. Зависимости PostgreSQL, systemd, Python и сертификаты разрешает пакетный менеджер. Первый профиль: x64/glibc, Ubuntu 24.04 / Debian с PostgreSQL >=16, RPM-дистрибутивы с PostgreSQL 16–19. Не обещаем GUI на headless, Alpine/musl, macOS или штатный пакет для старых дистрибутивов. Графический менеджер приложений может установить локальный пакет; автоматическое открытие браузера из root post-install запрещено. Ярлык ведёт в onboarding. Docker остаётся самостоятельным Compose-профилем с заранее установленным engine: установщик хранилища не включает гипервизор или WSL.
 
@@ -36,4 +36,4 @@ API-справочник использует существующий paginated
 
 ## Источники зависимостей
 
-[Inno Setup](https://jrsoftware.org/isdl.php), [лицензия компилятора](https://github.com/jrsoftware/issrc/blob/is-6_7_3/license.txt), [PostgreSQL Windows](https://www.postgresql.org/download/windows/), [EDB binaries](https://www.enterprisedb.com/download-postgresql-binaries), [WinSW](https://github.com/winsw/winsw/releases/tag/v2.12.0). Все URL и digest версий зафиксированы в scripts/native-dependencies.mjs; сторонние лицензии входят в Windows payload.
+[Inno Setup](https://jrsoftware.org/isdl.php), [лицензия компилятора](https://github.com/jrsoftware/issrc/blob/is-6_7_4/license.txt), [PostgreSQL Windows](https://www.postgresql.org/download/windows/), [EDB binaries](https://www.enterprisedb.com/download-postgresql-binaries), [WinSW](https://github.com/winsw/winsw/releases/tag/v2.12.0). Все URL и digest версий зафиксированы в scripts/native-dependencies.mjs; сторонние лицензии входят в Windows payload.

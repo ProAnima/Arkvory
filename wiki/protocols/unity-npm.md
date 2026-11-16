@@ -181,7 +181,7 @@ The answer lists every version with the content of its `package.json` (including
 | Tarball                         | Up to the maximum object size of the installation, `ARKVORY_MAX_OBJECT_BYTES` (about 10 TiB by default). An archive that expands more than 100 times plus 64 MiB is refused. |
 | The rest of the publish request | Up to 8 MiB of JSON, nested at most 64 levels. The tarball is read as a stream and is not kept in memory.                                                                    |
 | One publish request             | Must finish within 30 minutes and must not pause for more than 30 seconds (`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`)                                   |
-| Uploads at the same time        | 2 per server and 1 per key by default. A waiting request gives up after 20 seconds.                                                                                          |
+| Uploads at the same time        | 8 per server and 4 per key by default. A waiting request gives up after 20 seconds.                                                                                          |
 | Search text                     | Up to 256 characters                                                                                                                                                         |
 
 `npm publish` is one request, and it starts again from the first byte after a failure. For packages of many gigabytes, upload the file with [`arkvoryctl`](./cli) as an artifact or a [raw file](./raw-files). Large binary assets that change often are better placed in [Git LFS](./git-lfs); keep code and stable resources in packages.

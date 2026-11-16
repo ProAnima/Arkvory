@@ -234,7 +234,7 @@ PostgreSQL 16~19 버전을 사용하세요. 하나의 Arkvory 설치에 하나�
 4. 설치가 끝나면 임시 디렉터리 `/opt/proanima-arkvory/bootstrap.*`를 삭제하세요. 프롬프트에서 URL을 입력했다면 그 디렉터리의 `native.json`에 URL이 들어 있습니다.
 5. [첫 시작과 시작하기](#first-start)에서 설명한 대로 소유자를 만드세요.
 
-스크립트는 `nodejs.org`에서 Node.js 24.21.0을 다운로드하고 SHA-256을 확인한 다음 최신 안정 릴리스를 설치합니다. 자동 업데이트를 꺼 두려면 `--automatic`을 생략하세요. 환경 변수로 기본값을 변경할 수 있습니다.
+스크립트는 `nodejs.org`에서 Node.js 24.22.3을 다운로드하고 SHA-256을 확인한 다음 최신 안정 릴리스를 설치합니다. 자동 업데이트를 꺼 두려면 `--automatic`을 생략하세요. 환경 변수로 기본값을 변경할 수 있습니다.
 
 | 변수                      | 의미                                                        | 기본값                  |
 | ------------------------- | ----------------------------------------------------------- | ----------------------- |
@@ -248,7 +248,7 @@ PostgreSQL 16~19 버전을 사용하세요. 하나의 Arkvory 설치에 하나�
 
 ```bash
 root=/opt/proanima-arkvory
-sudo "$root/runtime/node-v24.21.0-linux-x64/bin/node" "$root/manage.mjs" status --root "$root"
+sudo "$root/runtime/node-v24.22.3-linux-x64/bin/node" "$root/manage.mjs" status --root "$root"
 ```
 
 PostgreSQL 서버는 직접 백업하고 유지 관리합니다. Arkvory 백업 에이전트가 연결 URL을 통해 데이터베이스 내용을 보관소로 복사합니다. [백업](../operate/backups)을 참조하세요.

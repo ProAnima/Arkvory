@@ -239,7 +239,7 @@ When a data server is lost for good, replace it with a new one under the same na
 When a data server stays away for long (a disk replacement, for example), and stopped writes cost more than the risk, an operator can accept writes with one copy for a limited time:
 
 ```bash
-arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
+arkvory cluster-single-copy --root /opt/proanima-arkvory --until "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --reason "disk replacement on node-b"
 ```
 
 - The time must be within the next 7 days and carry its zone: `Z` for UTC or an offset such as `+03:00`. Without a zone the command refuses, because the active server would read it in its own local time. The command works only while copies are missing.

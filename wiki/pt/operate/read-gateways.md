@@ -30,7 +30,7 @@ As permissões de repositório são verificadas a cada leitura, como no escritor
 - **As mesmas chaves de serviço.** Dê a todos os processos o mesmo conteúdo de `ARKVORY_KEYS_FILE`, para que as chaves de arquivo e seus IDs coincidam. As chaves de serviço gerenciadas vivem no banco de dados, então coincidem por si sós.
 - **Porta própria.** Todo processo no mesmo host precisa de sua própria `ARKVORY_PORT`.
 - **Uma visão somente leitura dos arquivos.** Onde puder, monte o diretório de armazenamento como somente leitura para o gateway. A recusa HTTP não substitui os direitos do sistema operacional. Observe que o gateway ainda grava no banco de dados: leases, diagnósticos de armazenamento, o horário de último uso de tokens pessoais e os bloqueios que protegem arquivos que estão sendo lidos.
-- **Conexões de banco de dados.** Todo gateway precisa de três conexões a mais que `ARKVORY_DATABASE_POOL_SIZE`. Conte-as em `max_connections` do PostgreSQL.
+- **Conexões de banco de dados.** Cada gateway usa o pool de consultas dimensionado por `ARKVORY_DATABASE_POOL_SIZE` e um pool separado de até 8 conexões para sessões de longa duração (propriedade do armazenamento, proteção dos arquivos durante o download e concessão do gateway). Inclua os dois pools em `max_connections` do PostgreSQL.
 
 ## Executar um gateway {#run}
 
@@ -102,7 +102,7 @@ O banco de dados reserva um slot por 10 segundos. Um processo o renova a cada 2 
 - **Relógios.** Os leases dependem de relógios estáveis. Um salto no relógio do servidor de banco de dados, ou uma máquina virtual parada, pode deixar um processo servindo além de seu lease. Pare os processos antigos antes de iniciar um substituto em um caso desses.
 - **Falha do banco de dados.** O banco de dados é o ponto fraco. Se ele ficar inacessível, os leases expiram e todos os processos param de servir payload.
 
-O servidor só consegue notar um processo morto que perdeu sua rede por meio do TCP keepalive. Defina `tcp_keepalives_idle`, `tcp_keepalives_interval` e `tcp_keepalives_count` no PostgreSQL, por exemplo como 10, 5 e 3 segundos, ou defina `tcp_user_timeout`. Sem eles, um novo escritor ou worker pode esperar pelo longo tempo limite padrão do sistema operacional.
+O servidor só consegue notar um processo morto que perdeu sua rede por meio do TCP keepalive. Por exemplo, defina `tcp_keepalives_idle` como 10 segundos, `tcp_keepalives_interval` como 5 segundos e `tcp_keepalives_count` como 3 sondagens no PostgreSQL, ou defina `tcp_user_timeout`. Sem eles, um novo escritor ou worker pode esperar pelo longo tempo limite padrão do sistema operacional.
 
 ## Monitorar gateways {#monitoring}
 

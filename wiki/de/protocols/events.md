@@ -54,7 +54,7 @@ Die Antwort enthält `items`, `next`, `head`, `oldest` und `epoch`. Übergeben S
     "artifactId": "9a7b6c5d-4e3f-4a1b-8c2d-1e0f9a8b7c6d",
     "name": "game.upack",
     "size": "73400320",
-    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sha256": "d563c767a739c2a9066a2668341a473c4cb0dcbc106c2d533133ad8311c3c007",
     "labels": ["ci"],
     "stages": []
   }

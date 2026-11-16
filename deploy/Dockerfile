@@ -1,4 +1,4 @@
-FROM node:24.21.0-bookworm-slim
+FROM node:24.22.3-bookworm-slim
 WORKDIR /opt/arkvory
 # Module resolution stays in the release (ADR 0031, addendum 2026-10-18); no global search path.
 ENV NODE_PATH=

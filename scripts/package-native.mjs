@@ -90,10 +90,10 @@ async function windowsPackage() {
   const nodeArchive = join(stage, 'node.zip');
   await copyFile(await dependency('nodeWindows', cache), nodeArchive);
   await expand(nodeArchive, join(stage, 'node'));
-  await copyFile(join(stage, 'node/node-v24.21.0-win-x64/node.exe'), join(runtime, 'node.exe'));
-  await installerRuntimePins(join(stage, 'node/node-v24.21.0-win-x64'));
+  await copyFile(join(stage, 'node/node-v24.22.3-win-x64/node.exe'), join(runtime, 'node.exe'));
+  await installerRuntimePins(join(stage, 'node/node-v24.22.3-win-x64'));
   await copyFile(
-    join(stage, 'node/node-v24.21.0-win-x64/LICENSE'),
+    join(stage, 'node/node-v24.22.3-win-x64/LICENSE'),
     join(runtime, 'NODE-LICENSE.txt'),
   );
   const pgArchive = join(stage, 'pg.zip');

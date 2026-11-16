@@ -132,10 +132,28 @@ wget --header="Authorization: Bearer $ARKVORY_KEY" -O GameSetup.exe "$URL"
 
 경로는 언제든 새 버전이 될 수 있고, `GET`은 경로를 다시 확인합니다. 다운로드를 안전하게 이어서 하려면 첫 응답의 `ETag`를 기억해 `If-Range`로 보내세요:
 
+최초 `GET` 응답의 `ETag`를 `GameSetup.etag`에 저장하고, `HEAD`로 새 값을 가져오지 마세요. 이 예제는 기존 부분 파일의 크기로 오프셋을 계산하고 `206`일 때만 임시 응답을 덧붙입니다. `200`이거나 요청이 실패하면 부분 파일을 변경하지 않습니다. 새 다운로드를 별도로 시작하세요. 파일을 사용하기 전에 최종 SHA-256을 검증하세요.
+
 ```bash
-etag=$(curl -sSI -H "Authorization: Bearer $ARKVORY_KEY" "$URL" | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
-curl -sS -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
-  -H "Range: bytes=1048576-" "$URL" >> GameSetup.part
+etag=$(cat GameSetup.etag) || exit 1
+test -n "$etag" || exit 1
+offset=$(wc -c < GameSetup.part) || exit 1
+offset=$(printf '%s' "$offset" | tr -d '[:space:]')
+segment=$(mktemp) || exit 1
+status=$(curl -fsS -o "$segment" -w '%{http_code}' \
+  -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
+  -H "Range: bytes=$offset-" "$URL") || {
+  rm -f "$segment"
+  exit 1
+}
+if [ "$status" != 206 ]; then
+  rm -f "$segment"
+  exit 1
+fi
+cat "$segment" >> GameSetup.part
+result=$?
+rm -f "$segment"
+test "$result" -eq 0
 ```
 
 파일이 변경되지 않았을 때 다운로드를 건너뛰려면, 지난번에 저장한 ETag를 보내세요:
@@ -189,7 +207,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ARKVORY_KEY
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 파일 크기         | 설치의 최대 객체 크기, `ARKVORY_MAX_OBJECT_BYTES`(기본 약 10 TiB)                                                                                      |
 | 하나의 `PUT` 요청 | 30분 안에 끝나야 하고 30초 넘게 멈추면 안 됩니다(`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`). 이것이 허용되는 최댓값이기도 합니다. |
-| 동시 업로드       | 기본적으로 서버당 2개, 키당 1개(`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). 대기 중인 요청은 20초 후 `503`과 함께 포기합니다.         |
+| 동시 업로드       | 기본적으로 서버당 8개, 키당 4개(`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). 대기 중인 요청은 20초 후 `503`과 함께 포기합니다.         |
 | 동시 다운로드     | 기본적으로 서버당 16개, 키당 4개                                                                                                                       |
 | 할당량            | 파일이 리포지토리 할당량과 설치 용량에 포함됨                                                                                                          |
 

@@ -52,7 +52,7 @@ El instalador elimina el archivo del propietario después de crear la cuenta. No
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Archivos del programa            | `C:\Program Files\ProAnima\Arkvory`                                                                                                                          |
 | Datos, configuración y registros | `C:\ProgramData\ProAnima\Arkvory` (la raíz de la instalación)                                                                                                |
-| Base de datos                    | PostgreSQL 18.4 en `database\` de la raíz, en `127.0.0.1`, en el primer puerto libre de 45329-45348, excluido de los puertos que Windows reserva al arrancar |
+| Base de datos                    | PostgreSQL 18.7 en `database\` de la raíz, en `127.0.0.1`, en el primer puerto libre de 45329-45348, excluido de los puertos que Windows reserva al arrancar |
 | Consola                          | `http://127.0.0.1:8080/console/`                                                                                                                             |
 | Clave de recuperación            | `config\bootstrap-token.txt` en la raíz                                                                                                                      |
 | Tarea de actualización           | `ProAnimaArkvoryUpdate` en el Programador de tareas. Se ejecuta cada minuto como SYSTEM                                                                      |
@@ -82,7 +82,7 @@ Use este método si su organización ya tiene un servidor PostgreSQL en funciona
 .\install.ps1 -AutomaticUpdates
 ```
 
-El script solicita la URL de conexión de PostgreSQL. La entrada está oculta. Después descarga Node.js 24.21.0 de `nodejs.org`, comprueba su SHA-256 e instala la última versión estable. Si la raíz ya contiene Node.js, el script lo usa solo cuando `node.exe` tiene el SHA-256 esperado y la carpeta no contiene nada más. En caso contrario, vuelve a descargar Node.js y mueve la carpeta anterior a `runtime\unverified-…`.
+El script solicita la URL de conexión de PostgreSQL. La entrada está oculta. Después descarga Node.js 24.22.3 de `nodejs.org`, comprueba su SHA-256 e instala la última versión estable. Si la raíz ya contiene Node.js, el script lo usa solo cuando `node.exe` tiene el SHA-256 esperado y la carpeta no contiene nada más. En caso contrario, vuelve a descargar Node.js y mueve la carpeta anterior a `runtime\unverified-…`.
 
 En lugar de la solicitud, puede pasar un archivo JSON protegido:
 
@@ -126,7 +126,7 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 # Instalador gráfico
 & 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' status --root $root
 # Instalación con script
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 Ejecute `arkvory.ps1 help` para ver todos los comandos. Los comandos se describen en [Configuración](./configuration) y [Actualizaciones](./updates).

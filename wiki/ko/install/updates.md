@@ -194,7 +194,7 @@ GitHub의 릴리스에 인증이 필요하면 리포지토리 콘텐츠를 읽�
 
 업데이터는 아카이브의 SHA-256을 매니페스트와 비교하여 확인합니다. 서명은 `arkvory-release.json.sig`가 매니페스트 옆에 있을 때만 확인합니다. 로컬 디렉터리는 직접 선택한 것이므로 업데이트에 서명이 필요하지 않습니다. 서명이 없으면 1단계에서 키트를 `release-checksums.json`과 비교한 것이 출처를 증명하는 유일한 방법입니다. 스키마 변경에 대한 규칙도 같습니다. 먼저 검증된 백업이 필요합니다.
 
-네이티브 패키지나 `Arkvory-Setup-x64.exe`는 자체 릴리스를 포함하므로 인터넷 액세스가 필요하지 않습니다. Compose 업데이트는 호스트에서 이미지를 빌드합니다. 기본 이미지 `node:24.21.0-bookworm-slim`이 아직 호스트에 없을 때만 Docker Hub가 필요합니다.
+네이티브 패키지나 `Arkvory-Setup-x64.exe`는 자체 릴리스를 포함하므로 인터넷 액세스가 필요하지 않습니다. Compose 업데이트는 호스트에서 이미지를 빌드합니다. 기본 이미지 `node:24.22.3-bookworm-slim`이 아직 호스트에 없을 때만 Docker Hub가 필요합니다.
 
 ## 플랫폼별 업데이트 {#platforms}
 
@@ -242,3 +242,5 @@ GitHub의 릴리스에 인증이 필요하면 리포지토리 콘텐츠를 읽�
 | `Interrupted update request; inspect installation and use updates-reset` | 콘솔의 요청이 접수되었지만 끝나지 않았습니다. 상태를 확인한 다음 `updates-reset`을 실행하세요                                                                                                                                     |
 
 더 많은 도움말은 [문제 해결](../operate/troubleshooting)과 [자가 복구](../operate/self-healing)에 있습니다.
+
+기존 데이터베이스를 PostgreSQL 18.7로 업데이트하기 전에 [공급업체의 업데이트 후 요구 사항](https://www.postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/)을 확인하세요.

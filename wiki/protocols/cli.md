@@ -119,12 +119,12 @@ A download link is a secret. It cannot be revoked before it expires.
 
 ### Directory trees {#directory-trees}
 
-| Command                                                                             | Result                                                                  |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publishes the folder as one ZIP artifact, resumable                     |
-| `tree pull ID DIR`                                                                  | Makes the folder the tree: whole archive, or only the files that differ |
-| `tree verify ID DIR`                                                                | Lists missing, mismatched and extra files; exit code 5 when any differ  |
-| `tree repair ID DIR`                                                                | Writes missing and mismatched files again; keeps extra files            |
+| Command                                                                             | Result                                                                                                                                            |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publishes the folder as one ZIP artifact, resumable                                                                                               |
+| `tree pull ID DIR`                                                                  | Makes the folder the tree: whole archive, or only the files that differ                                                                           |
+| `tree verify ID DIR`                                                                | Lists `missing`, `mismatched` and `extra` files; exit code 5 only when `missing` or `mismatched` is nonempty. Extra files alone give exit code 0. |
+| `tree repair ID DIR`                                                                | Writes missing and mismatched files again; keeps extra files                                                                                      |
 
 See [Directory trees](../use/trees).
 

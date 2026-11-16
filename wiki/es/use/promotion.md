@@ -136,7 +136,12 @@ curl -fL -G -H "Authorization: Bearer $DEPLOY_KEY" -o app.upack \
 ```
 
 ```typescript
-const found = await prod.packages.resolve({ name: 'app', range: '^1.4', stage: 'release' });
+const found = await prod.packages.resolve({
+  name: 'app',
+  group: 'acme/game',
+  range: '^1.4',
+  stage: 'release',
+});
 ```
 
 Los filtros son los mismos en todas las herramientas: el `name` del paquete, el `group` (vacío si el paquete no tiene ninguno), una versión exacta o un rango, la `stage`, si se incluyen prelanzamientos y el orden. Los rangos se explican en [Paquetes UPack](./packages#versions).

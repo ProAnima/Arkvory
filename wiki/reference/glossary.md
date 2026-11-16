@@ -121,7 +121,7 @@ The validator of a download: the strong value `"sha256:<hex>"` of the artifact. 
 
 ### Failover {#failover}
 
-Moving clients to a mirror when the source is lost. The operator detaches the mirror, and it becomes an ordinary repository that accepts changes. Nothing switches by itself. See [Mirrors](../operate/mirrors).
+Moving service to another server after the active server fails. A high-availability (HA) cluster within one site can switch automatically under its replication and fencing rules. For a MIRROR repository, an operator must manually detach the mirror to make it an ordinary writable repository; the mirror does not switch automatically. See [Cluster](../operate/cluster) and [Mirrors](../operate/mirrors).
 
 ### Feedback {#feedback}
 

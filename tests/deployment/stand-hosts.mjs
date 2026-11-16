@@ -7,7 +7,7 @@ import { join } from 'node:path';
 // The base of the local CI image, so the stand runs the distribution the packages target. All
 // package dependencies are installed here: the .deb then installs without network access. The
 // file servers (Samba, NFS) stay masked except on the host that plays the NAS.
-const dockerfile = `FROM ubuntu:24.04@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3
+const dockerfile = `FROM ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8
 ENV DEBIAN_FRONTEND=noninteractive container=docker
 RUN apt-get update \\
  && apt-get install -y --no-install-recommends systemd systemd-sysv dbus postgresql python3 \\

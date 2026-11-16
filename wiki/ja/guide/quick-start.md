@@ -73,9 +73,9 @@ ssh -L 8080:127.0.0.1:8080 admin@arkvory.example
 
 ## ステップ3：所有者を作成する {#step-3-create-the-owner}
 
-Windowsでは、このステップは不要です。セットアップが所有者をすでに作成しています。
+`Arkvory-Setup-x64.exe` でインストールした場合は、このステップを省略してください。セットアップが所有者をすでに作成しています。
 
-LinuxとDockerでは、最初のアカウントを**回復キー**で作成します。インストーラーが、インストールルートの`config/bootstrap-token.txt`にキーを書き込みます。このファイルを読めるのは管理者だけです。
+Windows の PowerShell、Linux、Docker など、その他の方法でインストールした場合は、**回復キー**で最初のアカウントを作成します。インストーラーはインストールルートの `config/bootstrap-token.txt` にキーを書き込みます。このファイルを読めるのは管理者だけです。
 
 ```bash
 sudo cat /opt/proanima-arkvory/config/bootstrap-token.txt

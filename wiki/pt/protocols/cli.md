@@ -119,12 +119,12 @@ Um link de download é um segredo. Ele não pode ser revogado antes de expirar.
 
 ### Árvores de diretórios {#directory-trees}
 
-| Comando                                                                             | Resultado                                                                                |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publica a pasta como um único artefato ZIP, de forma retomável                           |
-| `tree pull ID DIR`                                                                  | Transforma a pasta na árvore: o arquivo compactado inteiro ou só os arquivos que diferem |
-| `tree verify ID DIR`                                                                | Lista os arquivos ausentes, divergentes e extras; código de saída 5 quando algum difere  |
-| `tree repair ID DIR`                                                                | Grava de novo os arquivos ausentes e divergentes; mantém os extras                       |
+| Comando                                                                             | Resultado                                                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publica a pasta como um único artefato ZIP, de forma retomável                                                                                                                                                   |
+| `tree pull ID DIR`                                                                  | Transforma a pasta na árvore: o arquivo compactado inteiro ou só os arquivos que diferem                                                                                                                         |
+| `tree verify ID DIR`                                                                | Lista os arquivos `missing` (ausentes), `mismatched` (divergentes) e `extra` (extras); código de saída 5 somente se `missing` ou `mismatched` não estiver vazio. Arquivos extras sozinhos dão código de saída 0. |
+| `tree repair ID DIR`                                                                | Grava de novo os arquivos ausentes e divergentes; mantém os extras                                                                                                                                               |
 
 Veja [Árvores de diretórios](../use/trees).
 

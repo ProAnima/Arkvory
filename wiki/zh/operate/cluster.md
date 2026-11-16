@@ -239,7 +239,7 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 当某台数据服务器长时间缺席（例如更换磁盘），并且停止写入的代价超过风险时，操作员可以在有限时间内接受只有一份副本的写入：
 
 ```bash
-arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
+arkvory cluster-single-copy --root /opt/proanima-arkvory --until "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --reason "disk replacement on node-b"
 ```
 
 - 时间必须在未来 7 天以内，并带有时区：`Z` 表示 UTC，或使用 `+03:00` 这样的偏移量。没有时区时命令会拒绝执行，因为活动服务器会按其本地时间解读该时间。该命令仅在缺少副本时才有效。

@@ -74,7 +74,7 @@ ProAnimaStudio 签名模块可以增加存储、传输协议和 HTTP 路由，�
 3. 按照[应用更改](../install/configuration#apply-change)重启服务。
 4. 以全局管理员身份检查模块：`GET /api/v1/system/modules` 在 API 和每个读取网关上都显示它为 `running: true`，`health.status` 为 `ok`。
 
-签名模块根据声明的角色在 API、读取网关、worker 和备份代理中运行。每个进程只提供适用于其角色且在 `uses` 中声明的服务。路由需要 `routes` 服务。Docker Compose 暂不加载模块。
+签名模块根据声明的角色在 API、读取网关、worker 和备份代理中运行。每个进程只提供适用于其角色且在 `uses` 中声明的服务。路由前缀需要 `routes` 服务；缺少时会报 `routes_unsupported`。Docker Compose 暂不加载模块。
 
 模块存储以 `<module>.<name>` 注册，可用于新上传的存储选择。如果实例停止接受写入，新上传将回退到 `default`。核心在发布分块组装的对象前验证全部字节。模块数据清理会等待活动读取、所有备份固定记录以及捕获屏障解除。计算在受限线程中运行；订阅仅在处理成功后确认事件，失败后可能重复投递。
 

@@ -19,13 +19,13 @@ Compose no incluye HTTPS. Coloque un proxy inverso delante antes de que los clie
 | Host               | Una instalación de Arkvory por host de contenedores. El nombre del proyecto y el puerto son fijos                                                                                            |
 | Puerto libre       | 8080 en `127.0.0.1`                                                                                                                                                                          |
 | Contenedores       | Solo contenedores Linux. No se admiten contenedores Windows                                                                                                                                  |
-| Internet           | `nodejs.org` (el instalador descarga Node.js 24.21.0 y comprueba su SHA-256), el hub de actualizaciones o GitHub (la versión), y Docker Hub (`node:24.21.0-bookworm-slim` y `postgres:18.4`) |
+| Internet           | `nodejs.org` (el instalador descarga Node.js 24.22.3 y comprueba su SHA-256), el hub de actualizaciones o GitHub (la versión), y Docker Hub (`node:24.22.3-bookworm-slim` y `postgres:18.7`) |
 
 El instalador no instala ni modifica el motor de contenedores, el hipervisor ni WSL.
 
 ## El paquete {#bundle}
 
-El instalador toma una versión verificada y la descomprime en `releases/<version>/` dentro de la raíz de la instalación. El archivo de Compose es `releases/<version>/deploy/compose.yml` y el archivo de compilación es `releases/<version>/deploy/Dockerfile`. La imagen `proanima-arkvory:<version>` se compila en su host a partir de `node:24.21.0-bookworm-slim`. No se descarga nada de un registro de Arkvory.
+El instalador toma una versión verificada y la descomprime en `releases/<version>/` dentro de la raíz de la instalación. El archivo de Compose es `releases/<version>/deploy/compose.yml` y el archivo de compilación es `releases/<version>/deploy/Dockerfile`. La imagen `proanima-arkvory:<version>` se compila en su host a partir de `node:24.22.3-bookworm-slim`. No se descarga nada de un registro de Arkvory.
 
 La raíz de la instalación es `/opt/proanima-arkvory` en Linux. Su estructura se describe en [Elegir una instalación](./#installation-directory). En una instalación de Compose los datos no están en `data/`: están en los volúmenes que se describen a continuación.
 
@@ -33,7 +33,7 @@ La raíz de la instalación es `/opt/proanima-arkvory` en Linux. Su estructura s
 
 | Servicio      | Imagen                       | Función                                                                                                     |
 | ------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `database`    | `postgres:18.4`              | PostgreSQL. Informa de que está listo con `pg_isready` cada 5 segundos                                      |
+| `database`    | `postgres:18.7`              | PostgreSQL. Informa de que está listo con `pg_isready` cada 5 segundos                                      |
 | `api`         | `proanima-arkvory:<version>` | API HTTP y consola. Publicada en `127.0.0.1:8080`. Comprobación de estado cada 10 segundos                  |
 | `worker`      | `proanima-arkvory:<version>` | Finaliza las subidas y ejecuta tareas en segundo plano. Se inicia después de que la API esté sana           |
 | `backup`      | `proanima-arkvory:<version>` | Agente de copias de seguridad. Lee el volumen de almacenamiento en solo lectura. No publica ningún puerto   |
@@ -139,7 +139,7 @@ Abra un shell de root (`sudo -i`) y defina el comando `compose` una sola vez. Co
 
 ```bash
 root=/opt/proanima-arkvory
-node="$root/runtime/node-v24.21.0-linux-x64/bin/node"   # linux-arm64 on arm64
+node="$root/runtime/node-v24.22.3-linux-x64/bin/node"   # linux-arm64 on arm64
 version=$("$node" -p "require('$root/installation.json').current.version")
 compose=(docker compose --project-name proanima-arkvory --project-directory "$root"
   --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
@@ -184,7 +184,7 @@ La actualización descarga y comprueba la versión, compila la nueva imagen, lue
 El actualizador del host se ejecuta una vez por minuto. Instalado como `root` en un host con systemd, el instalador lo registra como `arkvory-update.timer`. Sin `root`, el instalador imprime una advertencia. Programe este comando cada minuto como el usuario que posee la instalación y tiene acceso al motor de contenedores, por ejemplo con cron:
 
 ```text
-* * * * * /home/admin/arkvory/runtime/node-v24.21.0-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
+* * * * * /home/admin/arkvory/runtime/node-v24.22.3-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
 ```
 
 Nunca dé el socket de Docker a los contenedores de Arkvory.
@@ -249,7 +249,7 @@ El instalador registra la tarea de actualización `ProAnimaArkvoryUpdate` solo c
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$node = "$root\runtime\node-v24.22.3-win-x64\node.exe"
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
@@ -267,7 +267,7 @@ foreach ($file in 'compose.vault.yml', 'compose.mirrors.yml') {
   if (Test-Path "$root\config\$file") { $compose += @('-f', "$root\config\$file") }
 }
 docker @compose ps
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 Un almacén de copias en Windows debe ser un volumen local o iSCSI. Se rechazan las rutas UNC y SMB. Para eliminar la instalación, ejecute `docker @compose down --volumes`, anule el registro de la tarea con `Unregister-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Confirm:$false` y elimine la raíz. Haga una copia de seguridad primero.

@@ -121,7 +121,7 @@ Der Validator eines Downloads: der starke Wert `"sha256:<hex>"` des Artefakts. V
 
 ### Failover {#failover}
 
-Clients auf einen Spiegel umschalten, wenn die Quelle verloren geht. Der Operator trennt den Spiegel ab, und er wird zu einem gewöhnlichen Repository, das Änderungen annimmt. Nichts schaltet sich von selbst um. Siehe [Spiegel](../operate/mirrors).
+Verlagerung des Dienstes auf einen anderen Server, nachdem der aktive Server ausgefallen ist. Ein Hochverfügbarkeitscluster (HA) innerhalb eines Standorts kann gemäß seinen Replikations- und Fencing-Regeln automatisch umschalten. Bei einem MIRROR-Repository muss ein Operator den Spiegel manuell abtrennen, damit er zu einem gewöhnlichen beschreibbaren Repository wird; der Spiegel schaltet nicht automatisch um. Siehe [Cluster](../operate/cluster) und [Spiegel](../operate/mirrors).
 
 ### Feedback {#feedback}
 

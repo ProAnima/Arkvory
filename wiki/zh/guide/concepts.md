@@ -9,7 +9,7 @@ description: 文档其余部分使用的概念，从安装和仓库到访问、�
 
 ## 安装实例及其服务 {#installation}
 
-一个安装实例就是一台服务器。它在一个 PostgreSQL 数据库旁运行三个 Arkvory 服务：
+标准安装在一台服务器上运行。它在一个 PostgreSQL 数据库旁运行三个 Arkvory 服务：
 
 | 部件       | 作用                                                                                                                |
 | ---------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -20,7 +20,7 @@ description: 文档其余部分使用的概念，从安装和仓库到访问、�
 
 文件内容保存在服务器的本地目录中，而不是数据库中。所有部件都位于**安装根目录**（Windows 上是 `C:\ProgramData\ProAnima\Arkvory`，Linux 上是 `/opt/proanima-arkvory`）。服务无需用户登录即可启动，并会在崩溃或卡死后重启（[自愈](../operate/self-healing)）。
 
-安装实例不是高可用集群。如果服务器停止，客户端会等待，然后继续它们的传输。参见[选择安装方式](../install/index)。在 Linux 上，两到三台服务器可以组成[高可用集群](../operate/cluster)。
+单服务器安装不具备高可用性。如果服务器停止，客户端会等待，然后继续它们的传输。参见[选择安装方式](../install/index)。在 Linux 上，两到三台服务器可以组成[高可用集群](../operate/cluster)。
 
 ## 仓库 {#repositories}
 
@@ -98,7 +98,7 @@ description: 文档其余部分使用的概念，从安装和仓库到访问、�
 
 ## 所有者与恢复密钥 {#owner-and-recovery-key}
 
-**所有者**是第一个账户。它是管理员，也是 `arkvory-owners` 组的成员，该组对 `releases` 具有 `write` 访问权限。Windows 安装程序会创建它；在 Linux 和 Docker 上，您需要使用恢复密钥在控制台中创建它。
+**所有者**是第一个账户。它是管理员，也是 `arkvory-owners` 组的成员，该组对 `releases` 具有 `write` 访问权限。只有图形安装程序 `Arkvory-Setup-x64.exe` 会创建它；使用 PowerShell 脚本、Linux 或 Docker（包括 Windows 上的 Docker）安装时，您需要使用恢复密钥在控制台中创建它。
 
 **恢复密钥**是安装程序写入安装根目录中 `config/bootstrap-token.txt` 的机密。它可以创建第一个所有者和账户、管理服务账户及其委派、运行备份并请求更新。安装工具会在服务器上读取它。它不用于 CI 或日常工作：请把它保存在服务器上，不要复制。参见[选择安装方式](../install/index#recovery-key)和[安全](../operate/security)。
 

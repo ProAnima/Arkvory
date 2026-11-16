@@ -33,12 +33,12 @@ jobs:
       matrix:
         os: [ubuntu-24.04, windows-2022]
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Cache verified native dependency archives
@@ -63,19 +63,19 @@ jobs:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, windows-2022, windows-2025]
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- quick module-data-scan
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: quality-${{ matrix.os }}
@@ -92,12 +92,12 @@ jobs:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, windows-2022, windows-2025]
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- deployment
@@ -114,12 +114,12 @@ jobs:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, windows-2022, windows-2025]
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- deployment-services
@@ -133,7 +133,7 @@ jobs:
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:18.4
+        image: postgres:18.7
         env:
           POSTGRES_USER: arkvory_test
           POSTGRES_PASSWORD: arkvory_test
@@ -146,12 +146,12 @@ jobs:
     env:
       ARKVORY_TEST_DATABASE_URL: postgresql://arkvory_test:arkvory_test@127.0.0.1:5432/arkvory_test
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- module-data-recovery
@@ -159,7 +159,7 @@ jobs:
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: integration
@@ -173,7 +173,7 @@ jobs:
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:18.4
+        image: postgres:18.7
         env:
           POSTGRES_USER: arkvory_test
           POSTGRES_PASSWORD: arkvory_test
@@ -186,12 +186,12 @@ jobs:
     env:
       ARKVORY_TEST_DATABASE_URL: postgresql://arkvory_test:arkvory_test@127.0.0.1:5432/arkvory_test
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run test:browser:install
@@ -199,7 +199,7 @@ jobs:
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: browser
@@ -219,7 +219,7 @@ jobs:
         gate: [large-full, large-multipart]
     services:
       postgres:
-        image: postgres:18.4
+        image: postgres:18.7
         env:
           POSTGRES_USER: arkvory_test
           POSTGRES_PASSWORD: arkvory_test
@@ -232,19 +232,19 @@ jobs:
     env:
       ARKVORY_TEST_DATABASE_URL: postgresql://arkvory_test:arkvory_test@127.0.0.1:5432/arkvory_test
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- ${{ matrix.gate }}
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: ${{ matrix.gate }}
@@ -257,19 +257,19 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- security
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: security
@@ -282,19 +282,19 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- docs
       - name: Publish gate report to logs and job summary
         if: ${{ always() }}
         run: node scripts/ci-report.mjs
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: ${{ always() && vars.ARKVORY_UPLOAD_ARTIFACTS == 'true' }}
         with:
           name: docs
@@ -307,12 +307,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run gate -- deployment-containers
@@ -325,12 +325,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Cache verified native dependency archives
@@ -351,12 +351,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Cache verified native dependency archives
@@ -379,12 +379,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       # The runner is disposable: the stand needs a hypervisor, libvirt and SSH for fence_virsh.
       - run: |
@@ -406,12 +406,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Cache verified native dependency archives
@@ -446,12 +446,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Cache verified native dependency archives
@@ -486,12 +486,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Cache verified native dependency archives
@@ -526,12 +526,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Cache verified native dependency archives
@@ -586,12 +586,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
       - name: Require every applicable gate to pass
         env:
           ARKVORY_CI_NEEDS: ${{ toJSON(needs) }}

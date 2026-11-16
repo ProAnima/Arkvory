@@ -27,7 +27,7 @@ The free core works without internet access. The Windows installer includes Node
 
 ### Which database does it use? {#database}
 
-PostgreSQL, one database for each installation. The Windows installer includes PostgreSQL 18.4. The Linux packages use a dedicated cluster of a PostgreSQL 16 to 19 server from your distribution. The Docker Compose stack runs PostgreSQL 18.4 in a container. The script installers use your own server. Never connect two installations to one database. File content is not in the database: it is in the data directory.
+PostgreSQL, one database for each installation. The Windows installer includes PostgreSQL 18.7. The Linux packages use a dedicated cluster of a PostgreSQL 16 to 19 server from your distribution. The Docker Compose stack runs PostgreSQL 18.7 in a container. The script installers use your own server. Never connect two installations to one database. File content is not in the database: it is in the data directory.
 
 ### Can I use S3 or another object store? {#s3}
 
@@ -116,7 +116,7 @@ You may install and use any number of copies for any purpose, including in a com
 
 ### What is not allowed? {#license-forbidden}
 
-You may not distribute the software or changed versions to anyone outside your organization, publish forks, builds, container images or patches that contain its code, sell, rent or lend it or access to it, charge for it, or offer it to third parties as a hosted or managed service. You may not remove the copyright notices, the license or the names ProAnima Arkvory and ProAnimaStudio, or present a changed version as the original. When you describe a system built on Arkvory in public, name the source: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), https://github.com/ProAnima/Arkvory". Get copies only from the official sources. For other permissions, write to info@proanima.net.
+You may not distribute the software or changed versions to anyone outside your organization, publish forks, builds, container images or patches that contain its code, sell, rent or lend it or access to it, charge for it, or offer it to third parties as a hosted or managed service. You may not remove the copyright notices, the license or the names ProAnima Arkvory and ProAnimaStudio, or present a changed version as the original. When you describe a system built on Arkvory in public, name the source: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), <https://github.com/ProAnima/Arkvory>". Get copies only from the official sources. For other permissions, write to info@proanima.net.
 
 ### Where do I report a problem or a vulnerability? {#report}
 

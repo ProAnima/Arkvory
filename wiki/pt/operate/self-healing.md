@@ -137,7 +137,7 @@ A autorrecuperação cobre falhas de um processo. Estas situações precisam de 
 - **Certificados.** O Arkvory lê arquivos renovados sem reiniciar (a cada 300 segundos por padrão), mas suas ferramentas devem renová-los.
 - **Um serviço parado.** Um serviço que você parou permanece parado.
 - **A plataforma.** O Docker deve iniciar com a máquina. Você atualiza versões principais do PostgreSQL, Node.js e o sistema operacional.
-- **Um servidor ou disco perdido.** Não há failover. Restaure de um backup. Consulte [Backups](./backups).
+- **Perda de um servidor ou disco.** Uma instalação independente não tem failover: restaure um backup. Um cluster de alta disponibilidade pode alternar para outro servidor de dados conforme suas regras de replicação e fencing. Veja [Backups](./backups) e [Cluster de alta disponibilidade](./cluster).
 
 ## Páginas relacionadas {#related-pages}
 

@@ -19,13 +19,13 @@ Compose has no built-in HTTPS. Put a reverse proxy in front of it before clients
 | Host          | One Arkvory installation per container host. The project name and the port are fixed                                                                                                     |
 | Free port     | 8080 on `127.0.0.1`                                                                                                                                                                      |
 | Containers    | Linux containers only. Windows containers are not supported                                                                                                                              |
-| Internet      | `nodejs.org` (the installer downloads Node.js 24.21.0 and checks its SHA-256), the update hub or GitHub (the release), and Docker Hub (`node:24.21.0-bookworm-slim` and `postgres:18.4`) |
+| Internet      | `nodejs.org` (the installer downloads Node.js 24.22.3 and checks its SHA-256), the update hub or GitHub (the release), and Docker Hub (`node:24.22.3-bookworm-slim` and `postgres:18.7`) |
 
 The installer does not install or change the container engine, the hypervisor or WSL.
 
 ## The bundle {#bundle}
 
-The installer takes a verified release and unpacks it to `releases/<version>/` in the installation root. The Compose file is `releases/<version>/deploy/compose.yml` and the build file is `releases/<version>/deploy/Dockerfile`. The image `proanima-arkvory:<version>` is built on your host from `node:24.21.0-bookworm-slim`. Nothing is pulled from an Arkvory registry.
+The installer takes a verified release and unpacks it to `releases/<version>/` in the installation root. The Compose file is `releases/<version>/deploy/compose.yml` and the build file is `releases/<version>/deploy/Dockerfile`. The image `proanima-arkvory:<version>` is built on your host from `node:24.22.3-bookworm-slim`. Nothing is pulled from an Arkvory registry.
 
 The installation root is `/opt/proanima-arkvory` on Linux. Its layout is described in [Choose an installation](./#installation-directory). In a Compose installation the data is not in `data/`: it is in the volumes described below.
 
@@ -33,7 +33,7 @@ The installation root is `/opt/proanima-arkvory` on Linux. Its layout is describ
 
 | Service       | Image                        | Role                                                                                         |
 | ------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| `database`    | `postgres:18.4`              | PostgreSQL. Reports ready with `pg_isready` every 5 seconds                                  |
+| `database`    | `postgres:18.7`              | PostgreSQL. Reports ready with `pg_isready` every 5 seconds                                  |
 | `api`         | `proanima-arkvory:<version>` | HTTP API and console. Published on `127.0.0.1:8080`. Health check every 10 seconds           |
 | `worker`      | `proanima-arkvory:<version>` | Finishes uploads and runs background jobs. Starts after the API is healthy                   |
 | `backup`      | `proanima-arkvory:<version>` | Backup agent. Reads the storage volume read-only. Publishes no port                          |
@@ -139,7 +139,7 @@ Open a root shell (`sudo -i`) and define the `compose` command once. Compose nee
 
 ```bash
 root=/opt/proanima-arkvory
-node="$root/runtime/node-v24.21.0-linux-x64/bin/node"   # linux-arm64 on arm64
+node="$root/runtime/node-v24.22.3-linux-x64/bin/node"   # linux-arm64 on arm64
 version=$("$node" -p "require('$root/installation.json').current.version")
 compose=(docker compose --project-name proanima-arkvory --project-directory "$root"
   --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
@@ -184,7 +184,7 @@ The update downloads and checks the release, builds the new image, then stops `b
 The host updater runs once a minute. Installed as `root` on a systemd host, the installer registers it as `arkvory-update.timer`. Without `root`, the installer prints a warning. Schedule this command every minute as the user that owns the installation and has access to the container engine, for example with cron:
 
 ```text
-* * * * * /home/admin/arkvory/runtime/node-v24.21.0-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
+* * * * * /home/admin/arkvory/runtime/node-v24.22.3-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
 ```
 
 Never give the Docker socket to the Arkvory containers.
@@ -249,7 +249,7 @@ The installer registers the update task `ProAnimaArkvoryUpdate` only when it run
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$node = "$root\runtime\node-v24.22.3-win-x64\node.exe"
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
@@ -267,7 +267,7 @@ foreach ($file in 'compose.vault.yml', 'compose.mirrors.yml') {
   if (Test-Path "$root\config\$file") { $compose += @('-f', "$root\config\$file") }
 }
 docker @compose ps
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 A backup vault on Windows must be a local or iSCSI volume. UNC and SMB paths are refused. To remove the installation, run `docker @compose down --volumes`, unregister the task with `Unregister-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Confirm:$false`, and delete the root. Back up first.

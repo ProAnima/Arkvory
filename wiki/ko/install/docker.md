@@ -19,13 +19,13 @@ Compose에는 내장 HTTPS가 없습니다. 다른 컴퓨터의 클라이언트�
 | 호스트         | 컨테이너 호스트당 Arkvory 설치 하나. 프로젝트 이름과 포트는 고정입니다                                                                                                            |
 | 사용 가능 포트 | `127.0.0.1`의 8080                                                                                                                                                                |
 | 컨테이너       | Linux 컨테이너만 지원합니다. Windows 컨테이너는 지원되지 않습니다                                                                                                                 |
-| 인터넷         | `nodejs.org`(설치 프로그램이 Node.js 24.21.0을 다운로드하고 SHA-256을 확인합니다), 업데이트 허브 또는 GitHub(릴리스), Docker Hub(`node:24.21.0-bookworm-slim` 및 `postgres:18.4`) |
+| 인터넷         | `nodejs.org`(설치 프로그램이 Node.js 24.22.3을 다운로드하고 SHA-256을 확인합니다), 업데이트 허브 또는 GitHub(릴리스), Docker Hub(`node:24.22.3-bookworm-slim` 및 `postgres:18.7`) |
 
 설치 프로그램은 컨테이너 엔진, 하이퍼바이저 또는 WSL을 설치하거나 변경하지 않습니다.
 
 ## 번들 {#bundle}
 
-설치 프로그램은 검증된 릴리스를 가져와 설치 루트의 `releases/<version>/`에 압축을 풉니다. Compose 파일은 `releases/<version>/deploy/compose.yml`이고 빌드 파일은 `releases/<version>/deploy/Dockerfile`입니다. `proanima-arkvory:<version>` 이미지는 `node:24.21.0-bookworm-slim`에서 호스트에 빌드됩니다. Arkvory 레지스트리에서는 아무것도 가져오지 않습니다.
+설치 프로그램은 검증된 릴리스를 가져와 설치 루트의 `releases/<version>/`에 압축을 풉니다. Compose 파일은 `releases/<version>/deploy/compose.yml`이고 빌드 파일은 `releases/<version>/deploy/Dockerfile`입니다. `proanima-arkvory:<version>` 이미지는 `node:24.22.3-bookworm-slim`에서 호스트에 빌드됩니다. Arkvory 레지스트리에서는 아무것도 가져오지 않습니다.
 
 설치 루트는 Linux에서 `/opt/proanima-arkvory`입니다. 그 구조는 [설치 선택](./#installation-directory)에서 설명합니다. Compose 설치에서는 데이터가 `data/`에 없고 아래에 설명된 볼륨에 있습니다.
 
@@ -33,7 +33,7 @@ Compose에는 내장 HTTPS가 없습니다. 다른 컴퓨터의 클라이언트�
 
 | 서비스        | 이미지                       | 역할                                                                                |
 | ------------- | ---------------------------- | ----------------------------------------------------------------------------------- |
-| `database`    | `postgres:18.4`              | PostgreSQL. 5초마다 `pg_isready`로 준비 상태를 보고합니다                           |
+| `database`    | `postgres:18.7`              | PostgreSQL. 5초마다 `pg_isready`로 준비 상태를 보고합니다                           |
 | `api`         | `proanima-arkvory:<version>` | HTTP API와 콘솔. `127.0.0.1:8080`에 게시됩니다. 10초마다 상태 확인                  |
 | `worker`      | `proanima-arkvory:<version>` | 업로드를 마무리하고 백그라운드 작업을 실행합니다. API가 정상이 된 후 시작됩니다     |
 | `backup`      | `proanima-arkvory:<version>` | 백업 에이전트. 스토리지 볼륨을 읽기 전용으로 읽습니다. 포트를 게시하지 않습니다     |
@@ -139,7 +139,7 @@ root 셸(`sudo -i`)을 열고 `compose` 명령을 한 번 정의하세요. Compo
 
 ```bash
 root=/opt/proanima-arkvory
-node="$root/runtime/node-v24.21.0-linux-x64/bin/node"   # linux-arm64 on arm64
+node="$root/runtime/node-v24.22.3-linux-x64/bin/node"   # linux-arm64 on arm64
 version=$("$node" -p "require('$root/installation.json').current.version")
 compose=(docker compose --project-name proanima-arkvory --project-directory "$root"
   --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
@@ -184,7 +184,7 @@ sudo "$node" "$root/manage.mjs" update --root "$root"
 호스트 업데이터는 1분에 한 번 실행됩니다. systemd 호스트에 `root`로 설치하면 설치 프로그램이 이를 `arkvory-update.timer`로 등록합니다. `root`가 아니면 설치 프로그램이 경고를 출력합니다. 설치를 소유하고 컨테이너 엔진에 접근할 수 있는 사용자로 이 명령을 1분마다 예약하세요. 예를 들어 cron을 사용합니다:
 
 ```text
-* * * * * /home/admin/arkvory/runtime/node-v24.21.0-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
+* * * * * /home/admin/arkvory/runtime/node-v24.22.3-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
 ```
 
 Arkvory 컨테이너에 Docker 소켓을 주지 마세요.
@@ -249,7 +249,7 @@ Docker Desktop은 워크스테이션에서 평가용으로만 사용하세요. D
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$node = "$root\runtime\node-v24.22.3-win-x64\node.exe"
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
@@ -267,7 +267,7 @@ foreach ($file in 'compose.vault.yml', 'compose.mirrors.yml') {
   if (Test-Path "$root\config\$file") { $compose += @('-f', "$root\config\$file") }
 }
 docker @compose ps
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 Windows의 백업 보관소는 로컬 또는 iSCSI 볼륨이어야 합니다. UNC 및 SMB 경로는 거부됩니다. 설치를 제거하려면 `docker @compose down --volumes`를 실행하고, `Unregister-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Confirm:$false`로 작업을 등록 해제한 다음 루트를 삭제하세요. 먼저 백업하세요.

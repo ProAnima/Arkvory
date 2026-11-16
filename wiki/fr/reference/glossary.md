@@ -121,7 +121,7 @@ Le validateur d’un téléchargement : la valeur forte `"sha256:<hex>"` de l’
 
 ### Basculement {#failover}
 
-Le déplacement des clients vers un miroir lorsque la source est perdue. L’opérateur détache le miroir, qui devient un dépôt ordinaire acceptant les modifications. Rien ne bascule tout seul. Voir [Miroirs](../operate/mirrors).
+Le transfert du service vers un autre serveur après la défaillance du serveur actif. Un cluster à haute disponibilité (HA) au sein d’un même site peut basculer automatiquement selon ses règles de réplication et de fencing. Pour un dépôt MIRROR, un opérateur doit détacher manuellement le miroir pour en faire un dépôt ordinaire accessible en écriture ; le miroir ne bascule pas automatiquement. Voir [Cluster](../operate/cluster) et [Miroirs](../operate/mirrors).
 
 ### Commentaires {#feedback}
 

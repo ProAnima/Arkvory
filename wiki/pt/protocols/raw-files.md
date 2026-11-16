@@ -132,10 +132,28 @@ Somente um range por solicitação é suportado. Uma solicitação com vários r
 
 Um caminho pode receber uma nova versão a qualquer momento, e um `GET` resolve o caminho novamente. Para continuar um download com segurança, lembre-se do `ETag` da primeira resposta e envie-o como `If-Range`:
 
+Guarde o `ETag` do `GET` original em `GameSetup.etag`; não obtenha um valor novo com `HEAD`. O exemplo calcula o deslocamento a partir do arquivo parcial existente e só acrescenta a resposta temporária após `206`. Em caso de `200` ou falha na solicitação, mantém o arquivo parcial intacto: inicie um novo download separadamente. Verifique o SHA-256 final antes de usar o arquivo.
+
 ```bash
-etag=$(curl -sSI -H "Authorization: Bearer $ARKVORY_KEY" "$URL" | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
-curl -sS -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
-  -H "Range: bytes=1048576-" "$URL" >> GameSetup.part
+etag=$(cat GameSetup.etag) || exit 1
+test -n "$etag" || exit 1
+offset=$(wc -c < GameSetup.part) || exit 1
+offset=$(printf '%s' "$offset" | tr -d '[:space:]')
+segment=$(mktemp) || exit 1
+status=$(curl -fsS -o "$segment" -w '%{http_code}' \
+  -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
+  -H "Range: bytes=$offset-" "$URL") || {
+  rm -f "$segment"
+  exit 1
+}
+if [ "$status" != 206 ]; then
+  rm -f "$segment"
+  exit 1
+fi
+cat "$segment" >> GameSetup.part
+result=$?
+rm -f "$segment"
+test "$result" -eq 0
 ```
 
 Para pular um download quando o arquivo não mudou, envie o ETag que você armazenou da última vez:
@@ -189,7 +207,7 @@ Um [gateway de leitura](../operate/read-gateways) aceita somente `GET` e `HEAD`.
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Tamanho do arquivo       | O tamanho máximo de objeto da instalação, `ARKVORY_MAX_OBJECT_BYTES` (cerca de 10 TiB por padrão)                                                                                           |
 | Uma solicitação `PUT`    | Deve terminar em até 30 minutos e não pode pausar por mais de 30 segundos (`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`). Esses também são os valores máximos permitidos. |
-| Uploads ao mesmo tempo   | 2 por servidor e 1 por chave por padrão (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). Uma solicitação em espera desiste após 20 segundos com `503`.                         |
+| Uploads ao mesmo tempo   | 8 por servidor e 4 por chave por padrão (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). Uma solicitação em espera desiste após 20 segundos com `503`.                         |
 | Downloads ao mesmo tempo | 16 por servidor e 4 por chave por padrão                                                                                                                                                    |
 | Cota                     | O arquivo conta para a cota do repositório e para a capacidade da instalação                                                                                                                |
 

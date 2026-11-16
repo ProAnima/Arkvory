@@ -19,13 +19,13 @@ Compose hat kein eingebautes HTTPS. Setzen Sie einen Reverse-Proxy davor, bevor 
 | Host              | Eine Arkvory-Installation pro Container-Host. Der Projektname und der Port sind fest                                                                                                            |
 | Freier Port       | 8080 auf `127.0.0.1`                                                                                                                                                                            |
 | Container         | Nur Linux-Container. Windows-Container werden nicht unterstützt                                                                                                                                 |
-| Internet          | `nodejs.org` (der Installer lädt Node.js 24.21.0 herunter und prüft dessen SHA-256), der Update-Hub oder GitHub (das Release) und Docker Hub (`node:24.21.0-bookworm-slim` und `postgres:18.4`) |
+| Internet          | `nodejs.org` (der Installer lädt Node.js 24.22.3 herunter und prüft dessen SHA-256), der Update-Hub oder GitHub (das Release) und Docker Hub (`node:24.22.3-bookworm-slim` und `postgres:18.7`) |
 
 Der Installer installiert oder ändert weder die Container-Engine noch den Hypervisor oder WSL.
 
 ## Das Bundle {#bundle}
 
-Der Installer nimmt ein verifiziertes Release und entpackt es nach `releases/<version>/` im Installationsverzeichnis. Die Compose-Datei ist `releases/<version>/deploy/compose.yml`, die Build-Datei ist `releases/<version>/deploy/Dockerfile`. Das Image `proanima-arkvory:<version>` wird auf Ihrem Host aus `node:24.21.0-bookworm-slim` gebaut. Aus einer Arkvory-Registry wird nichts gezogen.
+Der Installer nimmt ein verifiziertes Release und entpackt es nach `releases/<version>/` im Installationsverzeichnis. Die Compose-Datei ist `releases/<version>/deploy/compose.yml`, die Build-Datei ist `releases/<version>/deploy/Dockerfile`. Das Image `proanima-arkvory:<version>` wird auf Ihrem Host aus `node:24.22.3-bookworm-slim` gebaut. Aus einer Arkvory-Registry wird nichts gezogen.
 
 Das Installationsverzeichnis ist unter Linux `/opt/proanima-arkvory`. Seine Struktur ist unter [Installation auswählen](./#installation-directory) beschrieben. Bei einer Compose-Installation liegen die Daten nicht in `data/`: Sie liegen in den unten beschriebenen Volumes.
 
@@ -33,7 +33,7 @@ Das Installationsverzeichnis ist unter Linux `/opt/proanima-arkvory`. Seine Stru
 
 | Dienst        | Image                        | Rolle                                                                                                   |
 | ------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `database`    | `postgres:18.4`              | PostgreSQL. Meldet alle 5 Sekunden mit `pg_isready` Bereitschaft                                        |
+| `database`    | `postgres:18.7`              | PostgreSQL. Meldet alle 5 Sekunden mit `pg_isready` Bereitschaft                                        |
 | `api`         | `proanima-arkvory:<version>` | HTTP-API und Konsole. Veröffentlicht auf `127.0.0.1:8080`. Health-Prüfung alle 10 Sekunden              |
 | `worker`      | `proanima-arkvory:<version>` | Schließt Uploads ab und führt Hintergrundaufgaben aus. Startet, nachdem die API bereit ist              |
 | `backup`      | `proanima-arkvory:<version>` | Backup-Agent. Liest das Speicher-Volume schreibgeschützt. Veröffentlicht keinen Port                    |
@@ -139,7 +139,7 @@ Bewahren Sie den Wiederherstellungsschlüssel auf dem Server auf. Siehe [Sicherh
 
 ```bash
 root=/opt/proanima-arkvory
-node="$root/runtime/node-v24.21.0-linux-x64/bin/node"   # linux-arm64 on arm64
+node="$root/runtime/node-v24.22.3-linux-x64/bin/node"   # linux-arm64 on arm64
 version=$("$node" -p "require('$root/installation.json').current.version")
 compose=(docker compose --project-name proanima-arkvory --project-directory "$root"
   --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
@@ -184,7 +184,7 @@ Das Update lädt das Release herunter und prüft es, baut das neue Image, stoppt
 Der Host-Updater läuft einmal pro Minute. Als `root` auf einem systemd-Host installiert, registriert der Installer ihn als `arkvory-update.timer`. Ohne `root` gibt der Installer eine Warnung aus. Planen Sie diesen Befehl jede Minute als der Benutzer, dem die Installation gehört und der Zugriff auf die Container-Engine hat, zum Beispiel mit cron:
 
 ```text
-* * * * * /home/admin/arkvory/runtime/node-v24.21.0-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
+* * * * * /home/admin/arkvory/runtime/node-v24.22.3-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
 ```
 
 Geben Sie den Docker-Socket niemals an die Arkvory-Container weiter.
@@ -249,7 +249,7 @@ Der Installer registriert die Update-Aufgabe `ProAnimaArkvoryUpdate` nur, wenn e
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$node = "$root\runtime\node-v24.22.3-win-x64\node.exe"
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
@@ -267,7 +267,7 @@ foreach ($file in 'compose.vault.yml', 'compose.mirrors.yml') {
   if (Test-Path "$root\config\$file") { $compose += @('-f', "$root\config\$file") }
 }
 docker @compose ps
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 Ein Backup-Speicher unter Windows muss ein lokales oder iSCSI-Volume sein. UNC- und SMB-Pfade werden abgelehnt. Um die Installation zu entfernen, führen Sie `docker @compose down --volumes` aus, heben Sie die Aufgabe mit `Unregister-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Confirm:$false` auf und löschen Sie das Installationsverzeichnis. Erstellen Sie zuerst ein Backup.

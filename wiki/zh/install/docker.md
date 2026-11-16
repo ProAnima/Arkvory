@@ -19,13 +19,13 @@ Compose 没有内置 HTTPS。在客户端从其他计算机连接之前，请在
 | 主机     | 每台容器主机一个 Arkvory 安装。项目名称和端口是固定的                                                                                                          |
 | 空闲端口 | `127.0.0.1` 上的 8080                                                                                                                                          |
 | 容器     | 仅限 Linux 容器。不支持 Windows 容器                                                                                                                           |
-| 互联网   | `nodejs.org`（安装程序下载 Node.js 24.21.0 并检查其 SHA-256）、更新中心或 GitHub（发行版），以及 Docker Hub（`node:24.21.0-bookworm-slim` 和 `postgres:18.4`） |
+| 互联网   | `nodejs.org`（安装程序下载 Node.js 24.22.3 并检查其 SHA-256）、更新中心或 GitHub（发行版），以及 Docker Hub（`node:24.22.3-bookworm-slim` 和 `postgres:18.7`） |
 
 安装程序不会安装或更改容器引擎、虚拟机监控程序或 WSL。
 
 ## 软件包 {#bundle}
 
-安装程序获取经过验证的发行版并将其解包到安装根目录下的 `releases/<version>/`。Compose 文件是 `releases/<version>/deploy/compose.yml`，构建文件是 `releases/<version>/deploy/Dockerfile`。容器镜像 `proanima-arkvory:<version>` 在您的主机上基于 `node:24.21.0-bookworm-slim` 构建。不会从 Arkvory 注册表拉取任何内容。
+安装程序获取经过验证的发行版并将其解包到安装根目录下的 `releases/<version>/`。Compose 文件是 `releases/<version>/deploy/compose.yml`，构建文件是 `releases/<version>/deploy/Dockerfile`。容器镜像 `proanima-arkvory:<version>` 在您的主机上基于 `node:24.22.3-bookworm-slim` 构建。不会从 Arkvory 注册表拉取任何内容。
 
 安装根目录在 Linux 上是 `/opt/proanima-arkvory`。其布局在[选择安装方式](./#installation-directory)中描述。在 Compose 安装中，数据不在 `data/` 中：它位于下文描述的卷中。
 
@@ -33,7 +33,7 @@ Compose 没有内置 HTTPS。在客户端从其他计算机连接之前，请在
 
 | 服务          | 镜像                         | 作用                                                                       |
 | ------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| `database`    | `postgres:18.4`              | PostgreSQL。每 5 秒用 `pg_isready` 报告就绪                                |
+| `database`    | `postgres:18.7`              | PostgreSQL。每 5 秒用 `pg_isready` 报告就绪                                |
 | `api`         | `proanima-arkvory:<version>` | HTTP API 和控制台。发布在 `127.0.0.1:8080`。每 10 秒健康检查               |
 | `worker`      | `proanima-arkvory:<version>` | 完成上传并运行后台作业。在 API 健康后启动                                  |
 | `backup`      | `proanima-arkvory:<version>` | 备份代理。以只读方式读取存储卷。不发布端口                                 |
@@ -139,7 +139,7 @@ ARKVORY_INSTALL_ROOT="$HOME/arkvory" bash ./install.sh --mode compose
 
 ```bash
 root=/opt/proanima-arkvory
-node="$root/runtime/node-v24.21.0-linux-x64/bin/node"   # linux-arm64 on arm64
+node="$root/runtime/node-v24.22.3-linux-x64/bin/node"   # linux-arm64 on arm64
 version=$("$node" -p "require('$root/installation.json').current.version")
 compose=(docker compose --project-name proanima-arkvory --project-directory "$root"
   --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
@@ -184,7 +184,7 @@ sudo "$node" "$root/manage.mjs" update --root "$root"
 主机更新程序每分钟运行一次。在 systemd 主机上以 `root` 安装时，安装程序将它注册为 `arkvory-update.timer`。不使用 `root` 时，安装程序会打印警告。请以拥有该安装并有权访问容器引擎的用户身份每分钟安排此命令，例如使用 cron：
 
 ```text
-* * * * * /home/admin/arkvory/runtime/node-v24.21.0-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
+* * * * * /home/admin/arkvory/runtime/node-v24.22.3-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
 ```
 
 切勿将 Docker socket 交给 Arkvory 容器。
@@ -249,7 +249,7 @@ sudo rm -rf /opt/proanima-arkvory
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$node = "$root\runtime\node-v24.22.3-win-x64\node.exe"
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
@@ -267,7 +267,7 @@ foreach ($file in 'compose.vault.yml', 'compose.mirrors.yml') {
   if (Test-Path "$root\config\$file") { $compose += @('-f', "$root\config\$file") }
 }
 docker @compose ps
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 Windows 上的备份存储必须是本地或 iSCSI 卷。UNC 和 SMB 路径会被拒绝。要删除安装，请运行 `docker @compose down --volumes`，使用 `Unregister-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Confirm:$false` 注销任务，并删除根目录。请先进行备份。

@@ -18,14 +18,14 @@ Free of charge, worldwide and non-exclusively, without the right to transfer the
 
 ## 2. What you may not do
 
-- Distribute the software or changed versions of it, in whole or in part, in source or built form, to anyone outside your organization, or publish them. This includes forks, builds, container images and patches that contain code of the software. Copies are obtained only from official sources: https://github.com/ProAnima/Arkvory, the ProAnimaStudio update service and the container registries named in the official documentation. A fork that a hosting platform creates under its own terms gives no rights beyond this license.
+- Distribute the software or changed versions of it, in whole or in part, in source or built form, to anyone outside your organization, or publish them. This includes forks, builds, container images and patches that contain code of the software. Copies are obtained only from official sources: <https://github.com/ProAnima/Arkvory>, the ProAnimaStudio update service and the container registries named in the official documentation. A fork that a hosting platform creates under its own terms gives no rights beyond this license.
 - Sell, rent or lend the software or access to it, or charge for it, or provide it to third parties as a hosted or managed service. Using your installation to store and deliver your own artifacts, including to your own customers, is permitted.
 - Remove, hide or change copyright notices, this license, NOTICE.md, or the names ProAnima Arkvory and ProAnimaStudio in the interface and documentation of the software.
 - Present a changed version as the original software or as released by the licensor.
 
 ## 3. Attribution
 
-When you publicly describe a product, service or infrastructure that uses the software (on a website, in documentation, publications or presentations), name the source: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), https://github.com/ProAnima/Arkvory".
+When you publicly describe a product, service or infrastructure that uses the software (on a website, in documentation, publications or presentations), name the source: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), <https://github.com/ProAnima/Arkvory>".
 
 ## 4. Third-party components
 

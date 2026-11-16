@@ -25,7 +25,7 @@ JSON 숫자는 모든 64비트 값을 담을 수 없습니다. 따라서 Arkvory
 
 ## 인증 {#authentication}
 
-로그인, 공개 상태 확인, 로그인 옵션을 제외한 모든 작업은 `Authorization: Bearer <credential>` 헤더에 자격 증명이 필요합니다. 자격 증명은 콘솔 세션, 개인용 액세스 토큰, 서비스 키 또는 복구 키입니다. 자격 증명이 할 수 있는 일은 종류와 각 작업의 **액세스 규칙**에 따라 다릅니다. 통합을 설계하기 전에 [인증](./authentication)을 읽고, 자동화에는 필요한 작업만 가진 서비스 키를 부여하세요.
+로그인, 자기 등록, 공개 상태 확인, 로그인 옵션을 제외한 모든 작업은 `Authorization: Bearer <credential>` 헤더에 자격 증명이 필요합니다. 자기 등록(`POST /api/v1/auth/register`, `registerAccount`)에는 자격 증명이 필요 없으며, 관리자가 `ARKVORY_ALLOW_REGISTRATION=true`로 설정한 경우에만 성공할 수 있습니다. 비활성화되어 있으면 사유 `registration_disabled`와 함께 `403`을 반환합니다. 자격 증명은 콘솔 세션, 개인용 액세스 토큰, 서비스 키 또는 복구 키입니다. 자격 증명이 할 수 있는 일은 종류와 각 작업의 **액세스 규칙**에 따라 다릅니다. 통합을 설계하기 전에 [인증](./authentication)을 읽고, 자동화에는 필요한 작업만 가진 서비스 키를 부여하세요.
 
 ## 탐색 {#discovery}
 

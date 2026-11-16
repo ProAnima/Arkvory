@@ -220,7 +220,7 @@ push하는 CI 키는 보통 pull도 합니다(예: 베이스 이미지나 빌드
 | 업로드 요청 하나     | 30분 안에 끝나야 하며 30초를 넘게 멈춰 있으면 안 됩니다(`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`). 30분은 허용되는 최댓값이기도 합니다.          |
 | 완료되지 않은 업로드 | 24시간 동안 활동이 없으면 바이트와 함께 제거됩니다                                                                                                                     |
 | 임시 디스크 공간     | 업로드하는 동안 레이어 크기의 최대 두 배                                                                                                                               |
-| 동시 업로드          | 기본값은 키당 1개, 서버당 2개(`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`, `ARKVORY_MAX_UPLOADS`). 대기 중인 요청은 20초 후에 포기합니다(`ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`). |
+| 동시 업로드          | 기본값은 키당 4개, 서버당 8개(`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`, `ARKVORY_MAX_UPLOADS`). 대기 중인 요청은 20초 후에 포기합니다(`ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`). |
 | 동시 다운로드        | 기본값은 키당 4개, 서버당 16개                                                                                                                                         |
 | 페이지당 태그 수     | 1000                                                                                                                                                                   |
 | 할당량               | 레이어, 매니페스트, 완료되지 않은 업로드의 바이트는 리포지토리 할당량과 설치 용량에 포함됩니다                                                                         |
