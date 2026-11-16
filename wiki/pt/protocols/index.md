@@ -26,12 +26,12 @@ As rotas em `/v2`, `/lfs` e `/npm` seguem as especificações dos respectivos pr
 
 ## Credenciais {#credentials}
 
-Toda solicitação precisa de uma credencial, exceto as verificações públicas de integridade (health checks). O Arkvory aceita estes tipos:
+A maioria das solicitações precisa de uma credencial. O login (`POST /api/v1/auth/login`), o autorregistro (`POST /api/v1/auth/register`), as opções de login (`GET /api/v1/auth/options`) e as verificações públicas de integridade (`GET /health/live`, `GET /health/status`) não exigem o cabeçalho `Authorization`. O autorregistro só pode ser concluído com sucesso quando o administrador define `ARKVORY_ALLOW_REGISTRATION=true`; quando está desativado, retorna `403` com o motivo `registration_disabled`. `GET /health/ready` e `GET /health/metrics` exigem autenticação. O Arkvory aceita estes tipos:
 
 | Tipo                    | Aparência         | Origem                                                                                                                                  | Uso típico                                                     |
 | ----------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | Token de acesso pessoal | `pat_...`         | Criado por um usuário no console. Escopo `read` ou `read-write`. Expira (90 dias por padrão, no máximo 365).                            | Desenvolvedores: Unity, git, Docker em uma estação de trabalho |
-| Chave de serviço        | `arkvory_...`     | Emitida por um administrador para uma conta de serviço, com ações exatas por repositório                                                | CI/CD, agentes de implantação, servidores de build             |
+| Chave de serviço        | `arkvory_...`     | Emitida para uma conta de serviço, com ações exatas por repositório, com a chave de recuperação ou por uma chave de operador delegada   | CI/CD, agentes de implantação, servidores de build             |
 | Chave de arquivo        | qualquer segredo  | O arquivo de chaves do servidor (`ARKVORY_KEYS_FILE`), com `read` ou `write` por repositório; a chave do proprietário também administra | Proprietário da instalação, integrações legadas                |
 | Sessão                  | `dps_...`         | Login no console; válida por 12 horas                                                                                                   | Trabalho interativo no console                                 |
 | Link de download        | URL com `?token=` | Criado para um artefato; de 60 segundos a 24 horas                                                                                      | Entregar um arquivo a alguém sem uma chave                     |

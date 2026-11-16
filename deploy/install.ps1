@@ -122,9 +122,9 @@ if ($Mode -eq 'windows') {
 }
 $work = Join-Path $Root ('bootstrap.' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
-$nodeName = 'node-v24.21.0-win-x64'
+$nodeName = 'node-v24.22.3-win-x64'
 # SHA-256 of node.exe in the pinned archive below (scripts/native-dependencies.mjs pins the same archive).
-$nodeSha256 = 'BA4E6D110E8C1592A1ECD390F6B05F3DA124B13871A5BE62B341A07A853C6C32'
+$nodeSha256 = '86FC4785327DB5F5C7558DC6156C543B433C313E813A222E088086222AB4AFA6'
 $nodeEntries = @('CHANGELOG.md', 'LICENSE', 'README.md', 'corepack', 'corepack.cmd', 'install_tools.bat', 'node.exe', 'node_modules', 'nodevars.bat', 'npm', 'npm.cmd', 'npm.ps1', 'npx', 'npx.cmd', 'npx.ps1')
 # A runtime is used only when node.exe has the pinned hash and nothing but the archive's own
 # entries sits beside it: Windows loads libraries from the directory of an executable first.
@@ -144,10 +144,10 @@ if (-not (Test-NodeRuntime $current)) {
     $archive = Join-Path $work 'node.zip'
     # Three attempts with a pause for transient network failures; the checksum decides below.
     foreach ($attempt in 1..3) {
-        try { Invoke-WebRequest "https://nodejs.org/dist/v24.21.0/$nodeName.zip" -OutFile $archive -UseBasicParsing; break }
+        try { Invoke-WebRequest "https://nodejs.org/dist/v24.22.3/$nodeName.zip" -OutFile $archive -UseBasicParsing; break }
         catch { if ($attempt -eq 3) { throw }; Start-Sleep -Seconds (5 * $attempt) }
     }
-    if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne '158F7685B44DE51F6C0DF1D153526CBCD3E1BC739A8DFC607721CEF75DE9E541') { throw 'Node.js checksum mismatch' }
+    if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne 'E612AF99F626AB415EA225AF6BCE5C971FEB448CB5CAE250BB1C3FA50C5F7D9F') { throw 'Node.js checksum mismatch' }
     # A fresh directory inside the protected runtime directory; the runtime is switched to it only
     # after verification. Antivirus scanning can briefly hold a freshly extracted node.exe.
     # fresh-* directories that an interrupted run left were never run and are removed first;

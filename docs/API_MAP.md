@@ -6,7 +6,7 @@
 
 Управление установленным кодом: `GET/HEAD /api/v1/system/updates` и `POST /api/v1/system/updates/requests`. Surface administration, глобальный administrator, команды check/configure/apply с revision и UUID. SDK: `client.updates`. [Контракт, права и восстановление](UPDATES.md).
 
-Резервные копии экземпляра (B2, [ADR 0056](adr/0056-unattended-backups.md)): `/api/v1/backup/*`, surface administration, системные права `backup.read`/`backup.manage` (администратор учётных записей или файловый ключ владельца/bootstrap; ключи репозиториев — 403). Подробности — [раздел 1a](#1a-резервные-копии--реализовано). Схема БД введена в 26; в ядре 0.6.3 актуальная — 52 (`SCHEMA_VERSION`).
+Резервные копии экземпляра (B2, [ADR 0056](adr/0056-unattended-backups.md)): `/api/v1/backup/*`, surface administration, системные права `backup.read`/`backup.manage` (администратор учётных записей или файловый ключ владельца/bootstrap; ключи репозиториев — 403). Подробности — [раздел 1a](#instance-backups). Схема БД введена в 26; в ядре 0.6.3 актуальная — 52 (`SCHEMA_VERSION`).
 
 Области ответственности, уровни видимости, каталог операций текущего credential и SDK для удалённых клиентов реализованы: [API_SURFACES](API_SURFACES.md). `GET/HEAD /api/v1/operations` — authenticated, контекст repository необязателен, pagination до 100, advisory conditions. `GET/HEAD /api/v1/openapi.json?surface=…` — документационное представление. Версия схемы определяется `packages/infrastructure/src/schema-version.ts`; для выпущенного ядра 0.6.3 это 52.
 
@@ -53,6 +53,8 @@
 | PUT / DELETE `/api/v1/access-groups/{id}/grants/{repository}` | administrator                 | 204; access read/write либо снять grant                                             | `policy.manage` + разрешение делегировать конкретные actions/resources      |
 
 CORS: OPTIONS для `/api/v1/*` и `/health/ready` проверяет origin/method/headers без Bearer. Это не разрешение на саму операцию; см. [EXTERNAL_UI](EXTERNAL_UI.md). `/console/` — статический клиент, не API управления.
+
+<a id="instance-backups"></a>
 
 ## 1a. Резервные копии — реализовано
 

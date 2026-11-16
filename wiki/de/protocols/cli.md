@@ -119,12 +119,12 @@ Ein Download-Link ist ein Geheimnis. Er kann nicht vor Ablauf widerrufen werden.
 
 ### Verzeichnisbäume {#directory-trees}
 
-| Befehl                                                                              | Ergebnis                                                                               |
-| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Veröffentlicht den Ordner als ein ZIP-Artefakt, fortsetzbar                            |
-| `tree pull ID DIR`                                                                  | Macht den Ordner zum Baum: ganzes Archiv oder nur die abweichenden Dateien             |
-| `tree verify ID DIR`                                                                | Listet fehlende, abweichende und zusätzliche Dateien; Exit-Code 5 bei jeder Abweichung |
-| `tree repair ID DIR`                                                                | Schreibt fehlende und abweichende Dateien neu; behält zusätzliche Dateien              |
+| Befehl                                                                              | Ergebnis                                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Veröffentlicht den Ordner als ein ZIP-Artefakt, fortsetzbar                                                                                                                                                  |
+| `tree pull ID DIR`                                                                  | Macht den Ordner zum Baum: ganzes Archiv oder nur die abweichenden Dateien                                                                                                                                   |
+| `tree verify ID DIR`                                                                | Listet `missing` (fehlende), `mismatched` (abweichende) und `extra` (zusätzliche) Dateien; Exit-Code 5 nur, wenn `missing` oder `mismatched` nicht leer ist. Zusätzliche Dateien allein ergeben Exit-Code 0. |
+| `tree repair ID DIR`                                                                | Schreibt fehlende und abweichende Dateien neu; behält zusätzliche Dateien                                                                                                                                    |
 
 Siehe [Verzeichnisbäume](../use/trees).
 

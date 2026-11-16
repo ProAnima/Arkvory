@@ -30,7 +30,7 @@ It is a standalone product with its own HTTP API, command-line client and TypeSc
 - **The whole cluster in one place.** Pair the other installations, mirrors and second sites with a one-time code over a pinned certificate, and see on one page whether each answers, its version, HA copies, read gateways, mirror lag and download queue.
 - **Mirrors and read gateways.** A second installation keeps a read-only copy of repositories and serves it when the first site is lost; extra download processes share one bandwidth budget.
 - **Runs by itself.** Windows services, Linux packages or Docker Compose. Services restart after a crash or a hang; signed stable updates install by hand or in a maintenance hour, behind a fresh verified backup, with rollback.
-- **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark. The documentation offers the same language selection; some Japanese and Arabic pages fall back to English.
+- **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark. All 46 user documentation pages are translated into the same eleven languages.
 
 ## Modules and Arkvory Pro
 
@@ -81,7 +81,7 @@ The full walkthrough: [Quick start](https://proanima.github.io/Arkvory/guide/qui
 
 ## Documentation
 
-**[proanima.github.io/Arkvory](https://proanima.github.io/Arkvory/)** — installation, everyday work, clients and protocols, operation (backups, mirrors, the high-availability cluster, storage, monitoring, security, troubleshooting) and the HTTP API reference generated from the contract the server enforces. With search and the eleven-language selector of the console; Japanese and Arabic still contain English fallback pages. The [current implementation and limits](docs/CURRENT_STATE.md) distinguish shipped features from historical plans. The engineering documents (architecture, contracts, decisions) are in Russian in [`docs/`](docs/) and in the site's developers' section.
+**[proanima.github.io/Arkvory](https://proanima.github.io/Arkvory/)** — installation, everyday work, clients and protocols, operation (backups, mirrors, the high-availability cluster, storage, monitoring, security, troubleshooting) and the HTTP API reference generated from the contract the server enforces. With search, the eleven-language selector of the console and complete translations of all 46 user pages, including Japanese and Arabic. The [current implementation and limits](docs/CURRENT_STATE.md) distinguish shipped features from historical plans. The engineering documents (architecture, contracts, decisions) are in Russian in [`docs/`](docs/) and in the site's developers' section.
 
 ## Limits
 
@@ -89,7 +89,7 @@ A standalone installation is one server with PostgreSQL and a local content dire
 
 ## For developers
 
-Requires Node.js 24 LTS, npm 11 and PostgreSQL 18 (Docker is optional).
+Requires Node.js 24.22.3 LTS, npm 11 and PostgreSQL 18 (Docker is optional).
 
 ```bash
 git clone https://github.com/ProAnima/Arkvory.git
@@ -105,6 +105,6 @@ Running from source is for development; servers are installed from the release p
 
 **© 2026 Ian Panaev (Ян Панаев), ProAnimaStudio.**
 
-ProAnima Arkvory is free of charge for everyone, companies included, and its source code is open for reading. It is not open source: you may use it and change it within your organization, but you may not distribute copies or forks, sell it or offer it as a service. When you publicly describe a system built on Arkvory, name the source: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), https://github.com/ProAnima/Arkvory". Copies come only from official sources.
+ProAnima Arkvory is free of charge for everyone, companies included, and its source code is open for reading. It is not open source: you may use it and change it within your organization, but you may not distribute copies or forks, sell it or offer it as a service. When you publicly describe a system built on Arkvory, name the source: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), <https://github.com/ProAnima/Arkvory>". Copies come only from official sources.
 
 Terms: [license](LICENSE.md) ([на русском](LICENSE.ru.md); the Russian text prevails), notice: [NOTICE.md](NOTICE.md), model: [LICENSING](docs/LICENSING.md). Third-party components retain their own licenses.

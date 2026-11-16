@@ -2,7 +2,7 @@
 // (`## Backups {#backups}`): a translation keeps the ids, so a link to a section works in every
 // language, and tests/wiki.test.mjs compares a page's ids with the English page's.
 
-const FENCE = /^s*(```|~~~)/;
+const FENCE = /^\s*(```|~~~)/;
 const HEADING = /^(#{2,3})\s+(.*?)\s*$/;
 const ID = /\s*\{#([A-Za-z0-9_-]+)\}$/;
 

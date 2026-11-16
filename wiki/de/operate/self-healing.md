@@ -137,7 +137,7 @@ Selbstheilung deckt Ausfälle eines Prozesses ab. Diese brauchen einen Operator:
 - **Zertifikate.** Arkvory liest erneuerte Zertifikatsdateien ohne Neustart (standardmäßig alle 300 Sekunden), aber Ihre Werkzeuge müssen sie erneuern.
 - **Ein gestoppter Dienst.** Ein Dienst, den Sie gestoppt haben, bleibt gestoppt.
 - **Die Plattform.** Docker muss beim Boot starten. PostgreSQL-Hauptversionen, Node.js und das Betriebssystem aktualisieren Sie.
-- **Ein verlorener Server oder Datenträger.** Es gibt kein Failover. Stellen Sie aus einem Backup wieder her. Siehe [Backups](./backups).
+- **Verlust eines Servers oder Datenträgers.** Eine Einzelinstallation bietet kein Failover: Stellen Sie eine Sicherung wieder her. Ein HA-Cluster kann gemäß seinen Replikations- und Fencing-Regeln zu einem anderen Datenserver wechseln. Siehe [Sicherungen](./backups) und [Hochverfügbarkeitscluster](./cluster).
 
 ## Verwandte Seiten {#related-pages}
 

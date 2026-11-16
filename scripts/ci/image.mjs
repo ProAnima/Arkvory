@@ -13,7 +13,7 @@ const powershell = [
 ];
 
 export const postgresImage =
-  'postgres:18.4@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636';
+  'postgres:18.7@sha256:2ea8630df176ad090ec92136dee850397c5af8781e4bcf2e4162593691c61bbc';
 
 async function playwrightVersion(root) {
   const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));

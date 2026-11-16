@@ -181,7 +181,7 @@ A resposta lista cada versão com o conteúdo de seu `package.json` (incluindo o
 | Tarball                                 | Até o tamanho máximo de objeto da instalação, `ARKVORY_MAX_OBJECT_BYTES` (cerca de 10 TiB por padrão). Um arquivo que expande mais de 100 vezes mais 64 MiB é recusado. |
 | O restante da solicitação de publicação | Até 8 MiB de JSON, aninhado no máximo 64 níveis. O tarball é lido como um stream e não é mantido na memória.                                                            |
 | Uma solicitação de publicação           | Deve terminar em até 30 minutos e não pode pausar por mais de 30 segundos (`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`)                              |
-| Uploads ao mesmo tempo                  | 2 por servidor e 1 por chave por padrão. Uma solicitação em espera desiste após 20 segundos.                                                                            |
+| Uploads ao mesmo tempo                  | 8 por servidor e 4 por chave por padrão. Uma solicitação em espera desiste após 20 segundos.                                                                            |
 | Texto de pesquisa                       | Até 256 caracteres                                                                                                                                                      |
 
 O `npm publish` é uma única solicitação, e ele reinicia a partir do primeiro byte após uma falha. Para pacotes de muitos gigabytes, envie o arquivo com o [`arkvoryctl`](./cli) como um artefato ou um [arquivo bruto](./raw-files). Assets binários grandes que mudam com frequência ficam melhor no [Git LFS](./git-lfs); mantenha código e recursos estáveis nos pacotes.

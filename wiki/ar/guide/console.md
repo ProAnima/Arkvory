@@ -48,7 +48,7 @@ title: وحدة التحكم على الويب
 
 ### المالك الأول {#the-first-owner}
 
-لا توجد حسابات في التثبيت الجديد. على Windows ينشئ برنامج التثبيت المالك. وفي التثبيتات الأخرى، أنشئ المالك في وحدة التحكم:
+لا توجد حسابات في التثبيت الجديد. ينشئ مثبّت Windows الرسومي `Arkvory-Setup-x64.exe` المالك. أما مع سكربت Windows PowerShell أو Linux أو Docker، فأنشئ المالك في وحدة التحكم:
 
 1. افتح [[ui:navStart]] ووسّع [[ui:welcomeOwner]].
 2. الصق مفتاح الاسترداد من `config/bootstrap-token.txt` في دليل التثبيت.
@@ -81,7 +81,7 @@ title: وحدة التحكم على الويب
 - [[ui:assetTitle]]: يجعل [[ui:assign]] هذا المُخرَج المحتوى الحالي لمسار ملف.
 - [[ui:promotionTitle]]: يعلّم [[ui:stageAdd]] المُخرَج بمرحلة، مثل `qa` أو `release`. وينشره [[ui:promoteSubmit]] في مستودع آخر. راجع [الترقية](../use/promotion).
 - [[ui:attachmentsTitle]]: يربط [[ui:attachmentAdd]] ملف بيان أو SBOM أو توقيعًا أو تقريرًا أو ملفًا آخر بنسخة البناء هذه. ويعرض [[ui:attachmentHistory]] المجموعات السابقة.
-- [[ui:deletionTitle]]: يعرض [[ui:deletionInspect]] ما لا يزال يستخدم المُخرَج. وللحذف، الصق معرّف المُخرَج واختر [[ui:deletionSubmit]].
+- [[ui:deletionTitle]]: يعرض [[ui:deletionInspect]] ما لا يزال يستخدم المُخرَج. وللحذف، الصق معرّف المُخرَج واختر [[ui:deletionSubmit]]. يتطلب الحذف مفتاح خدمة يملك الإجراء `artifact.delete`؛ ولا يتيح تسجيل الدخول بكلمة مرور أو الرمز الشخصي أو مفتاح الاسترداد الحذف.
 
 ## النقل {#transfers}
 
@@ -110,6 +110,8 @@ title: وحدة التحكم على الويب
 ### المستودعات {#repositories}
 
 يعرض [[ui:repositories]] المستودعات التي يمكنك رؤيتها، مع [[ui:repositoryRights]]. لكل بطاقة [[ui:repositoryOpen]] و[[ui:repositoryStorage]] (حصة التخزين والتنظيف التلقائي والتنظيف الفعلي)، و[[ui:repositoryAccess]] للمسؤولين. ويعرض المستودع المنسوخ بمرآة الشارة [[ui:mirrorBadge]]. راجع [المستودعات](../use/repositories) و[التخزين](../operate/storage).
+
+تتطلب لوحة التخزين مفتاح خدمة يملك الإجراء `storage.read` أو `storage.manage`.
 
 ### وصول الخدمات {#service-access}
 

@@ -234,7 +234,7 @@ sudo userdel arkvory-db
 4. 安装完成后，删除临时目录 `/opt/proanima-arkvory/bootstrap.*`。如果您在提示符处输入了 URL，该目录会在 `native.json` 中保存它。
 5. 如[首次启动和入门](#first-start)所述创建所有者。
 
-脚本从 `nodejs.org` 下载 Node.js 24.21.0，检查其 SHA-256 并安装最新的稳定版。省略 `--automatic` 可让自动更新保持关闭。环境变量会更改默认值：
+脚本从 `nodejs.org` 下载 Node.js 24.22.3，检查其 SHA-256 并安装最新的稳定版。省略 `--automatic` 可让自动更新保持关闭。环境变量会更改默认值：
 
 | 变量                      | 含义                                                    | 默认值                  |
 | ------------------------- | ------------------------------------------------------- | ----------------------- |
@@ -248,7 +248,7 @@ sudo userdel arkvory-db
 
 ```bash
 root=/opt/proanima-arkvory
-sudo "$root/runtime/node-v24.21.0-linux-x64/bin/node" "$root/manage.mjs" status --root "$root"
+sudo "$root/runtime/node-v24.22.3-linux-x64/bin/node" "$root/manage.mjs" status --root "$root"
 ```
 
 您需要自行备份和维护 PostgreSQL 服务器。Arkvory 备份代理通过连接 URL 将数据库内容复制到备份存储中。参见[备份](../operate/backups)。

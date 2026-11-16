@@ -9,7 +9,7 @@ Cette page explique les termes que les autres pages emploient. Chaque section es
 
 ## L’installation et ses services {#installation}
 
-Une installation correspond à un serveur. Elle exécute trois services Arkvory à côté d’une base de données PostgreSQL :
+Une installation standard s’exécute sur un serveur. Elle exécute trois services Arkvory à côté d’une base de données PostgreSQL :
 
 | Partie              | Rôle                                                                                                                                                                    |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -98,7 +98,7 @@ Une clé de service est émise une fois, affichée une fois, et ne devient utili
 
 ## Le propriétaire et la clé de récupération {#owner-and-recovery-key}
 
-Le **propriétaire** est le premier compte. C’est un administrateur et un membre du groupe `arkvory-owners`, qui a un accès `write` à `releases`. Le programme d’installation Windows le crée ; sous Linux et Docker, vous le créez dans la console avec la clé de récupération.
+Le **propriétaire** est le premier compte. C’est un administrateur et un membre du groupe `arkvory-owners`, qui a un accès `write` à `releases`. Le programme d’installation graphique Windows `Arkvory-Setup-x64.exe` le crée ; avec le script Windows PowerShell, Linux ou Docker, vous le créez dans la console avec la clé de récupération.
 
 La **clé de récupération** est un secret que le programme d’installation écrit dans `config/bootstrap-token.txt` à la racine d’installation. Elle peut créer le premier propriétaire et des comptes, gérer les comptes de service et leurs délégations, exécuter des sauvegardes et demander des mises à jour. Les outils d’installation la lisent sur le serveur. Elle n’est pas destinée au CI ni au travail quotidien : gardez-la sur le serveur et ne la copiez pas. Voir [Choisir une installation](../install/index#recovery-key) et [Sécurité](../operate/security).
 

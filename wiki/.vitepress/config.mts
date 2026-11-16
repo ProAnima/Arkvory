@@ -9,6 +9,7 @@ import { siteText } from './site-text.ts';
 import { tokenize } from './tokenize.ts';
 import { uiLabels } from './ui-labels.ts';
 import { vueSafe } from './vue-safe.ts';
+import { apiFragments } from './api-fragments.ts';
 import { dictionaries } from './console-labels.ts';
 
 // The search index in words as each script has them: Chinese and Japanese have no spaces
@@ -190,9 +191,12 @@ export default defineConfig({
     },
   },
   markdown: {
+    // Shiki has no bundled Caddyfile grammar; keep the correct label without build warnings.
+    languageAlias: { caddyfile: 'text' },
     // An untranslated page includes the English one; its links stay relative to the page shown.
     include: { rebaseRelativeUrls: false },
     config: (md) => {
+      apiFragments(md);
       uiLabels(md, dictionaries(), languageOf);
       vueSafe(md);
     },

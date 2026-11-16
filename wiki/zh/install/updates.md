@@ -194,7 +194,7 @@ sudo arkvory configure --root <root> --unpin
 
 更新程序根据清单检查归档的 SHA-256。只有当 `arkvory-release.json.sig` 位于清单旁边时，它才检查签名。本地目录是您自己的选择，因此更新不要求签名。没有签名时，第 1 步中将套件与 `release-checksums.json` 比较是您对来源的唯一证明。架构更改的规则同样适用：您需要先有一份经过验证的备份。
 
-原生软件包或 `Arkvory-Setup-x64.exe` 自带其发行版，不需要互联网访问。Compose 更新会在主机上构建容器镜像。只有当基础镜像 `node:24.21.0-bookworm-slim` 尚未存在于主机上时，它才需要 Docker Hub。
+原生软件包或 `Arkvory-Setup-x64.exe` 自带其发行版，不需要互联网访问。Compose 更新会在主机上构建容器镜像。只有当基础镜像 `node:24.22.3-bookworm-slim` 尚未存在于主机上时，它才需要 Docker Hub。
 
 ## 按平台更新 {#platforms}
 
@@ -242,3 +242,5 @@ sudo arkvory configure --root <root> --unpin
 | `Interrupted update request; inspect installation and use updates-reset` | 来自控制台的请求已被接受但未完成。检查状态，然后运行 `updates-reset`                                                                                                                                        |
 
 更多提示见[故障排查](../operate/troubleshooting)和[自愈](../operate/self-healing)。
+
+将现有数据库升级到 PostgreSQL 18.7 之前，请阅读[供应方的升级后要求](https://www.postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/)。

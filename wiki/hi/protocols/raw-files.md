@@ -132,10 +132,28 @@ wget --header="Authorization: Bearer $ARKVORY_KEY" -O GameSetup.exe "$URL"
 
 एक पथ कभी भी नया संस्करण पा सकता है, और एक `GET` पथ को फिर से हल करता है। डाउनलोड सुरक्षित रूप से जारी रखने के लिए, पहले उत्तर का `ETag` याद रखें और उसे `If-Range` के रूप में भेजें:
 
+मूल `GET` का `ETag`, `GameSetup.etag` में सहेजें; `HEAD` से नया मान न लें। यह उदाहरण मौजूदा आंशिक फ़ाइल के आकार से ऑफ़सेट निकालता है और केवल `206` मिलने पर अस्थायी उत्तर जोड़ता है। `200` या अनुरोध विफल होने पर आंशिक फ़ाइल अपरिवर्तित रहती है: अलग से नया डाउनलोड शुरू करें। फ़ाइल का उपयोग करने से पहले अंतिम SHA-256 सत्यापित करें।
+
 ```bash
-etag=$(curl -sSI -H "Authorization: Bearer $ARKVORY_KEY" "$URL" | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
-curl -sS -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
-  -H "Range: bytes=1048576-" "$URL" >> GameSetup.part
+etag=$(cat GameSetup.etag) || exit 1
+test -n "$etag" || exit 1
+offset=$(wc -c < GameSetup.part) || exit 1
+offset=$(printf '%s' "$offset" | tr -d '[:space:]')
+segment=$(mktemp) || exit 1
+status=$(curl -fsS -o "$segment" -w '%{http_code}' \
+  -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
+  -H "Range: bytes=$offset-" "$URL") || {
+  rm -f "$segment"
+  exit 1
+}
+if [ "$status" != 206 ]; then
+  rm -f "$segment"
+  exit 1
+fi
+cat "$segment" >> GameSetup.part
+result=$?
+rm -f "$segment"
+test "$result" -eq 0
 ```
 
 जब फ़ाइल नहीं बदली हो तो डाउनलोड छोड़ने के लिए, पिछली बार सहेजा गया ETag भेजें:
@@ -189,7 +207,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ARKVORY_KEY
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | फ़ाइल आकार      | इंस्टॉलेशन का अधिकतम ऑब्जेक्ट आकार, `ARKVORY_MAX_OBJECT_BYTES` (डिफ़ॉल्ट रूप से लगभग 10 TiB)                                                                          |
 | एक `PUT` अनुरोध | 30 मिनट के भीतर पूरा होना चाहिए और 30 सेकंड से अधिक रुकना नहीं चाहिए (`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`)। ये अधिकतम अनुमत मान भी हैं।     |
-| एक साथ अपलोड   | डिफ़ॉल्ट रूप से प्रति सर्वर 2 और प्रति कुंजी 1 (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`)। प्रतीक्षारत अनुरोध 20 सेकंड के बाद `503` के साथ हार मान लेता है। |
+| एक साथ अपलोड   | डिफ़ॉल्ट रूप से प्रति सर्वर 8 और प्रति कुंजी 4 (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`)। प्रतीक्षारत अनुरोध 20 सेकंड के बाद `503` के साथ हार मान लेता है। |
 | एक साथ डाउनलोड | डिफ़ॉल्ट रूप से प्रति सर्वर 16 और प्रति कुंजी 4                                                                                                                      |
 | कोटा           | फ़ाइल रिपॉज़िटरी कोटा और इंस्टॉलेशन की क्षमता के विरुद्ध गिनी जाती है                                                                                                 |
 

@@ -48,7 +48,7 @@ Depois de entrar com uma senha, você pode usar [[ui:changeOwnPassword]] e [[ui:
 
 ### O primeiro proprietário {#the-first-owner}
 
-Uma instalação nova não tem contas. No Windows, o instalador cria o proprietário. Nas outras instalações, crie o proprietário no console:
+Uma instalação nova não tem contas. O instalador gráfico do Windows `Arkvory-Setup-x64.exe` cria o proprietário. Com o script do Windows PowerShell, Linux ou Docker, crie o proprietário no console:
 
 1. Abra [[ui:navStart]] e expanda [[ui:welcomeOwner]].
 2. Cole a chave de recuperação de `config/bootstrap-token.txt`, no diretório da instalação.
@@ -81,7 +81,7 @@ A seção [[ui:metadata]] mostra um artefato:
 - [[ui:assetTitle]]: [[ui:assign]] torna este artefato o conteúdo atual de um caminho de arquivo.
 - [[ui:promotionTitle]]: [[ui:stageAdd]] marca o artefato com um estágio, como `qa` ou `release`. [[ui:promoteSubmit]] o publica em outro repositório. Consulte [Promoção](../use/promotion).
 - [[ui:attachmentsTitle]]: [[ui:attachmentAdd]] vincula um manifesto, um SBOM, uma assinatura, um relatório ou outro arquivo a este build. [[ui:attachmentHistory]] mostra os conjuntos anteriores.
-- [[ui:deletionTitle]]: [[ui:deletionInspect]] mostra o que ainda usa o artefato. Para excluir, cole o ID do artefato e selecione [[ui:deletionSubmit]].
+- [[ui:deletionTitle]]: [[ui:deletionInspect]] mostra o que ainda usa o artefato. Para excluir, cole o ID do artefato e selecione [[ui:deletionSubmit]]. A exclusão exige uma chave de serviço com a ação `artifact.delete`; login por senha, token pessoal e chave de recuperação não podem excluir.
 
 ## Transferências {#transfers}
 
@@ -110,6 +110,8 @@ Os administradores gerenciam as pessoas aqui. O bloco [[ui:accountsHeading]] lis
 ### Repositórios {#repositories}
 
 A seção [[ui:repositories]] mostra os repositórios que você pode ver, com [[ui:repositoryRights]]. Cada cartão tem [[ui:repositoryOpen]], [[ui:repositoryStorage]] (cota, limpeza automática e limpeza física) e, para os administradores, [[ui:repositoryAccess]]. Um repositório espelhado mostra o selo [[ui:mirrorBadge]]. Consulte [Repositórios](../use/repositories) e [Armazenamento](../operate/storage).
+
+O painel de armazenamento exige uma chave de serviço com as ações `storage.read` ou `storage.manage`.
 
 ### Acesso de serviços {#service-access}
 

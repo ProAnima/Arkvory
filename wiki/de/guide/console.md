@@ -48,7 +48,7 @@ Nach der Anmeldung mit einem Passwort können Sie [[ui:changeOwnPassword]] und [
 
 ### Der erste Besitzer {#the-first-owner}
 
-Eine neue Installation hat keine Konten. Unter Windows erstellt das Setup den Besitzer. Bei anderen Installationen erstellen Sie den Besitzer in der Konsole:
+Eine neue Installation hat keine Konten. Der grafische Windows-Installer `Arkvory-Setup-x64.exe` erstellt den Besitzer. Beim PowerShell-Skript für Windows, unter Linux oder mit Docker erstellen Sie den Besitzer in der Konsole:
 
 1. Öffnen Sie [[ui:navStart]] und erweitern Sie [[ui:welcomeOwner]].
 2. Fügen Sie den Wiederherstellungsschlüssel aus `config/bootstrap-token.txt` im Installationsverzeichnis ein.

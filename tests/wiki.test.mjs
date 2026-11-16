@@ -14,7 +14,13 @@ import {
 } from '../scripts/wiki/site.mjs';
 import { headings, slug, withIds } from '../scripts/wiki/headings.mjs';
 import { operationText, operations } from '../scripts/wiki/reference.mjs';
-import { checkApi, comparePage, frontField as field, labels } from '../scripts/wiki/check.mjs';
+import {
+  checkApi,
+  comparePage,
+  frontField as field,
+  labels,
+  missingTechnicalTerms,
+} from '../scripts/wiki/check.mjs';
 import { rulesOf, sample, typeOf } from '../scripts/wiki/schema.mjs';
 import { writtenPages } from '../scripts/wiki.mjs';
 import { writeStubs } from '../scripts/wiki/stubs.mjs';
@@ -32,6 +38,39 @@ const leaves = (value, path = '') =>
     : [[path.slice(0, -1), value]];
 
 const pages = writtenPages();
+
+test('translation checks find omitted permissions, proxy headers and queue options', () => {
+  const source =
+    '`artifact.delete` `storage.read` `ARKVORY_SITE_URL` `X-Forwarded-Host` ' +
+    '`Retry-After` `rate_limited` `--wait-limit MS` `artifact.*`';
+  assert.deepEqual(missingTechnicalTerms(source, 'Только общие слова о настройке'), [
+    '--wait-limit',
+    'ARKVORY_SITE_URL',
+    'Retry-After',
+    'X-Forwarded-Host',
+    'artifact.*',
+    'artifact.delete',
+    'rate_limited',
+    'storage.read',
+  ]);
+});
+
+test('technical checks allow translated prose and placeholders without requiring repetition', () => {
+  const source =
+    'Use `--root <root>` with `ARKVORY_MODULES_FILE`; `routes_unsupported` means failure. ' +
+    'Repeat `ARKVORY_MODULES_FILE`. Send `Authorization: Bearer <key>`. **Same storage.**';
+  const translation =
+    'Используйте `--root <корень>` и `ARKVORY_MODULES_FILE`; ошибка `routes_unsupported`. ' +
+    'Заголовок `Authorization: Bearer <ключ>`.';
+  assert.deepEqual(missingTechnicalTerms(source, translation), []);
+  assert.deepEqual(
+    missingTechnicalTerms('A failure is backup.request.failed.', 'backup.request.failed。'),
+    [],
+  );
+  assert.deepEqual(missingTechnicalTerms('Allow artifact.read.', 'Нет разрешения'), [
+    'artifact.read',
+  ]);
+});
 
 test('every English page is written: a title, one heading, no stub', () => {
   for (const page of pages) {
@@ -211,6 +250,15 @@ test('heading ids follow VitePress slugs and skip code blocks', () => {
   assert.deepEqual(
     headings(withIds(page)).map((h) => h.id),
     ['a-b', 'a-b-2', 'own'],
+  );
+  const indented = '## Outside\n\n   ~~~md\n## Example, not a section\n   ~~~\n';
+  assert.deepEqual(
+    headings(indented).map((h) => h.text),
+    ['Outside'],
+  );
+  assert.equal(
+    withIds(indented),
+    '## Outside {#outside}\n\n   ~~~md\n## Example, not a section\n   ~~~\n',
   );
 });
 

@@ -48,7 +48,7 @@ title: वेब कंसोल
 
 ### पहला स्वामी {#the-first-owner}
 
-नए इंस्टॉलेशन में कोई खाता नहीं होता। Windows पर सेटअप स्वामी को बनाता है। दूसरे इंस्टॉलेशन में स्वामी को कंसोल में बनाएँ:
+नए इंस्टॉलेशन में कोई खाता नहीं होता। Windows का ग्राफ़िकल इंस्टॉलर `Arkvory-Setup-x64.exe` स्वामी को बनाता है। Windows PowerShell स्क्रिप्ट, Linux या Docker से इंस्टॉल करने पर पुनर्प्राप्ति कुंजी से स्वामी को कंसोल में बनाएँ:
 
 1. [[ui:navStart]] खोलें और [[ui:welcomeOwner]] को विस्तृत करें।
 2. इंस्टॉलेशन डायरेक्टरी में मौजूद `config/bootstrap-token.txt` से पुनर्प्राप्ति कुंजी पेस्ट करें।
@@ -81,7 +81,7 @@ title: वेब कंसोल
 - [[ui:assetTitle]]: [[ui:assign]] इस आर्टिफ़ैक्ट को फ़ाइल पथ की वर्तमान सामग्री बनाता है।
 - [[ui:promotionTitle]]: [[ui:stageAdd]] आर्टिफ़ैक्ट पर `qa` या `release` जैसा स्टेज लगाता है। [[ui:promoteSubmit]] उसे किसी दूसरी रिपॉज़िटरी में प्रकाशित करता है। [प्रमोशन](../use/promotion) देखें।
 - [[ui:attachmentsTitle]]: [[ui:attachmentAdd]] मैनिफ़ेस्ट, SBOM, हस्ताक्षर, रिपोर्ट या कोई दूसरी फ़ाइल इस बिल्ड से जोड़ता है। [[ui:attachmentHistory]] पहले के सेट दिखाता है।
-- [[ui:deletionTitle]]: [[ui:deletionInspect]] दिखाता है कि आर्टिफ़ैक्ट का अब भी क्या उपयोग कर रहा है। हटाने के लिए आर्टिफ़ैक्ट ID पेस्ट करें और [[ui:deletionSubmit]] चुनें।
+- [[ui:deletionTitle]]: [[ui:deletionInspect]] दिखाता है कि आर्टिफ़ैक्ट का अब भी क्या उपयोग कर रहा है। हटाने के लिए आर्टिफ़ैक्ट ID पेस्ट करें और [[ui:deletionSubmit]] चुनें। हटाने के लिए `artifact.delete` अधिकार वाली सेवा-कुंजी आवश्यक है; पासवर्ड से साइन-इन, व्यक्तिगत टोकन और रिकवरी-कुंजी से हटाना संभव नहीं है।
 
 ## ट्रांसफ़र {#transfers}
 
@@ -110,6 +110,8 @@ title: वेब कंसोल
 ### रिपॉज़िटरी {#repositories}
 
 [[ui:repositories]] अनुभाग उन रिपॉज़िटरी को दिखाता है जो आप देख सकते हैं, साथ में [[ui:repositoryRights]]। हर कार्ड में [[ui:repositoryOpen]], [[ui:repositoryStorage]] (कोटा, स्वचालित क्लीनअप और भौतिक क्लीनअप) और व्यवस्थापकों के लिए [[ui:repositoryAccess]] होता है। मिरर की गई रिपॉज़िटरी पर [[ui:mirrorBadge]] बैज दिखता है। [रिपॉज़िटरी](../use/repositories) और [स्टोरेज](../operate/storage) देखें।
+
+स्टोरेज पैनल के लिए `storage.read` या `storage.manage` अधिकार वाली सेवा-कुंजी आवश्यक है।
 
 ### सेवा एक्सेस {#service-access}
 

@@ -54,7 +54,7 @@ title: Windows
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | 程序文件         | `C:\Program Files\ProAnima\Arkvory`                                                                                                 |
 | 数据、配置和日志 | `C:\ProgramData\ProAnima\Arkvory`（安装根目录）                                                                                     |
-| 数据库           | PostgreSQL 18.4，位于根目录的 `database\` 中，监听 `127.0.0.1` 上 45329-45348 中第一个空闲端口，已从 Windows 启动时保留的端口中排除 |
+| 数据库           | PostgreSQL 18.7，位于根目录的 `database\` 中，监听 `127.0.0.1` 上 45329-45348 中第一个空闲端口，已从 Windows 启动时保留的端口中排除 |
 | 控制台           | `http://127.0.0.1:8080/console/`                                                                                                    |
 | 恢复密钥         | 根目录中的 `config\bootstrap-token.txt`                                                                                             |
 | 更新任务         | 任务计划程序（Task Scheduler）中的 `ProAnimaArkvoryUpdate`。以 SYSTEM 身份每分钟运行一次                                            |
@@ -84,7 +84,7 @@ title: Windows
 .\install.ps1 -AutomaticUpdates
 ```
 
-脚本会询问 PostgreSQL 连接 URL，输入内容不会显示。然后它从 `nodejs.org` 下载 Node.js 24.21.0，检查其 SHA-256，并安装最新的稳定版。如果根目录中已有 Node.js，只有当 `node.exe` 的 SHA-256 与预期一致且该目录中没有其他内容时，脚本才会使用它。否则脚本会重新下载 Node.js，并把旧目录移到 `runtime\unverified-…`。
+脚本会询问 PostgreSQL 连接 URL，输入内容不会显示。然后它从 `nodejs.org` 下载 Node.js 24.22.3，检查其 SHA-256，并安装最新的稳定版。如果根目录中已有 Node.js，只有当 `node.exe` 的 SHA-256 与预期一致且该目录中没有其他内容时，脚本才会使用它。否则脚本会重新下载 Node.js，并把旧目录移到 `runtime\unverified-…`。
 
 也可以不使用提示，而是传入一个受保护的 JSON 文件：
 
@@ -128,7 +128,7 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 # 图形安装程序
 & 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' status --root $root
 # 脚本安装
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 运行 `arkvory.ps1 help` 查看所有命令。这些命令在[配置](./configuration)和[更新](./updates)中有说明。

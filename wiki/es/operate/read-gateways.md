@@ -30,7 +30,7 @@ Los permisos de los repositorios se comprueban en cada lectura, igual que en el 
 - **Las mismas claves de servicio.** Dé a cada proceso el mismo contenido de `ARKVORY_KEYS_FILE`, para que las claves de archivo y sus ID coincidan. Las claves de servicio administradas están en la base de datos, así que coinciden por sí solas.
 - **Un puerto propio.** Cada proceso del mismo equipo necesita su propio `ARKVORY_PORT`.
 - **Una vista de solo lectura de los archivos.** Cuando pueda, monte el directorio de almacenamiento en modo de solo lectura para la puerta de enlace. El rechazo HTTP no sustituye a los permisos del sistema operativo. Tenga en cuenta que la puerta de enlace sigue escribiendo en la base de datos: los leases, los diagnósticos del almacenamiento, la hora del último uso de los tokens personales y los bloqueos que protegen los archivos que se están leyendo.
-- **Conexiones a la base de datos.** Cada puerta de enlace necesita tres conexiones más que `ARKVORY_DATABASE_POOL_SIZE`. Inclúyalas en `max_connections` de PostgreSQL.
+- **Conexiones a la base de datos.** Cada puerta de enlace usa el grupo de conexiones para consultas cuyo tamaño define `ARKVORY_DATABASE_POOL_SIZE` y otro grupo de hasta 8 conexiones para sesiones de larga duración (propiedad del almacenamiento, protección de archivos durante la descarga y concesión de la puerta de enlace). Incluya ambos grupos en `max_connections` de PostgreSQL.
 
 ## Ejecutar una puerta de enlace {#run}
 
@@ -102,7 +102,7 @@ La base de datos reserva un slot durante 10 segundos. Un proceso lo renueva cada
 - **Relojes.** Los leases dependen de relojes monótonos. Un salto del reloj del servidor de la base de datos, o una máquina virtual detenida, puede dejar a un proceso sirviendo más allá de su lease. En ese caso, detenga los procesos antiguos antes de iniciar un reemplazo.
 - **Fallo de la base de datos.** La base de datos es el punto débil. Si deja de estar accesible, los leases vencen y todos los procesos dejan de servir datos.
 
-El servidor puede detectar un proceso muerto que perdió la red solo mediante TCP keepalive. Defina `tcp_keepalives_idle`, `tcp_keepalives_interval` y `tcp_keepalives_count` en PostgreSQL, por ejemplo en 10, 5 y 3 segundos, o defina `tcp_user_timeout`. Sin ellos, un writer o un worker nuevo puede esperar el largo tiempo de espera predeterminado del sistema operativo.
+El servidor puede detectar un proceso muerto que perdió la red solo mediante TCP keepalive. Por ejemplo, defina `tcp_keepalives_idle` en 10 segundos, `tcp_keepalives_interval` en 5 segundos y `tcp_keepalives_count` en 3 sondas en PostgreSQL, o defina `tcp_user_timeout`. Sin ellos, un writer o un worker nuevo puede esperar el largo tiempo de espera predeterminado del sistema operativo.
 
 ## Monitorizar las puertas de enlace {#monitoring}
 

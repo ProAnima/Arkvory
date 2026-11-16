@@ -9,7 +9,7 @@ This page explains the words that the other pages use. Each section is short and
 
 ## Installation and its services {#installation}
 
-One installation is one server. It runs three Arkvory services next to one PostgreSQL database:
+A standard installation runs on one server. It runs three Arkvory services next to one PostgreSQL database:
 
 | Part         | What it does                                                                                                                                                  |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -98,7 +98,7 @@ A service key is issued once, shown once, and becomes usable only after it is **
 
 ## The owner and the recovery key {#owner-and-recovery-key}
 
-The **owner** is the first account. It is an administrator and a member of the group `arkvory-owners`, which has `write` access to `releases`. The Windows installer creates it; on Linux and Docker you create it in the console with the recovery key.
+The **owner** is the first account. It is an administrator and a member of the group `arkvory-owners`, which has `write` access to `releases`. The Windows graphical installer `Arkvory-Setup-x64.exe` creates it; with the Windows PowerShell script, Linux or Docker you create it in the console with the recovery key.
 
 The **recovery key** is a secret that the installer writes to `config/bootstrap-token.txt` in the installation root. It can create the first owner and accounts, manage service accounts and their delegations, run backups, and request updates. The installation tools read it on the server. It is not for CI or daily work: keep it on the server and do not copy it. See [Choose an installation](../install/index#recovery-key) and [Security](../operate/security).
 

@@ -132,10 +132,28 @@ Nur ein Bereich pro Anfrage wird unterstützt. Eine Anfrage mit mehreren Bereich
 
 Ein Pfad kann jederzeit eine neue Version erhalten, und ein `GET` löst den Pfad erneut auf. Um einen Download sicher fortzusetzen, merken Sie sich den `ETag` der ersten Antwort und senden Sie ihn als `If-Range`:
 
+Speichern Sie den `ETag` des ursprünglichen `GET` in `GameSetup.etag`; ermitteln Sie keinen neuen Wert mit `HEAD`. Das Beispiel berechnet den Offset aus der vorhandenen Teildatei und hängt die temporäre Antwort nur nach `206` an. Bei `200` oder einem fehlgeschlagenen Request bleibt die Teildatei unverändert: Starten Sie einen neuen Download separat. Prüfen Sie vor der Verwendung die endgültige SHA-256-Prüfsumme.
+
 ```bash
-etag=$(curl -sSI -H "Authorization: Bearer $ARKVORY_KEY" "$URL" | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
-curl -sS -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
-  -H "Range: bytes=1048576-" "$URL" >> GameSetup.part
+etag=$(cat GameSetup.etag) || exit 1
+test -n "$etag" || exit 1
+offset=$(wc -c < GameSetup.part) || exit 1
+offset=$(printf '%s' "$offset" | tr -d '[:space:]')
+segment=$(mktemp) || exit 1
+status=$(curl -fsS -o "$segment" -w '%{http_code}' \
+  -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
+  -H "Range: bytes=$offset-" "$URL") || {
+  rm -f "$segment"
+  exit 1
+}
+if [ "$status" != 206 ]; then
+  rm -f "$segment"
+  exit 1
+fi
+cat "$segment" >> GameSetup.part
+result=$?
+rm -f "$segment"
+test "$result" -eq 0
 ```
 
 Um einen Download zu überspringen, wenn sich die Datei nicht geändert hat, senden Sie den ETag, den Sie zuletzt gespeichert haben:
@@ -189,7 +207,7 @@ Ein [Lese-Gateway](../operate/read-gateways) akzeptiert nur `GET` und `HEAD`. Ei
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dateigröße             | Die maximale Objektgröße der Installation, `ARKVORY_MAX_OBJECT_BYTES` (standardmäßig etwa 10 TiB)                                                                                                               |
 | Eine `PUT`-Anfrage     | Muss innerhalb von 30 Minuten abgeschlossen sein und darf nicht länger als 30 Sekunden pausieren (`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`). Dies sind auch die höchsten erlaubten Werte. |
-| Uploads gleichzeitig   | Standardmäßig 2 pro Server und 1 pro Schlüssel (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). Eine wartende Anfrage gibt nach 20 Sekunden mit `503` auf.                                         |
+| Uploads gleichzeitig   | Standardmäßig 8 pro Server und 4 pro Schlüssel (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). Eine wartende Anfrage gibt nach 20 Sekunden mit `503` auf.                                         |
 | Downloads gleichzeitig | Standardmäßig 16 pro Server und 4 pro Schlüssel                                                                                                                                                                 |
 | Kontingent             | Die Datei zählt gegen das Repository-Kontingent und die Kapazität der Installation                                                                                                                              |
 

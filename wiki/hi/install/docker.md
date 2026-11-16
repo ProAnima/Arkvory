@@ -19,13 +19,13 @@ Compose में अंतर्निहित HTTPS नहीं है। �
 | होस्ट      | प्रति कंटेनर होस्ट एक Arkvory इंस्टॉलेशन। प्रोजेक्ट नाम और पोर्ट तय हैं                                                                                                               |
 | खाली पोर्ट | `127.0.0.1` पर 8080                                                                                                                                                      |
 | कंटेनर      | केवल Linux कंटेनर। Windows कंटेनर समर्थित नहीं हैं                                                                                                                                |
-| इंटरनेट     | `nodejs.org` (इंस्टॉलर Node.js 24.21.0 डाउनलोड करता है और उसका SHA-256 जाँचता है), अपडेट हब या GitHub (रिलीज़), और Docker Hub (`node:24.21.0-bookworm-slim` और `postgres:18.4`) |
+| इंटरनेट     | `nodejs.org` (इंस्टॉलर Node.js 24.22.3 डाउनलोड करता है और उसका SHA-256 जाँचता है), अपडेट हब या GitHub (रिलीज़), और Docker Hub (`node:24.22.3-bookworm-slim` और `postgres:18.7`) |
 
 इंस्टॉलर कंटेनर इंजन, हाइपरवाइज़र या WSL इंस्टॉल या बदलता नहीं है।
 
 ## बंडल {#bundle}
 
-इंस्टॉलर सत्यापित रिलीज़ लेता है और उसे इंस्टॉलेशन रूट में `releases/<version>/` पर खोलता है। Compose फ़ाइल `releases/<version>/deploy/compose.yml` है और बिल्ड फ़ाइल `releases/<version>/deploy/Dockerfile` है। इमेज `proanima-arkvory:<version>` आपके होस्ट पर `node:24.21.0-bookworm-slim` से बनाई जाती है। किसी Arkvory रजिस्ट्री से कुछ भी पुल नहीं किया जाता।
+इंस्टॉलर सत्यापित रिलीज़ लेता है और उसे इंस्टॉलेशन रूट में `releases/<version>/` पर खोलता है। Compose फ़ाइल `releases/<version>/deploy/compose.yml` है और बिल्ड फ़ाइल `releases/<version>/deploy/Dockerfile` है। इमेज `proanima-arkvory:<version>` आपके होस्ट पर `node:24.22.3-bookworm-slim` से बनाई जाती है। किसी Arkvory रजिस्ट्री से कुछ भी पुल नहीं किया जाता।
 
 इंस्टॉलेशन रूट Linux पर `/opt/proanima-arkvory` है। उसका लेआउट [इंस्टॉलेशन चुनें](./#installation-directory) में वर्णित है। Compose इंस्टॉलेशन में डेटा `data/` में नहीं होता: वह नीचे वर्णित वॉल्यूम में होता है।
 
@@ -33,7 +33,7 @@ Compose में अंतर्निहित HTTPS नहीं है। �
 
 | सेवा           | इमेज                          | भूमिका                                                                                   |
 | ------------- | ---------------------------- | --------------------------------------------------------------------------------------- |
-| `database`    | `postgres:18.4`              | PostgreSQL। हर 5 सेकंड में `pg_isready` के साथ तैयार बताता है                                  |
+| `database`    | `postgres:18.7`              | PostgreSQL। हर 5 सेकंड में `pg_isready` के साथ तैयार बताता है                                  |
 | `api`         | `proanima-arkvory:<version>` | HTTP API और कंसोल। `127.0.0.1:8080` पर प्रकाशित। हर 10 सेकंड में हेल्थ चेक                       |
 | `worker`      | `proanima-arkvory:<version>` | अपलोड पूरा करता है और पृष्ठभूमि जॉब चलाता है। API के स्वस्थ होने के बाद शुरू होता है                  |
 | `backup`      | `proanima-arkvory:<version>` | बैकअप एजेंट। स्टोरेज वॉल्यूम को रीड-ओनली पढ़ता है। कोई पोर्ट प्रकाशित नहीं करता                     |
@@ -139,7 +139,7 @@ root शेल खोलें (`sudo -i`) और `compose` कमांड क�
 
 ```bash
 root=/opt/proanima-arkvory
-node="$root/runtime/node-v24.21.0-linux-x64/bin/node"   # linux-arm64 on arm64
+node="$root/runtime/node-v24.22.3-linux-x64/bin/node"   # linux-arm64 on arm64
 version=$("$node" -p "require('$root/installation.json').current.version")
 compose=(docker compose --project-name proanima-arkvory --project-directory "$root"
   --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
@@ -184,7 +184,7 @@ sudo "$node" "$root/manage.mjs" update --root "$root"
 होस्ट अपडेटर मिनट में एक बार चलता है। systemd होस्ट पर `root` के रूप में इंस्टॉल होने पर इंस्टॉलर इसे `arkvory-update.timer` के रूप में पंजीकृत करता है। `root` के बिना, इंस्टॉलर चेतावनी छापता है। इस कमांड को उस उपयोगकर्ता के रूप में हर मिनट शेड्यूल करें जो इंस्टॉलेशन का स्वामी है और कंटेनर इंजन तक पहुँच रखता है, उदाहरण के लिए cron के साथ:
 
 ```text
-* * * * * /home/admin/arkvory/runtime/node-v24.21.0-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
+* * * * * /home/admin/arkvory/runtime/node-v24.22.3-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
 ```
 
 Arkvory कंटेनरों को कभी Docker सॉकेट न दें।
@@ -249,7 +249,7 @@ Docker Desktop को केवल वर्कस्टेशन पर मू�
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$node = "$root\runtime\node-v24.22.3-win-x64\node.exe"
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
@@ -267,7 +267,7 @@ foreach ($file in 'compose.vault.yml', 'compose.mirrors.yml') {
   if (Test-Path "$root\config\$file") { $compose += @('-f', "$root\config\$file") }
 }
 docker @compose ps
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 Windows पर बैकअप स्टोरेज स्थानीय या iSCSI वॉल्यूम होना चाहिए। UNC और SMB पथ अस्वीकार कर दिए जाते हैं। इंस्टॉलेशन हटाने के लिए, `docker @compose down --volumes` चलाएँ, कार्य को `Unregister-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Confirm:$false` से हटाएँ, और रूट को हटाएँ। पहले बैकअप लें।

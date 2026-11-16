@@ -183,8 +183,12 @@ test('downloads that an interrupted operation left are removed, and nothing else
   await mkdir(target);
   await writeFile(join(target, 'kept'), 'kept');
   await symlink(target, join(f.root, link), 'junction');
-  t.after(() => unlink(join(f.root, link)).catch(() => undefined));
-  await stage(f.root, f.source);
-  assert.deepEqual((await downloads(f.root)).sort(), [current, foreign, folder, link].sort());
-  assert.equal(await readFile(join(target, 'kept'), 'utf8'), 'kept', 'links are not followed');
+  try {
+    await stage(f.root, f.source);
+    assert.deepEqual((await downloads(f.root)).sort(), [current, foreign, folder, link].sort());
+    assert.equal(await readFile(join(target, 'kept'), 'utf8'), 'kept', 'links are not followed');
+  } finally {
+    // Remove the junction before fixture cleanup can remove its sibling target on Windows.
+    await unlink(join(f.root, link));
+  }
 });

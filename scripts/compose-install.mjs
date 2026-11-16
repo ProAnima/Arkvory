@@ -5,7 +5,7 @@ import { join, resolve, isAbsolute, dirname } from 'node:path';
 import { parseArgs } from 'node:util';
 
 // One command for running a source checkout in Docker: compile, package the same release bundle
-// that the gates verify, then install it in compose mode (API, worker and PostgreSQL 18.4).
+// that the gates verify, then install it in compose mode (API, worker and PostgreSQL 18.7).
 const usage =
   'Usage: npm run deploy:compose -- --root <absolute dedicated directory> [--version 0.1.0] [--engine docker|podman]';
 const { values } = parseArgs({

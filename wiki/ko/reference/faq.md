@@ -27,7 +27,7 @@ Arkvory는 기본적으로 최대 10 TiB의 콘텐츠(`ARKVORY_CAPACITY_BYTES`)�
 
 ### 어떤 데이터베이스를 사용하나요? {#database}
 
-PostgreSQL이며, 설치마다 데이터베이스 하나를 사용합니다. Windows 설치 프로그램에는 PostgreSQL 18.4가 포함되어 있습니다. Linux 패키지는 배포판의 PostgreSQL 16~19 서버의 전용 클러스터를 사용합니다. Docker Compose 스택은 컨테이너에서 PostgreSQL 18.4를 실행합니다. 스크립트 설치 프로그램은 자체 서버를 사용합니다. 두 설치를 하나의 데이터베이스에 연결하지 마세요. 파일 콘텐츠는 데이터베이스에 없으며, 데이터 디렉터리에 있습니다.
+PostgreSQL이며, 설치마다 데이터베이스 하나를 사용합니다. Windows 설치 프로그램에는 PostgreSQL 18.7가 포함되어 있습니다. Linux 패키지는 배포판의 PostgreSQL 16~19 서버의 전용 클러스터를 사용합니다. Docker Compose 스택은 컨테이너에서 PostgreSQL 18.7를 실행합니다. 스크립트 설치 프로그램은 자체 서버를 사용합니다. 두 설치를 하나의 데이터베이스에 연결하지 마세요. 파일 콘텐츠는 데이터베이스에 없으며, 데이터 디렉터리에 있습니다.
 
 ### S3나 다른 객체 스토리지를 사용할 수 있나요? {#s3}
 
@@ -116,7 +116,7 @@ PostgreSQL이며, 설치마다 데이터베이스 하나를 사용합니다. Win
 
 ### 무엇이 허용되지 않나요? {#license-forbidden}
 
-조직 외부의 누구에게도 소프트웨어나 변경된 버전을 배포할 수 없으며, 해당 코드를 포함하는 포크, 빌드, 컨테이너 이미지, 패치를 게시할 수 없고, 판매, 대여 또는 대출하거나 이에 대한 액세스를 제공하거나 요금을 부과하거나, 호스팅 또는 관리형 서비스로 제3자에게 제공할 수 없습니다. 저작권 고지, 라이선스, ProAnima Arkvory 및 ProAnimaStudio 이름을 제거하거나 변경된 버전을 원본으로 제시할 수 없습니다. Arkvory를 기반으로 구축한 시스템을 공개적으로 설명할 때는 출처를 밝히세요: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), https://github.com/ProAnima/Arkvory". 사본은 공식 출처에서만 받으세요. 그 밖의 권한은 info@proanima.net으로 문의하세요.
+조직 외부의 누구에게도 소프트웨어나 변경된 버전을 배포할 수 없으며, 해당 코드를 포함하는 포크, 빌드, 컨테이너 이미지, 패치를 게시할 수 없고, 판매, 대여 또는 대출하거나 이에 대한 액세스를 제공하거나 요금을 부과하거나, 호스팅 또는 관리형 서비스로 제3자에게 제공할 수 없습니다. 저작권 고지, 라이선스, ProAnima Arkvory 및 ProAnimaStudio 이름을 제거하거나 변경된 버전을 원본으로 제시할 수 없습니다. Arkvory를 기반으로 구축한 시스템을 공개적으로 설명할 때는 출처를 밝히세요: "ProAnima Arkvory by ProAnimaStudio (Ian Panaev), <https://github.com/ProAnima/Arkvory>". 사본은 공식 출처에서만 받으세요. 그 밖의 권한은 info@proanima.net으로 문의하세요.
 
 ### 문제나 취약점은 어디에 보고하나요? {#report}
 

@@ -48,7 +48,7 @@ Webコンソールは、ArkvoryのブラウザーUIです。サーバーの一�
 
 ### 最初の所有者 {#the-first-owner}
 
-新しいインストールにはアカウントがありません。Windowsでは、セットアップが所有者を作成します。それ以外のインストールでは、コンソールで所有者を作成します。
+新しいインストールにはアカウントがありません。Windowsのグラフィカルインストーラー `Arkvory-Setup-x64.exe` が所有者を作成します。Windows PowerShellスクリプト、Linux、Dockerでは、コンソールで所有者を作成します。
 
 1. [[ui:navStart]]を開き、[[ui:welcomeOwner]]を展開します。
 2. インストールディレクトリの`config/bootstrap-token.txt`にある回復キーを貼り付けます。
@@ -81,7 +81,7 @@ Webコンソールは、ArkvoryのブラウザーUIです。サーバーの一�
 - [[ui:assetTitle]]：[[ui:assign]]は、このアーティファクトをファイルパスの現在のコンテンツにします。
 - [[ui:promotionTitle]]：[[ui:stageAdd]]は、`qa`や`release`などのステージをアーティファクトに付けます。[[ui:promoteSubmit]]は、別のリポジトリに公開します。[プロモーション](../use/promotion)を参照してください。
 - [[ui:attachmentsTitle]]：[[ui:attachmentAdd]]は、マニフェスト、SBOM、署名、レポートなどのファイルをこのビルドに関連付けます。[[ui:attachmentHistory]]には、以前のセットが表示されます。
-- [[ui:deletionTitle]]：[[ui:deletionInspect]]は、そのアーティファクトを今も使っているものを表示します。削除するには、アーティファクトのIDを貼り付けて[[ui:deletionSubmit]]を選択します。
+- [[ui:deletionTitle]]：[[ui:deletionInspect]]は、そのアーティファクトを今も使っているものを表示します。削除するには、アーティファクトのIDを貼り付けて[[ui:deletionSubmit]]を選択します。 削除には `artifact.delete` アクションを持つサービスキーが必要です。パスワードでのサインイン、個人用トークン、復旧キーでは削除できません。
 
 ## 転送 {#transfers}
 
@@ -110,6 +110,8 @@ Webコンソールは、ArkvoryのブラウザーUIです。サーバーの一�
 ### リポジトリ {#repositories}
 
 [[ui:repositories]]には、表示できるリポジトリが[[ui:repositoryRights]]とともに表示されます。各カードには[[ui:repositoryOpen]]と[[ui:repositoryStorage]]（クォータ、自動クリーンアップ、物理クリーンアップ）があり、管理者には[[ui:repositoryAccess]]も表示されます。ミラーされたリポジトリには[[ui:mirrorBadge]]のバッジが表示されます。[リポジトリ](../use/repositories)と[ストレージ](../operate/storage)を参照してください。
+
+ストレージの表示と管理には、`storage.read` または `storage.manage` アクションを持つサービスキーが必要です。
 
 ### サービスアクセス {#service-access}
 

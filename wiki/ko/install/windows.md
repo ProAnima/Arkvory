@@ -52,7 +52,7 @@ Microsoft 런타임 때문에 다시 시작해야 한다고 Setup이 알려 주�
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
 | 프로그램 파일      | `C:\Program Files\ProAnima\Arkvory`                                                                                                 |
 | 데이터, 구성, 로그 | `C:\ProgramData\ProAnima\Arkvory`(설치 루트)                                                                                        |
-| 데이터베이스       | 루트의 `database\`에 있는 PostgreSQL 18.4, `127.0.0.1`의 45329-45348 중 첫 번째 빈 포트, Windows가 부팅 시 예약하는 포트에서 제외됨 |
+| 데이터베이스       | 루트의 `database\`에 있는 PostgreSQL 18.7, `127.0.0.1`의 45329-45348 중 첫 번째 빈 포트, Windows가 부팅 시 예약하는 포트에서 제외됨 |
 | 콘솔               | `http://127.0.0.1:8080/console/`                                                                                                    |
 | 복구 키            | 루트의 `config\bootstrap-token.txt`                                                                                                 |
 | 업데이트 작업      | 작업 스케줄러의 `ProAnimaArkvoryUpdate`. SYSTEM 계정으로 매분 실행됩니다                                                            |
@@ -82,7 +82,7 @@ Microsoft 런타임 때문에 다시 시작해야 한다고 Setup이 알려 주�
 .\install.ps1 -AutomaticUpdates
 ```
 
-스크립트가 PostgreSQL 연결 URL을 묻습니다. 입력한 내용은 화면에 표시되지 않습니다. 이어서 스크립트는 `nodejs.org`에서 Node.js 24.21.0을 다운로드하고 SHA-256을 확인한 다음 최신 안정 릴리스를 설치합니다. 루트에 Node.js가 이미 있으면 스크립트는 `node.exe`의 SHA-256이 예상 값과 같고 폴더에 다른 항목이 없을 때만 그것을 사용합니다. 그렇지 않으면 Node.js를 다시 다운로드하고 이전 폴더를 `runtime\unverified-…`로 옮깁니다.
+스크립트가 PostgreSQL 연결 URL을 묻습니다. 입력한 내용은 화면에 표시되지 않습니다. 이어서 스크립트는 `nodejs.org`에서 Node.js 24.22.3을 다운로드하고 SHA-256을 확인한 다음 최신 안정 릴리스를 설치합니다. 루트에 Node.js가 이미 있으면 스크립트는 `node.exe`의 SHA-256이 예상 값과 같고 폴더에 다른 항목이 없을 때만 그것을 사용합니다. 그렇지 않으면 Node.js를 다시 다운로드하고 이전 폴더를 `runtime\unverified-…`로 옮깁니다.
 
 프롬프트 대신 보호된 JSON 파일을 전달할 수도 있습니다.
 
@@ -126,7 +126,7 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 # 그래픽 설치 프로그램
 & 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' status --root $root
 # 스크립트로 설치한 경우
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 모든 명령을 보려면 `arkvory.ps1 help`를 실행하세요. 명령은 [구성](./configuration)과 [업데이트](./updates)에서 설명합니다.

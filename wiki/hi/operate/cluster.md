@@ -239,7 +239,7 @@ description: 'एक साइट के दो या तीन Linux सर्
 जब कोई डेटा सर्वर लंबे समय तक दूर रहे (उदाहरण के लिए डिस्क बदलने के कारण) और रुकी हुई राइट का नुकसान जोखिम से ज़्यादा हो, तो ऑपरेटर सीमित समय के लिए एक कॉपी के साथ राइट स्वीकार कर सकता है:
 
 ```bash
-arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
+arkvory cluster-single-copy --root /opt/proanima-arkvory --until "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --reason "disk replacement on node-b"
 ```
 
 - समय अगले 7 दिनों के भीतर होना चाहिए और उसमें उसका ज़ोन होना चाहिए: UTC के लिए `Z` या `+03:00` जैसा ऑफ़सेट। ज़ोन के बिना कमांड अस्वीकार कर देता है, क्योंकि सक्रिय सर्वर उसे अपने स्थानीय समय में पढ़ेगा। कमांड केवल तब तक काम करता है जब तक कॉपी कम हैं।

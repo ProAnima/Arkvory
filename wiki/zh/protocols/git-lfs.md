@@ -165,7 +165,7 @@ git lfs track --lockable "*.umap" "*.uasset"
 - 下载接受 `Range` 请求。
 - 对象最大可与安装实例的最大对象大小相同（`ARKVORY_MAX_OBJECT_BYTES`，默认约 10 TiB）。更大的对象会在批量响应中被拒绝并返回 `422`。
 
-默认情况下，服务器同时运行 2 个上传，每个密钥 1 个（`ARKVORY_MAX_UPLOADS`、`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`）。Git LFS 默认同时发送 8 个对象。其他上传会等待空闲槽位，并在 20 秒后放弃（`ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`）并返回 `503`。Git LFS 会对失败的对象重试几次，但推送大型文件时减少并行传输会更可靠：
+默认情况下，服务器同时运行 8 个上传，每个密钥 4 个（`ARKVORY_MAX_UPLOADS`、`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`）。Git LFS 默认同时发送 8 个对象。其他上传会等待空闲槽位，并在 20 秒后放弃（`ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`）并返回 `503`。Git LFS 会对失败的对象重试几次，但推送大型文件时减少并行传输会更可靠：
 
 ```bash
 git config lfs.concurrenttransfers 1
@@ -185,19 +185,19 @@ git config lfs.concurrenttransfers 1
 
 ## 故障排查 {#troubleshooting}
 
-| 消息或症状                                      | 原因                                          | 处理方式                                                    |
-| ----------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------- |
-| `401` 或授权错误                                | 没有密钥、密钥错误，或令牌已过期或已撤销      | 在凭据管理器中删除已保存的凭据，然后使用有效密钥再次推送    |
-| `403` 并提示 "Read-only personal access token"  | 令牌的范围为 `read`                           | 创建一个范围为 `read-write` 的令牌                          |
-| `403`                                           | 密钥缺少此操作的访问权限，或未授予该仓库权限  | 添加[权限](#permissions)中的动作                            |
-| `Lock failed: already created lock`             | 有人持有该锁                                  | 请所有者解锁，或请管理员使用 `--force`                      |
-| `422` "Object exceeds the maximum size"         | 对象大于安装实例的限制                        | 对此类文件使用 `arkvoryctl`                                 |
-| 上传时 `422`                                    | 内容与 `oid` 不匹配；文件在推送期间发生了变化 | 再次运行 `git lfs push`                                     |
-| `503` 或 `Retry-After`                          | 同时有太多传输                                | 降低 `lfs.concurrenttransfers` 并重试                       |
-| `507`                                           | 已达到仓库配额或安装实例的容量                | 释放空间或申请更大的配额                                    |
-| 上传时 `409`                                    | 该仓库是镜像                                  | 推送到主服务器                                              |
-| 工作树中的文件是带 `oid` 的小文本文件           | 对象未被下载，或未运行 `git lfs install`      | 运行 `git lfs install`，然后运行 `git lfs pull`             |
-| `x509: certificate signed by unknown authority` | 客户端不信任证书                              | 把证书颁发机构添加到系统的信任存储，或设置 `http.sslCAInfo` |
+| 消息或症状                                      | 原因                                          | 处理方式                                                                                                                                                             |
+| ----------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `401` 或授权错误                                | 没有密钥、密钥错误，或令牌已过期或已撤销      | 在凭据管理器中删除已保存的凭据，然后使用有效密钥再次推送                                                                                                             |
+| `403` 并提示 "Read-only personal access token"  | 令牌的范围为 `read`                           | 创建一个范围为 `read-write` 的令牌                                                                                                                                   |
+| `403`                                           | 密钥缺少此操作的访问权限，或未授予该仓库权限  | 添加[权限](#permissions)中的动作                                                                                                                                     |
+| `Lock failed: already created lock`             | 有人持有该锁                                  | 请所有者解锁，或请管理员使用 `--force`                                                                                                                               |
+| `422` "Object exceeds the maximum size"         | 对象大于安装实例的限制                        | `arkvoryctl` 受相同的限制。请使用更小的对象；如果安装实例的限制较低，也可以请管理员提高 `ARKVORY_MAX_OBJECT_BYTES`（单位为字节），但不得超过 10,000 GiB 的硬性上限。 |
+| 上传时 `422`                                    | 内容与 `oid` 不匹配；文件在推送期间发生了变化 | 再次运行 `git lfs push`                                                                                                                                              |
+| `503` 或 `Retry-After`                          | 同时有太多传输                                | 降低 `lfs.concurrenttransfers` 并重试                                                                                                                                |
+| `507`                                           | 已达到仓库配额或安装实例的容量                | 释放空间或申请更大的配额                                                                                                                                             |
+| 上传时 `409`                                    | 该仓库是镜像                                  | 推送到主服务器                                                                                                                                                       |
+| 工作树中的文件是带 `oid` 的小文本文件           | 对象未被下载，或未运行 `git lfs install`      | 运行 `git lfs install`，然后运行 `git lfs pull`                                                                                                                      |
+| `x509: certificate signed by unknown authority` | 客户端不信任证书                              | 把证书颁发机构添加到系统的信任存储，或设置 `http.sslCAInfo`                                                                                                          |
 
 不要关闭 TLS 验证（`GIT_SSL_NO_VERIFY`）：密钥会随每个请求发送。
 

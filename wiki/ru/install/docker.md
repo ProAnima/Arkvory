@@ -19,13 +19,13 @@ description: 'Запуск Arkvory как проекта Docker Compose: кон�
 | Хост                | Одна установка Arkvory на один хост контейнеров. Имя проекта и порт зафиксированы                                                                                            |
 | Свободный порт      | 8080 на `127.0.0.1`                                                                                                                                                          |
 | Контейнеры          | Только контейнеры Linux. Контейнеры Windows не поддерживаются                                                                                                                |
-| Интернет            | `nodejs.org` (установщик скачивает Node.js 24.21.0 и проверяет его SHA-256), хаб обновлений или GitHub (релиз) и Docker Hub (`node:24.21.0-bookworm-slim` и `postgres:18.4`) |
+| Интернет            | `nodejs.org` (установщик скачивает Node.js 24.22.3 и проверяет его SHA-256), хаб обновлений или GitHub (релиз) и Docker Hub (`node:24.22.3-bookworm-slim` и `postgres:18.7`) |
 
 Установщик не устанавливает и не меняет движок контейнеров, гипервизор или WSL.
 
 ## Комплект {#bundle}
 
-Установщик берёт проверенный релиз и распаковывает его в `releases/<версия>/` в корне установки. Файл Compose — `releases/<версия>/deploy/compose.yml`, файл сборки — `releases/<версия>/deploy/Dockerfile`. Образ `proanima-arkvory:<версия>` собирается на вашем хосте из `node:24.21.0-bookworm-slim`. Из реестра Arkvory ничего не скачивается.
+Установщик берёт проверенный релиз и распаковывает его в `releases/<версия>/` в корне установки. Файл Compose — `releases/<версия>/deploy/compose.yml`, файл сборки — `releases/<версия>/deploy/Dockerfile`. Образ `proanima-arkvory:<версия>` собирается на вашем хосте из `node:24.22.3-bookworm-slim`. Из реестра Arkvory ничего не скачивается.
 
 Корень установки в Linux — `/opt/proanima-arkvory`. Его структура описана в разделе [Выбор установки](./#installation-directory). В установке Compose данные хранятся не в `data/`, а в томах, описанных ниже.
 
@@ -33,7 +33,7 @@ description: 'Запуск Arkvory как проекта Docker Compose: кон�
 
 | Служба        | Образ                       | Роль                                                                                                 |
 | ------------- | --------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `database`    | `postgres:18.4`             | PostgreSQL. Сообщает о готовности через `pg_isready` каждые 5 секунд                                 |
+| `database`    | `postgres:18.7`             | PostgreSQL. Сообщает о готовности через `pg_isready` каждые 5 секунд                                 |
 | `api`         | `proanima-arkvory:<версия>` | HTTP API и консоль. Опубликован на `127.0.0.1:8080`. Проверка работоспособности каждые 10 секунд     |
 | `worker`      | `proanima-arkvory:<версия>` | Завершает загрузки и выполняет фоновые задания. Запускается после того, как API стал работоспособным |
 | `backup`      | `proanima-arkvory:<версия>` | Агент резервного копирования. Читает том хранилища только для чтения. Не публикует порт              |
@@ -139,7 +139,7 @@ ARKVORY_INSTALL_ROOT="$HOME/arkvory" bash ./install.sh --mode compose
 
 ```bash
 root=/opt/proanima-arkvory
-node="$root/runtime/node-v24.21.0-linux-x64/bin/node"   # linux-arm64 на arm64
+node="$root/runtime/node-v24.22.3-linux-x64/bin/node"   # linux-arm64 на arm64
 version=$("$node" -p "require('$root/installation.json').current.version")
 compose=(docker compose --project-name proanima-arkvory --project-directory "$root"
   --env-file "$root/config/compose.env" -f "$root/releases/$version/deploy/compose.yml")
@@ -184,7 +184,7 @@ sudo "$node" "$root/manage.mjs" update --root "$root"
 Программа обновления на хосте запускается раз в минуту. Если установщик запущен от `root` на хосте с systemd, он регистрирует её как `arkvory-update.timer`. Без `root` установщик печатает предупреждение. Запланируйте выполнение этой команды каждую минуту от имени пользователя, которому принадлежит установка и который имеет доступ к движку контейнеров, например через cron:
 
 ```text
-* * * * * /home/admin/arkvory/runtime/node-v24.21.0-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
+* * * * * /home/admin/arkvory/runtime/node-v24.22.3-linux-x64/bin/node /home/admin/arkvory/manage.mjs updates-poll --root /home/admin/arkvory
 ```
 
 Никогда не передавайте сокет Docker контейнерам Arkvory.
@@ -249,7 +249,7 @@ sudo rm -rf /opt/proanima-arkvory
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$node = "$root\runtime\node-v24.22.3-win-x64\node.exe"
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
@@ -267,7 +267,7 @@ foreach ($file in 'compose.vault.yml', 'compose.mirrors.yml') {
   if (Test-Path "$root\config\$file") { $compose += @('-f', "$root\config\$file") }
 }
 docker @compose ps
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 Хранилище копий в Windows должно быть локальным томом или томом iSCSI. Пути UNC и SMB отклоняются. Чтобы удалить установку, выполните `docker @compose down --volumes`, отмените регистрацию задачи командой `Unregister-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Confirm:$false` и удалите корень. Сначала сделайте резервную копию.

@@ -52,7 +52,7 @@ Microsoftランタイムのために再起動が必要だと表示された場�
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | プログラムファイル | `C:\Program Files\ProAnima\Arkvory`                                                                                                               |
 | データ、設定、ログ | `C:\ProgramData\ProAnima\Arkvory`（インストールルート）                                                                                           |
-| データベース       | ルートの`database\`にあるPostgreSQL 18.4。`127.0.0.1`上の45329-45348のうち最初の空きポートを使い、Windowsが起動時に予約するポートから除外されます |
+| データベース       | ルートの`database\`にあるPostgreSQL 18.7。`127.0.0.1`上の45329-45348のうち最初の空きポートを使い、Windowsが起動時に予約するポートから除外されます |
 | コンソール         | `http://127.0.0.1:8080/console/`                                                                                                                  |
 | 回復キー           | ルートの`config\bootstrap-token.txt`                                                                                                              |
 | 更新タスク         | タスク スケジューラの`ProAnimaArkvoryUpdate`。SYSTEMとして毎分実行されます                                                                        |
@@ -82,7 +82,7 @@ Microsoftランタイムのために再起動が必要だと表示された場�
 .\install.ps1 -AutomaticUpdates
 ```
 
-スクリプトは、PostgreSQLの接続URLを尋ねます。入力した内容は表示されません。その後、`nodejs.org`からNode.js 24.21.0をダウンロードし、SHA-256を確認して、最新の安定版リリースをインストールします。ルートにNode.jsがすでにある場合、スクリプトがそれを使うのは、`node.exe`のSHA-256が想定どおりで、フォルダーにほかのものがないときだけです。そうでない場合は、Node.jsをダウンロードし直し、以前のフォルダーを`runtime\unverified-…`に移動します。
+スクリプトは、PostgreSQLの接続URLを尋ねます。入力した内容は表示されません。その後、`nodejs.org`からNode.js 24.22.3をダウンロードし、SHA-256を確認して、最新の安定版リリースをインストールします。ルートにNode.jsがすでにある場合、スクリプトがそれを使うのは、`node.exe`のSHA-256が想定どおりで、フォルダーにほかのものがないときだけです。そうでない場合は、Node.jsをダウンロードし直し、以前のフォルダーを`runtime\unverified-…`に移動します。
 
 プロンプトの代わりに、保護されたJSONファイルを渡すこともできます。
 
@@ -126,7 +126,7 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 # グラフィカルインストーラー
 & 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' status --root $root
 # スクリプトによるインストール
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 `arkvory.ps1 help`を実行すると、すべてのコマンドを確認できます。コマンドについては、[設定](./configuration)と[更新](./updates)で説明しています。

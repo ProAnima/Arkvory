@@ -48,7 +48,7 @@ Después de iniciar sesión con una contraseña, puede usar [[ui:changeOwnPasswo
 
 ### El primer propietario {#the-first-owner}
 
-Una instalación nueva no tiene cuentas. En Windows, el instalador crea al propietario. En las demás instalaciones, cree al propietario en la consola:
+Una instalación nueva no tiene cuentas. El instalador gráfico de Windows `Arkvory-Setup-x64.exe` crea al propietario. Con el script de Windows PowerShell, Linux o Docker, cree al propietario en la consola:
 
 1. Abra [[ui:navStart]] y expanda [[ui:welcomeOwner]].
 2. Pegue la clave de recuperación de `config/bootstrap-token.txt`, en el directorio de la instalación.

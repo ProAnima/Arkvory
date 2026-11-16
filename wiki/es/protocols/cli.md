@@ -119,12 +119,12 @@ Un enlace de descarga es un secreto. No se puede revocar antes de que caduque.
 
 ### Árboles de directorios {#directory-trees}
 
-| Comando                                                                             | Resultado                                                                                                   |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publica la carpeta como un único artefacto ZIP, de forma reanudable                                         |
-| `tree pull ID DIR`                                                                  | Convierte la carpeta en el árbol: el archivo comprimido completo o solo los archivos que difieren           |
-| `tree verify ID DIR`                                                                | Enumera los archivos que faltan, los que no coinciden y los sobrantes; código de salida 5 si alguno difiere |
-| `tree repair ID DIR`                                                                | Vuelve a escribir los archivos que faltan o no coinciden; conserva los sobrantes                            |
+| Comando                                                                             | Resultado                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publica la carpeta como un único artefacto ZIP, de forma reanudable                                                                                                                                                             |
+| `tree pull ID DIR`                                                                  | Convierte la carpeta en el árbol: el archivo comprimido completo o solo los archivos que difieren                                                                                                                               |
+| `tree verify ID DIR`                                                                | Enumera los archivos `missing` (ausentes), `mismatched` (no coincidentes) y `extra` (sobrantes); código de salida 5 solo si `missing` o `mismatched` no está vacío. Los archivos sobrantes por sí solos dan código de salida 0. |
+| `tree repair ID DIR`                                                                | Vuelve a escribir los archivos que faltan o no coinciden; conserva los sobrantes                                                                                                                                                |
 
 Consulte [Árboles de directorios](../use/trees).
 

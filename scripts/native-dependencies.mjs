@@ -7,16 +7,16 @@ import { sha256 } from './release-files.mjs';
 
 export const dependencies = {
   nodeWindows: [
-    'https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip',
-    '158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541',
+    'https://nodejs.org/dist/v24.22.3/node-v24.22.3-win-x64.zip',
+    'e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7d9f',
   ],
   nodeLinux: [
-    'https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-x64.tar.xz',
-    'fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6',
+    'https://nodejs.org/dist/v24.22.3/node-v24.22.3-linux-x64.tar.xz',
+    '4f2b175a6d53a5c617a80dba2676238a0688cef28c6da4eba35c7d844e66fcfb',
   ],
   postgres: [
-    'https://get.enterprisedb.com/postgresql/postgresql-18.4-1-windows-x64-binaries.zip',
-    '7effe34c0bf89027b3f171447d351cbc460f4566c8d0f643daec67f140787858',
+    'https://get.enterprisedb.com/postgresql/postgresql-18.7-1-windows-x64-binaries.zip',
+    'ead0bbc27fb678fa24dcf86b738981323042abd073c744103bf7f3aed23f9a33',
   ],
   winsw: [
     'https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe',

@@ -26,7 +26,7 @@ Arkvory 只有一套存储和一种访问模型，但有多种访问方式。每
 
 ## 凭据 {#credentials}
 
-除公开的健康检查外，每个请求都需要凭据。Arkvory 接受以下几种：
+大多数请求都需要凭据。登录（`POST /api/v1/auth/login`）、自助注册（`POST /api/v1/auth/register`）、登录选项（`GET /api/v1/auth/options`）和公开健康检查（`GET /health/live`、`GET /health/status`）不需要 `Authorization` 请求头。自助注册只有在管理员设置 `ARKVORY_ALLOW_REGISTRATION=true` 后才可能成功；禁用时会返回 `403`，原因为 `registration_disabled`。`GET /health/ready` 和 `GET /health/metrics` 需要身份验证。Arkvory 接受以下几种：
 
 | 类型         | 外观                | 来源                                                                                          | 典型用途                                |
 | ------------ | ------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------- |

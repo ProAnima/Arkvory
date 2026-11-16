@@ -48,7 +48,7 @@ Après une connexion par mot de passe, vous pouvez utiliser [[ui:changeOwnPasswo
 
 ### Le premier propriétaire {#the-first-owner}
 
-Une nouvelle installation n’a aucun compte. Sous Windows, le programme d’installation crée le propriétaire. Pour les autres installations, créez le propriétaire dans la console :
+Une nouvelle installation n’a aucun compte. Le programme d’installation graphique Windows `Arkvory-Setup-x64.exe` crée le propriétaire. Avec le script Windows PowerShell, Linux ou Docker, créez le propriétaire dans la console :
 
 1. Ouvrez [[ui:navStart]] et développez [[ui:welcomeOwner]].
 2. Collez la clé de récupération qui se trouve dans `config/bootstrap-token.txt`, dans le répertoire d’installation.
@@ -81,7 +81,7 @@ Un chemin de fichier, tel que `builds/game/1.4/GameSetup.exe`, peut pointer plus
 - [[ui:assetTitle]] : [[ui:assign]] fait de cet artefact le contenu actuel d’un chemin de fichier.
 - [[ui:promotionTitle]] : [[ui:stageAdd]] marque l’artefact avec une étape, par exemple `qa` ou `release`. [[ui:promoteSubmit]] le publie dans un autre dépôt. Voir [Promotion](../use/promotion).
 - [[ui:attachmentsTitle]] : [[ui:attachmentAdd]] associe à ce build un manifeste, un SBOM, une signature, un rapport ou un autre fichier. [[ui:attachmentHistory]] affiche les ensembles précédents.
-- [[ui:deletionTitle]] : [[ui:deletionInspect]] montre ce qui utilise encore l’artefact. Pour le supprimer, collez l’ID de l’artefact et sélectionnez [[ui:deletionSubmit]].
+- [[ui:deletionTitle]] : [[ui:deletionInspect]] montre ce qui utilise encore l’artefact. Pour le supprimer, collez l’ID de l’artefact et sélectionnez [[ui:deletionSubmit]]. La suppression nécessite une clé de service autorisée à effectuer `artifact.delete` ; une connexion par mot de passe, un jeton personnel et la clé de récupération ne permettent pas de supprimer.
 
 ## Transferts {#transfers}
 
@@ -110,6 +110,8 @@ Les administrateurs gèrent ici les personnes. [[ui:accountsHeading]] liste les 
 ### Dépôts {#repositories}
 
 [[ui:repositories]] affiche les dépôts que vous pouvez voir, avec [[ui:repositoryRights]]. Chaque carte propose [[ui:repositoryOpen]], [[ui:repositoryStorage]] (quota, nettoyage automatique et nettoyage physique) et, pour les administrateurs, [[ui:repositoryAccess]]. Un dépôt en miroir affiche le badge [[ui:mirrorBadge]]. Voir [Dépôts](../use/repositories) et [Stockage](../operate/storage).
+
+Le panneau de stockage nécessite une clé de service avec les actions `storage.read` ou `storage.manage`.
 
 ### Accès des services {#service-access}
 

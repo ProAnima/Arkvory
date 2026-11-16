@@ -73,9 +73,9 @@ Depois, abra `http://127.0.0.1:8080/console/` no seu computador. Para dar acesso
 
 ## Passo 3. Criar o proprietário {#step-3-create-the-owner}
 
-No Windows, pule este passo: o instalador já criou o proprietário.
+Pule este passo se instalou com `Arkvory-Setup-x64.exe`: o instalador já criou o proprietário.
 
-No Linux e no Docker, a primeira conta é criada com a **chave de recuperação**. O instalador grava a chave em `config/bootstrap-token.txt`, na raiz da instalação. Somente um administrador pode ler o arquivo.
+Nos demais métodos de instalação, incluindo PowerShell no Windows, Linux e Docker, a primeira conta é criada com a **chave de recuperação**. O instalador grava a chave em `config/bootstrap-token.txt`, na raiz da instalação. Somente um administrador pode ler o arquivo.
 
 ```bash
 sudo cat /opt/proanima-arkvory/config/bootstrap-token.txt

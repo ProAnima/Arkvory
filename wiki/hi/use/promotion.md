@@ -136,7 +136,12 @@ curl -fL -G -H "Authorization: Bearer $DEPLOY_KEY" -o app.upack \
 ```
 
 ```typescript
-const found = await prod.packages.resolve({ name: 'app', range: '^1.4', stage: 'release' });
+const found = await prod.packages.resolve({
+  name: 'app',
+  group: 'acme/game',
+  range: '^1.4',
+  stage: 'release',
+});
 ```
 
 फ़िल्टर हर टूल में वही हैं: पैकेज `name`, `group` (अगर पैकेज का कोई न हो तो खाली), सटीक संस्करण या श्रेणी, `stage`, प्रीरिलीज़ शामिल करना है या नहीं, और क्रम। श्रेणियाँ [UPack पैकेज](./packages#versions) में समझाई गई हैं।

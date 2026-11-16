@@ -10,7 +10,7 @@
 
 - `npm run ci:local -- [verify|release]` воспроизводит lanes CI на одной машине:
   - `windows`: гейты на хосте в рабочем дереве (static, unit, security, integration, browser, deployment, deployment-containers на Linux-движке Docker Desktop, native-package; в release ещё оба сценария 5 GiB);
-  - `linux`: непривилегированный контейнер из `scripts/ci/linux.Dockerfile` с отдельным PostgreSQL 18.4 в собственной сети (static, unit, integration, browser, deployment);
+  - `linux`: непривилегированный контейнер из `scripts/ci/linux.Dockerfile` с отдельным PostgreSQL 18.7 в собственной сети (static, unit, integration, browser, deployment);
   - `linux-system`: одноразовый привилегированный контейнер с systemd как PID 1 (native-package, deployment-services, native-install). Пакеты, службы, пользователи и sudo живут только в нём; контейнер удаляется после прогона.
 - Образ закреплён по digest Ubuntu 24.04. Node.js берётся из того же архива с проверкой SHA-256, что и runtime поставки (`scripts/native-dependencies.mjs`). Playwright задан точной версией из `package.json`. Тег образа выводится из Dockerfile, хеша Node.js и версии Playwright.
 - Контейнерные lanes получают исходники через `git bundle`, а не через bind mount: тестируется ровно коммит, `node_modules` хоста в Linux не попадает. При `--allow-dirty` рабочее дерево фиксируется как отдельный commit object через временный индекс (HEAD, индекс и stash не меняются). Такое evidence помечено `dirty` и для выпуска не годится.

@@ -9,7 +9,7 @@ Esta página explica as palavras que as outras páginas usam. Cada seção é cu
 
 ## Instalação e seus serviços {#installation}
 
-Uma instalação é um servidor. Ela executa três serviços do Arkvory ao lado de um banco de dados PostgreSQL:
+Uma instalação padrão é executada em um servidor. Ela executa três serviços do Arkvory ao lado de um banco de dados PostgreSQL:
 
 | Parte            | O que ela faz                                                                                                                                         |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -98,7 +98,7 @@ Uma chave de serviço é emitida uma vez, mostrada uma vez, e só se torna utili
 
 ## O proprietário e a chave de recuperação {#owner-and-recovery-key}
 
-O **proprietário** é a primeira conta. É um administrador e membro do grupo `arkvory-owners`, que tem acesso `write` a `releases`. O instalador do Windows o cria; no Linux e no Docker você o cria no console com a chave de recuperação.
+O **proprietário** é a primeira conta. É um administrador e membro do grupo `arkvory-owners`, que tem acesso `write` a `releases`. O instalador gráfico do Windows `Arkvory-Setup-x64.exe` o cria; com o script do Windows PowerShell, Linux ou Docker, você o cria no console com a chave de recuperação.
 
 A **chave de recuperação** é um segredo que o instalador grava em `config/bootstrap-token.txt` na raiz da instalação. Ela pode criar o primeiro proprietário e contas, gerenciar contas de serviço e suas delegações, executar backups e solicitar atualizações. As ferramentas de instalação a leem no servidor. Ela não é para CI nem para o trabalho diário: mantenha-a no servidor e não a copie. Consulte [Escolher uma instalação](../install/index#recovery-key) e [Segurança](../operate/security).
 

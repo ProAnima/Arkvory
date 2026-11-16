@@ -194,7 +194,7 @@ Un servidor sin acceso a internet no puede comprobar si hay versiones. La págin
 
 El actualizador comprueba el SHA-256 del archivo con el manifiesto. Comprueba la firma solo cuando `arkvory-release.json.sig` está junto al manifiesto. Un directorio local es elección suya, así que la actualización no requiere la firma. Sin ella, la comparación del kit con `release-checksums.json` del paso 1 es su única prueba de origen. Se aplican las mismas reglas para un cambio de esquema: primero necesita una copia de seguridad verificada.
 
-Un paquete nativo o `Arkvory-Setup-x64.exe` lleva su versión y no necesita acceso a internet. Una actualización de Compose compila la imagen en el host. Solo necesita Docker Hub cuando la imagen base `node:24.21.0-bookworm-slim` todavía no está en el host.
+Un paquete nativo o `Arkvory-Setup-x64.exe` lleva su versión y no necesita acceso a internet. Una actualización de Compose compila la imagen en el host. Solo necesita Docker Hub cuando la imagen base `node:24.22.3-bookworm-slim` todavía no está en el host.
 
 ## Actualizar por plataforma {#platforms}
 
@@ -242,3 +242,5 @@ Actualice desde la consola o con `manage.mjs update`. El actualizador compila la
 | `Interrupted update request; inspect installation and use updates-reset` | Se aceptó una solicitud de la consola pero no se terminó. Compruebe el estado y luego ejecute `updates-reset`                                                                                                                           |
 
 Hay más sugerencias en [Solución de problemas](../operate/troubleshooting) y [Autorrecuperación](../operate/self-healing).
+
+Antes de actualizar una base de datos existente a PostgreSQL 18.7, consulte [los requisitos posteriores del proveedor](https://www.postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/).
