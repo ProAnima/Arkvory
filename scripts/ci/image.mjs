@@ -8,8 +8,8 @@ import { docker, exists } from './docker.mjs';
 // GitHub ubuntu runners preinstall PowerShell 7; deployment gates parse the Windows installer
 // scripts with it on Linux too. Hash from the release asset digest and release notes.
 const powershell = [
-  'https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/powershell-7.6.6-linux-x64.tar.gz',
-  'ddbc4a2d113bbd46d283cfedcbcd117a70caefd7673f41f2b4e0000badf103bc',
+  'https://github.com/PowerShell/PowerShell/releases/download/v7.6.10/powershell-7.6.10-linux-x64.tar.gz',
+  'e261cabc91c78a9afe8d1e5f24731ab0d38204735ab2ec94b0af55102652e10d',
 ];
 
 export const postgresImage =

@@ -79,7 +79,7 @@ export async function exerciseClient(output, version) {
       path.split(';').filter((p) => p.trim().toLowerCase() === installation.toLowerCase()).length,
       1,
     );
-    // Inno 6.7.3 terminates its first phase before usPostUninstall runs in the clone.
+    // Inno 6.7.4 terminates its first phase before usPostUninstall runs in the clone.
     // Wait for the process tree, then assert real removal; a parent exit code is insufficient.
     run('powershell.exe', [
       '-NoProfile',
