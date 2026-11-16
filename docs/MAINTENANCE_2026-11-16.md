@@ -78,6 +78,21 @@ Cache 6.1.0 и Pages actions уже актуальны. Права токено�
 | Проверка diff 52 страниц wiki                        | Только отступы и ширина разделителей таблиц, без изменения текста и направления выравнивания столбцов |
 | `git diff --check`                                   | Passed                                                                                                |
 
+Первый PR CI обнаружил расхождение npm: runner с npm 11.19.1 отклонил lock,
+который локальный npm 11.6.2 принимал, из-за отсутствующих optional-зависимостей
+`@emnapi/core` и `@emnapi/runtime` wasm-binding Rolldown. Lock пересоздан
+в чистой временной workspace через npm 11.19.1; добавлены только эти два
+пакета и нормализованы peer-флаги. Версии и integrity ранее проверенных
+пакетов не изменились. После исправления `npm ci --ignore-scripts --no-audit`
+и `npm ls --all` через npm 11.19.1 прошли на Windows и в чистом Linux-контейнере
+(Node 24.21.0). Гейты не ослаблялись; исходный неуспешный CI сохранён в
+[run 43859130070](https://github.com/ProAnima/Arkvory/actions/runs/43859130070).
+После исправления повторно прошёл `npm run gate -- security docs`: аудит 0,
+policy, сборка и wiki — passed. Логи установки npm 11.19.1 и повторных гейтов:
+`maintenance-ci-npm-repository-2026-11-16.log`,
+`maintenance-ci-npm-linux-2026-11-16.log`,
+`maintenance-lock-followup-2026-11-16.log` в `test-results/`.
+
 PostgreSQL 18.4 работал в отдельном одноразовом контейнере и отдельной тестовой
 БД; после завершения контейнер удалён. Chromium установлен в изолированный
 кеш `.cache/maintenance-playwright`. Браузер проверил консоль, управление
