@@ -85,9 +85,11 @@ test('one agent holds the lease; a standby takes over and a fenced owner cannot 
       version: 'crashed',
     });
     const crashed = await leases.acquire(async () => facts);
-    await crashed.close();
     b = startAgent(f, vault, { owner: second });
+    // The owner stays alive until the standby has seen it: a loaded host may start the agent
+    // later than the three-second lease lasts, and the standby would then never be observed.
     await eventually(() => b.has('backup.agent.standby'), 'standby behind a crashed owner');
+    await crashed.close();
     const recovered = await eventually(async () => {
       const row = await agentRow(f);
       return row.owner === second ? row : null;
