@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openModuleData } from '@proanima/arkvory-infrastructure';
@@ -123,4 +123,38 @@ test('shutdown cancels accounting lock retries before any mutation', async (t) =
   await opened.close();
   assert.equal(attempts, 1);
   await assert.rejects(opened.directory.data.create('new', { exclusive: true, durable: false }));
+});
+
+test('an abort that meets contention still removes its temporary file', async (t) => {
+  const options = await fixture(t);
+  const owner = randomUUID();
+  let contended = 0;
+  const opened = await openModuleData({
+    ...options,
+    deferredAccounting: false,
+    quota: { bytes: 64, files: 4 },
+    readOnly: false,
+    coordinator: {
+      owner,
+      run: async (_id, work) => {
+        if (contended > 0) {
+          contended--;
+          throw Object.assign(new Error('contended'), { code: 'busy' });
+        }
+        return work({ check() {}, orphan: async () => {} });
+      },
+    },
+  });
+  t.after(() => opened.close());
+  const sink = await opened.directory.data.create('new', { exclusive: true, durable: false });
+  await sink.write(Buffer.from('abc'));
+  const temporary = join(options.dataDirectory, 'module-data', 'recover', 'tmp', 'coordinated-v1');
+  assert.equal((await readdir(join(temporary, owner))).length, 1);
+  contended = 2;
+  await sink.abort();
+  assert.deepEqual(await readdir(join(temporary, owner)), [], 'the reservation is given back');
+  // The quota is free again for the same bytes.
+  const again = await opened.directory.data.create('again', { exclusive: true, durable: false });
+  await again.write(Buffer.alloc(61));
+  await again.close();
 });

@@ -39,6 +39,8 @@ const NOT_SENT = new Set([
   'ENETUNREACH',
   'EHOSTUNREACH',
   'EADDRNOTAVAIL',
+  // undici gave up before a connection existed (a host that drops packets): no byte was written.
+  'UND_ERR_CONNECT_TIMEOUT',
 ]);
 
 /** The hub's origin under the rule of the deployment's hub settings. */

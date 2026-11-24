@@ -198,9 +198,15 @@ export class GenerationBuild implements CacheBuild {
       if (this.state === 'committed') return;
       this.state = 'aborted';
       this.signal.removeEventListener('abort', this.cancel);
+      // An open handle keeps the build registered: shutdown must still drain it.
       await this.dropPending();
-      await this.host.retire();
-      this.host.settled();
+      try {
+        await this.host.retire();
+      } finally {
+        // A failed retirement keeps the generation reserved in the catalog until the owner is
+        // drained, but this handle does no more I/O and must not hold one of the build slots.
+        this.host.settled();
+      }
     });
   }
 

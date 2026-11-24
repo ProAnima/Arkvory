@@ -19,7 +19,7 @@ if [[ -z "$node" ]]; then
     "https://nodejs.org/dist/v24.22.3/$file" -o "$work/$file"
   printf '%s  %s\n' "$checksum" "$work/$file" | sha256sum --check --status
   mkdir -p "$root/runtime"
-  tar -xJf "$work/$file" -C "$root/runtime"
+  tar -xJf "$work/$file" --no-same-owner -C "$root/runtime"
   node="$root/runtime/node-v24.22.3-linux-$arch/bin/node"
   chmod -R a+rX "$root/runtime"
 fi

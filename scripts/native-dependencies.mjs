@@ -1,4 +1,5 @@
-import { mkdir, access } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir, access, rename, rm } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
@@ -48,21 +49,33 @@ export async function pinnedDownload(name, [url, hash], cache) {
     if (error.code !== 'ENOENT') throw error;
   }
   if (!exists) {
-    const response = await fetch(url, { signal: AbortSignal.timeout(600000) });
-    if (!response.ok || !response.body) throw Error(`Dependency download failed: ${name}`);
-    let bytes = 0;
-    await pipeline(
-      Readable.fromWeb(response.body),
-      async function* (source) {
-        for await (const chunk of source) {
-          bytes += chunk.length;
-          if (bytes > 600 * 1024 ** 2) throw Error('Dependency too large');
-          yield chunk;
-        }
-      },
-      createWriteStream(path, { flags: 'wx' }),
-    );
+    // A partial file under the final name would fail the checksum on every later run.
+    const partial = `${path}.${randomUUID()}.tmp`;
+    try {
+      await download(name, url, partial);
+      if ((await sha256(partial)) !== hash) throw Error(`Dependency checksum mismatch: ${name}`);
+      await rename(partial, path);
+    } catch (error) {
+      await rm(partial, { force: true });
+      throw error;
+    }
   }
   if ((await sha256(path)) !== hash) throw Error(`Dependency checksum mismatch: ${name}`);
   return path;
+}
+async function download(name, url, path) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(600000) });
+  if (!response.ok || !response.body) throw Error(`Dependency download failed: ${name}`);
+  let bytes = 0;
+  await pipeline(
+    Readable.fromWeb(response.body),
+    async function* (source) {
+      for await (const chunk of source) {
+        bytes += chunk.length;
+        if (bytes > 600 * 1024 ** 2) throw Error('Dependency too large');
+        yield chunk;
+      }
+    },
+    createWriteStream(path, { flags: 'wx' }),
+  );
 }

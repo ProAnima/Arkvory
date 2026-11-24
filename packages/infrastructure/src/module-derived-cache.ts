@@ -189,7 +189,8 @@ export class ModuleDerivedCache implements DerivedCache {
             this.queue.run(async () => {
               this.check();
               await this.catalog.retire(await this.session.get(), this.ownerId, id);
-              await this.sweep(false);
+              // The generation is retired; removing its files is repeated by every later sweep.
+              await this.sweep(false).catch(() => undefined);
             }),
           settled: () => {
             this.builds.delete(build);

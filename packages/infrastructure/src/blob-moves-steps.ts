@@ -111,7 +111,9 @@ export class PostgresUploadSwitch implements UploadStorageSwitch {
         return 'lost' as const;
       }
       const switched = await client.query(
-        `UPDATE arkvory_uploads SET storage_backend=$3
+        // The copy went through the staging directory of the target: online cleanup sweeps
+        // it (and a partial file of an interrupted copy) on its next pass under the upload lock.
+        `UPDATE arkvory_uploads SET storage_backend=$3, temp_cleaned=false
          WHERE id=$1 AND storage_backend=$2 AND status='available'`,
         [uploadId, from, to],
       );

@@ -19,7 +19,14 @@ export class DerivedCacheSession {
   }
 
   private async initialize(): Promise<PoolClient> {
-    const client = await this.pool.connect();
+    let client: PoolClient;
+    try {
+      client = await this.pool.connect();
+    } catch (error) {
+      // No session existed: a busy pool or a restarting database must not end this incarnation.
+      this.opening = undefined;
+      throw error;
+    }
     this.ownership = new StorageOwnership(client);
     try {
       const locked = await client.query<{ acquired: boolean }>(

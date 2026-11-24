@@ -193,3 +193,13 @@ test('capture refuses an invalid idempotency key before touching any port', asyn
     code: 'invalid_argument',
   });
 });
+
+test('a vault that refuses the staging directory fails the job instead of leaving it running', async () => {
+  const p = ports();
+  p.deps.vault.stage = async () => {
+    throw new ArkvoryError('capacity_exceeded', 'Injected: the vault volume is full');
+  };
+  await assert.rejects(new CaptureBackup(p.deps).run('full-vault'), { code: 'storage_full' });
+  assert.ok(p.events.includes('fail:storage_full'));
+  assert.ok(!p.events.includes('barrier.close'), 'nothing was held yet');
+});
