@@ -308,3 +308,49 @@ test('stage listing filters a batch of artifact ids and validates them', async (
       ids.slice(0, 20),
     );
 });
+
+test('a reservation made while the source was in another storage is never published', async (t) => {
+  const f = await setup(t, { keys });
+  const bytes = await upack({ group: 'tools', name: 'moved', version: '1.0.0' });
+  const id = await publish(f, 'dev', bytes);
+  // What an interrupted promotion leaves: a pending copy and its promotion row.
+  const reserved = await f.app.inject({
+    method: 'POST',
+    url: '/api/v1/repositories/prod/uploads',
+    headers: { ...auth, 'idempotency-key': randomUUID() },
+    payload: {
+      name: 'build.upack',
+      size: String(bytes.length),
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    },
+  });
+  assert.equal(reserved.statusCode, 201, reserved.body);
+  const stale = reserved.json().id;
+  await f.catalog.pool.query(
+    `INSERT INTO arkvory_promotions(target_artifact_id,source_artifact_id,source_repository,
+       target_repository,mode,state) VALUES($1,$2,'dev','prod','copy','pending')`,
+    [stale, id],
+  );
+  // The reservation names the storage the source was in then; the source has moved since.
+  await f.catalog.pool.query("UPDATE arkvory_uploads SET storage_backend='volume-2' WHERE id=$1", [
+    stale,
+  ]);
+  const created = await call(f, 'POST', `/api/v1/repositories/dev/artifacts/${id}/promote`, {
+    target: 'prod',
+  });
+  assert.equal(created.statusCode, 201, created.body);
+  const copy = created.json().artifactId;
+  assert.notEqual(copy, stale, 'the link exists only in the storage of the source');
+  const rows = await f.catalog.pool.query(
+    `SELECT id::text, status, storage_backend, expires_at<=now() AS ended FROM arkvory_uploads
+     WHERE id=ANY($1::uuid[])`,
+    [[stale, copy]],
+  );
+  const row = (wanted) => rows.rows.find((r) => r.id === wanted);
+  assert.equal(row(stale).status, 'pending');
+  assert.equal(row(stale).ended, true, 'cleanup returns its quota');
+  assert.equal(row(copy).status, 'available');
+  assert.equal(row(copy).storage_backend, 'default');
+  const download = await call(f, 'GET', `/api/v1/repositories/prod/artifacts/${copy}/content`);
+  assert.deepEqual(download.rawPayload, bytes);
+});

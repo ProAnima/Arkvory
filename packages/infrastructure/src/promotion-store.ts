@@ -29,6 +29,8 @@ interface Source {
   identity: { group: string; name: string; version: string } | null;
 }
 const noCancellation = { throwIfAborted() {} };
+/** An upload without a named storage is in the default one. */
+const storageOf = (backend: string | undefined): string => backend ?? 'default';
 
 /**
  * Promotion never streams bytes: the copy is reserved as a pending upload, its blob is linked
@@ -46,9 +48,11 @@ export class PostgresPromotions implements PromotionStore {
     const source = await this.source(input);
     const existing = await this.existingCopy(input, source);
     if (existing) return this.adopt(input, existing);
-    const copyId = (await this.pendingCopy(input)) ?? (await this.reserve(input, source));
+    const copyId = (await this.pendingCopy(input, source)) ?? (await this.reserve(input, source));
     await this.blobs.duplicate(input.id, copyId, source.descriptor, noCancellation, source.backend);
-    return inTransaction(this.pool, (client) => this.publish(client, input, copyId));
+    return inTransaction(this.pool, (client) =>
+      this.publish(client, input, copyId, storageOf(source.backend)),
+    );
   }
 
   private async source(input: PromotionInput): Promise<Source> {
@@ -105,15 +109,33 @@ export class PostgresPromotions implements PromotionStore {
     return match.id;
   }
 
-  private async pendingCopy(input: PromotionInput): Promise<string | null> {
-    const row = await this.pool.query<{ id: string }>(
-      `SELECT p.target_artifact_id AS id FROM arkvory_promotions p
+  /**
+   * The reservation of an earlier attempt, when its row names the storage the source is in now.
+   * The copy is a hard link, so it exists only in the storage of the source: a reservation made
+   * before the source moved would be published with a row pointing at a storage without bytes.
+   * Such a reservation is ended at once and cleanup returns its quota.
+   */
+  private async pendingCopy(input: PromotionInput, source: Source): Promise<string | null> {
+    const row = await this.pool.query<{ id: string; backend: string }>(
+      `SELECT p.target_artifact_id AS id, COALESCE(u.storage_backend,'default') AS backend
+       FROM arkvory_promotions p
        JOIN arkvory_uploads u ON u.id=p.target_artifact_id AND u.status='pending' AND u.expires_at>now()
        WHERE p.source_artifact_id=$1 AND p.target_repository=$2 AND p.state='pending' AND u.owner=$3
        ORDER BY p.created_at DESC LIMIT 1`,
       [input.id, input.target.repository, input.target.principal.id],
     );
-    return row.rows[0]?.id ?? null;
+    const pending = row.rows[0];
+    if (!pending) return null;
+    if (pending.backend === storageOf(source.backend)) return pending.id;
+    await this.abandon(pending.id);
+    return null;
+  }
+
+  private async abandon(copyId: string): Promise<void> {
+    await this.pool.query(
+      "UPDATE arkvory_uploads SET expires_at=now() WHERE id=$1 AND status='pending'",
+      [copyId],
+    );
   }
 
   /** Capacity and quota apply to the copy exactly as to a new upload of the same descriptor. */
@@ -129,6 +151,11 @@ export class PostgresPromotions implements PromotionStore {
       partBytes: partBytesFor(source.descriptor.size),
       access: input.target,
     });
+    // A storage over its logical limit sends new uploads elsewhere; a link cannot follow them.
+    if (storageOf(upload.storageBackend) !== storageOf(source.backend)) {
+      await this.abandon(upload.id);
+      throw new ArkvoryError('capacity_exceeded', 'The storage of the artifact takes no more data');
+    }
     await this.pool.query(
       `INSERT INTO arkvory_promotions(target_artifact_id,source_artifact_id,source_repository,target_repository,mode,state)
        VALUES($1,$2,$3,$4,$5,'pending') ON CONFLICT (target_artifact_id) DO NOTHING`,
@@ -153,7 +180,12 @@ export class PostgresPromotions implements PromotionStore {
     if (!live.rowCount) throw new ArkvoryError('not_found', 'Artifact not found');
   }
 
-  private async publish(client: PoolClient, input: PromotionInput, copyId: string) {
+  private async publish(
+    client: PoolClient,
+    input: PromotionInput,
+    copyId: string,
+    linkedIn: string,
+  ) {
     await this.lock(client, input);
     const raced = await client.query<{ id: string }>(
       `SELECT p.target_artifact_id AS id FROM arkvory_promotions p
@@ -165,8 +197,9 @@ export class PostgresPromotions implements PromotionStore {
     if (raced.rows[0]) return this.finish(client, input, raced.rows[0].id, false);
     if (!this.catalog.active) throw new ArkvoryError('unavailable', 'Storage ownership lost');
     const published = await client.query(
-      "UPDATE arkvory_uploads SET status='available' WHERE id=$1 AND repository=$2 AND status='pending'",
-      [copyId, input.target.repository],
+      `UPDATE arkvory_uploads SET status='available' WHERE id=$1 AND repository=$2
+       AND status='pending' AND COALESCE(storage_backend,'default')=$3`,
+      [copyId, input.target.repository, linkedIn],
     );
     if (published.rowCount !== 1)
       throw new ArkvoryError('conflict', 'Promotion reservation is no longer pending', {
