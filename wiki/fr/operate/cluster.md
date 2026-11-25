@@ -183,6 +183,8 @@ Installez un nouveau paquet sur chaque serveur de données. Sur les serveurs de 
 
 Ne démarrez pas et n’arrêtez pas les services Arkvory avec `systemctl` sur un serveur du cluster. Pacemaker y verrait une panne. Utilisez `pcs resource disable arkvory` et `pcs resource enable arkvory` pour un arrêt planifié de tout le service.
 
+Clusters créés avec un plan antérieur à 0.6.4 : dans `/etc/drbd.d/arkvory.res` sur chaque serveur, témoin compris, remplacez `--timeout 20` par `--timeout 60` dans la ligne `fence-peer`. Avec 20 s, la perte du serveur de secours dont Pacemaker retarde le fencing pouvait laisser le stockage du serveur actif suspendu jusqu’à `drbdadm resume-io arkvory`. DRBD relit le gestionnaire dans le fichier à chaque appel : aucun redémarrage n’est nécessaire.
+
 ## Pannes {#failures}
 
 | Ce qui se passe                                                            | `ha-2`                                                                                                                                     | `ha-3`                                                                        |

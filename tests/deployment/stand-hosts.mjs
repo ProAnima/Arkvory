@@ -18,14 +18,26 @@ STOPSIGNAL SIGRTMIN+3
 CMD ["/sbin/init"]
 `;
 
-export function docker(args, { input } = {}) {
+/**
+ * Every engine call is bounded: a command that hangs inside a host fails with an error that the
+ * stand reports with the journals of its hosts. Unbounded, it held the gate until its own
+ * timeout killed the process, and the log showed nothing after the gate name.
+ */
+export function docker(args, { input, timeoutMs = 10 * 60_000 } = {}) {
   return execFileSync('docker', args, {
     encoding: 'utf8',
     input,
     stdio: ['pipe', 'pipe', 'pipe'],
     maxBuffer: 16 * 1024 ** 2,
+    timeout: timeoutMs,
+    killSignal: 'SIGKILL',
     windowsHide: true,
   }).trim();
+}
+
+/** Progress in the gate log: a stand stopped by the gate timeout shows where it stood. */
+export function step(text) {
+  console.log(`  ${new Date().toISOString()} ${text}`);
 }
 
 /** The stand image, built once per Dockerfile content and kept like the local CI image. */
@@ -38,7 +50,11 @@ export async function standImage() {
   const context = await mkdtemp(join(tmpdir(), 'arkvory-stand-image-'));
   try {
     await writeFile(join(context, 'Dockerfile'), dockerfile);
-    docker(['build', '--label', 'org.proanima.arkvory.stand=1', '-t', tag, context]);
+    step(`building the stand image ${tag}`);
+    // The packages of a fresh runner come from the distribution mirrors: minutes, not hours.
+    docker(['build', '--label', 'org.proanima.arkvory.stand=1', '-t', tag, context], {
+      timeoutMs: 20 * 60_000,
+    });
   } finally {
     await rm(context, { recursive: true, force: true });
   }
@@ -130,7 +146,8 @@ function standHost(container, name) {
     async booted() {
       for (let attempt = 0; attempt < 60; attempt++) {
         try {
-          const state = exec(['systemctl', 'is-system-running', '--wait']);
+          // --wait returns when the boot ends; a unit that never settles must not hold the stand.
+          const state = exec(['systemctl', 'is-system-running', '--wait'], { timeoutMs: 30_000 });
           if (state === 'running' || state === 'degraded') return;
         } catch (error) {
           // `degraded` exits non-zero but the system has booted.

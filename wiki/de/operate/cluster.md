@@ -183,6 +183,8 @@ Installieren Sie ein neues Paket auf jedem Datenserver. Auf Standby-Servern erse
 
 Starten oder stoppen Sie die Arkvory-Dienste auf einem Cluster-Server nicht mit `systemctl`. Pacemaker würde das als Ausfall werten. Verwenden Sie `pcs resource disable arkvory` und `pcs resource enable arkvory` für einen geplanten Stopp des gesamten Dienstes.
 
+Cluster, die mit einem Plan vor 0.6.4 eingerichtet wurden: Ändern Sie in `/etc/drbd.d/arkvory.res` auf jedem Server, auch auf dem Witness, in der Zeile `fence-peer` den Wert `--timeout 20` in `--timeout 60`. Mit 20 s konnte der Ausfall des Standby-Servers, dessen Fencing Pacemaker verzögert, den Speicher des aktiven Servers bis zu `drbdadm resume-io arkvory` angehalten lassen. DRBD liest den Handler bei jedem Aufruf aus der Datei; ein Neustart ist nicht nötig.
+
 ## Ausfälle {#failures}
 
 | Was passiert                                                               | `ha-2`                                                                                                                      | `ha-3`                                                                                |

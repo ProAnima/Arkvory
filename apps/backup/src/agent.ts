@@ -141,6 +141,14 @@ function eventRecord(event: AgentEvent): DiagnosticRecord {
         points: event.points,
         damaged: event.damaged,
       };
+    case 'blobs.set_aside':
+      return {
+        ...base,
+        level: 'warning',
+        code: 'backup.blobs.set_aside',
+        blobs: event.blobs,
+        ...(event.errorCode === null ? {} : { errorCode: event.errorCode }),
+      };
   }
 }
 

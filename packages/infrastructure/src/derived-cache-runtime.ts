@@ -56,6 +56,21 @@ export function requireBudget(budget: unknown): asserts budget is CacheBudget {
     throw new ModuleServiceError('invalid_input', 'Invalid cache reservation');
 }
 
+/**
+ * The reservation a caller asked for, read once: properties of a caller-owned object (getters
+ * included) are copied before anything is queued or awaited and only the frozen copy is used
+ * during admission and I/O.
+ */
+export function reservationOf(budget: unknown): Readonly<CacheBudget> {
+  if (typeof budget !== 'object' || budget === null)
+    throw new ModuleServiceError('invalid_input', 'Invalid cache reservation');
+  const bytes: unknown = Reflect.get(budget, 'bytes');
+  const files: unknown = Reflect.get(budget, 'files');
+  const copied = { bytes, files };
+  requireBudget(copied);
+  return Object.freeze(copied);
+}
+
 export function requireKey(key: string): void {
   if (typeof key !== 'string' || key.length === 0 || Buffer.byteLength(key) > 256)
     throw new ModuleServiceError('invalid_input', 'Invalid cache key');

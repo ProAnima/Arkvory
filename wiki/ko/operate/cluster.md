@@ -183,6 +183,8 @@ root로 다음 명령을 실행하십시오. `cluster-status`, `cluster-single-c
 
 클러스터 서버에서 `systemctl`로 Arkvory 서비스를 시작하거나 중지하지 마십시오. Pacemaker가 이를 장애로 간주합니다. 전체 서비스를 계획적으로 중지하려면 `pcs resource disable arkvory`와 `pcs resource enable arkvory`를 사용하십시오.
 
+0.6.4 이전 계획으로 구성한 클러스터: 감시 노드를 포함한 모든 서버의 `/etc/drbd.d/arkvory.res`에서 `fence-peer` 줄의 `--timeout 20`을 `--timeout 60`으로 바꾸십시오. 20초에서는 Pacemaker가 펜싱을 지연하는 대기 서버를 잃으면 활성 서버의 스토리지가 `drbdadm resume-io arkvory`를 실행할 때까지 중단된 상태로 남을 수 있었습니다. DRBD는 호출할 때마다 파일에서 핸들러를 읽으므로 재시작할 필요가 없습니다.
+
 ## 장애 {#failures}
 
 | 상황                                                              | `ha-2`                                                                                                             | `ha-3`                                                                |

@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { selfSignedCertificate } from '../tls-certificate.mjs';
-import { docker, standImage, standNetwork, until } from './stand-hosts.mjs';
+import { docker, standImage, standNetwork, step, until } from './stand-hosts.mjs';
 
 /*
  * Two-site stand (docs/SECOND_SITE.md): two Linux hosts with systemd, each with its own
@@ -23,6 +23,7 @@ const stand = standNetwork();
 let passed = false;
 try {
   const image = await standImage();
+  step('starting hosts arkvory-a and arkvory-b');
   const a = stand.start('arkvory-a', image);
   const b = stand.start('arkvory-b', image);
   await Promise.all([a.booted(), b.booted()]);
@@ -31,6 +32,7 @@ try {
     host.copy(join(artifact, 'Arkvory-amd64.deb'), '/stand/Arkvory-amd64.deb');
     host.copy(resolve('tests/deployment/stand-probe.mjs'), '/stand/stand-probe.mjs');
   }
+  step('installing the package on both hosts');
   // Both installations at once: the postinst installs, migrates and starts the services.
   await Promise.all(
     [a, b].map(async (host) => {
@@ -40,6 +42,7 @@ try {
     }),
   );
 
+  step('configuring HTTPS on arkvory-a');
   // A: HTTPS for the name the mirror uses, from an authority B is told to trust.
   const certificate = selfSignedCertificate({ names: ['arkvory-a'] });
   await writeFile(join(work, 'cert.pem'), certificate.cert);
@@ -64,6 +67,7 @@ try {
   const firstImage = a.probe('image', { ...onA, image: 'team/web', tag: '1.0' });
   const { secret } = a.probe('mirror-key', onA);
 
+  step('attaching the mirror on arkvory-b');
   // B: the mirror, through the installer, trusting A's authority and nothing else extra.
   b.copy(join(work, 'cert.pem'), '/etc/arkvory/a-ca.pem');
   await writeFile(join(work, 'a.token'), secret);
@@ -93,6 +97,7 @@ try {
   );
   assert.equal(b.probe('can-write', onB).reason, 'mirror_read_only');
 
+  step('following changes of arkvory-a');
   // Changes on A arrive through the feed.
   const second = a.probe('publish', { ...onA, name: 'second.bin', size: 512 * 1024 });
   const secondImage = a.probe('image', { ...onA, image: 'team/web', tag: '2.0' });
@@ -107,12 +112,14 @@ try {
     'the new image on B',
   );
 
+  step('cutting arkvory-a off');
   // A is cut off: B keeps serving and its status says why it is behind.
   docker(['network', 'disconnect', stand.network, a.container]);
   a.probe('publish', { ...onA, url: 'https://127.0.0.1:8080', name: 'unseen.bin', size: 1024 });
   await until(() => b.probe('status', onB).errorCode !== null, 'B to report the lost source');
   assert.equal(b.probe('content', { ...onB, id: first.id }).sha256, first.sha256);
 
+  step('failing over to arkvory-b');
   // Failover: B becomes the primary and accepts writes; its copies stay.
   arkvory(b, ['--mirror-detach', 'releases']);
   assert.equal(b.probe('status', onB).status, 404, 'no mirror any more');

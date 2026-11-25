@@ -274,33 +274,51 @@ test('a gzip bomb, a deep publish body and a cancelled inspection stop early', a
   );
 });
 
-test('a tarball that npm would read differently is refused: pax size, global path, name case', async () => {
+test('a tarball that npm would read differently is refused; the pax records npm writes are read', async () => {
   const paxRecord = (text) => {
-    const record = (length) => `${length} ${text}\n`;
+    const record = (length) => `${length} ${text}
+`;
     let length = record(0).length;
     while (record(length).length !== length) length = record(length).length;
     return Buffer.from(record(length));
   };
-  // node-tar takes the entry size from pax; this reader takes it from ustar: the two would
-  // disagree about where the next header starts.
-  for (const type of ['x', 'g']) {
-    const resized = gzipSync(
-      tar(
-        entry('PaxHeader', paxRecord('size=0'), type),
-        entry('package/readme.txt', Buffer.alloc(1536)),
-        entry('package/package.json', manifest()),
-      ),
-    );
-    await assert.rejects(inspect(resized), /must not set the entry size/, type);
-  }
-  const renamed = gzipSync(
+  // What `npm pack` writes for a path that is not ASCII: a pax header with path and size.
+  const readme = Buffer.alloc(1536, 0x61);
+  const written = gzipSync(
     tar(
-      entry('PaxHeader', paxRecord('path=package/package.json'), 'g'),
+      entry(
+        'PaxHeader',
+        Buffer.concat([
+          paxRecord('path=package/locales/ü.json'),
+          paxRecord(`size=${String(readme.length)}`),
+        ]),
+        'x',
+      ),
+      entry('package/locales/u.json', readme),
       entry('package/package.json', manifest()),
     ),
   );
-  await assert.rejects(inspect(renamed), /global tar pax header must not set a path/);
-  // A harmless global header (a comment) is read and ignored.
+  assert.equal((await inspect(written)).manifest.version, '1.2.0');
+  // node-tar takes the entry size from pax and this reader from ustar: they must agree, or the
+  // two would disagree about where the next header starts.
+  const resized = gzipSync(
+    tar(
+      entry('PaxHeader', paxRecord('size=0'), 'x'),
+      entry('package/readme.txt', readme),
+      entry('package/package.json', manifest()),
+    ),
+  );
+  await assert.rejects(inspect(resized), /pax size differs from the size of its entry/);
+  for (const record of ['size=0', 'path=package/package.json']) {
+    const global = gzipSync(
+      tar(
+        entry('pax_global_header', paxRecord(record), 'g'),
+        entry('package/package.json', manifest()),
+      ),
+    );
+    await assert.rejects(inspect(global), /global tar pax header must not set/, record);
+  }
+  // A harmless global header (a comment, as git archive writes) is read and ignored.
   const commented = gzipSync(
     tar(
       entry('pax_global_header', paxRecord('comment=abc'), 'g'),

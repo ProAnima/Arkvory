@@ -319,11 +319,23 @@ export class BackupAgent {
       depth: deep ? 'deep' : 'structural',
       error,
     });
-    // The point stays flagged; what the next capture can heal is prepared for it.
+    // The point stays flagged; what the next capture can heal is prepared for it. The vault lock
+    // only refuses when a capture holds it: the verification is over and keeps its outcome, and
+    // the next deep check sets the blobs aside instead.
     if (damaged.length > 0)
-      await this.deps.lock.exclusive((held) =>
-        setAsideDamaged(vault, damaged, anyCancellation(cancellation, held)),
-      );
+      await this.deps.lock
+        .exclusive((held) =>
+          setAsideDamaged(vault, damaged, anyCancellation(cancellation, held, lease)),
+        )
+        .then(
+          (blobs) => {
+            this.deps.events?.({ code: 'blobs.set_aside', blobs, errorCode: null });
+          },
+          (error: unknown) => {
+            const failure = backupFailureOf(error);
+            this.deps.events?.({ code: 'blobs.set_aside', blobs: 0, errorCode: failure.code });
+          },
+        );
     if (!result.ok) throw new BackupFailure('integrity_mismatch', 'Point failed verification');
   }
 

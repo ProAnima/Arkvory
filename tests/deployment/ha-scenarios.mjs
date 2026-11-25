@@ -170,14 +170,44 @@ async function readRecovery(api, since) {
   return Math.round((Date.now() - since) / 1000);
 }
 
+/**
+ * ha-2 delays the fence of the preferred node (the lowest DRBD id) by 15 s: losing it as the
+ * standby is the slowest fence a standby loss meets. The scenario makes that the case, so the
+ * fence-peer handler of the active node must outlast it every run, not only when an earlier
+ * scenario happened to leave the preferred node standing by.
+ */
+async function preferredStandby(cluster) {
+  const [preferred] = cluster.data;
+  const primary = await active(cluster);
+  if (primary !== preferred) return;
+  const [other] = await standbys(cluster);
+  step(`switch over to ${other.name}: ${preferred.name} is the standby to lose`);
+  await primary.shell.exec(`arkvory cluster-switchover --root ${ROOT} --to ${other.name}`);
+  assert.equal((await active(cluster)).name, other.name);
+}
+
+/** After the fence the surviving primary's DRBD must not stay suspended (a broken handler). */
+async function ioResumed(primary) {
+  await until(
+    async () => !(await primary.shell.exec('drbdsetup status arkvory')).includes('suspended:'),
+    'the I/O of the active node to resume after the fence',
+    120000,
+  ).catch(async (error) => {
+    const status = await primary.shell.tryExec('drbdsetup status arkvory --verbose');
+    throw new Error(`${error.message}; ${status.output}`);
+  });
+}
+
 export const standbyFailure = {
   name: 'standby lost during writes: refused writes, working reads, automatic return',
   async run({ cluster, api }) {
+    if (cluster.profile === 'ha-2') await preferredStandby(cluster);
     const load = writer(api, 'standby-loss');
     await acknowledgedSome(load);
     const [standby] = await standbys(cluster);
     await powerOff(standby);
     if (cluster.profile === 'ha-2') {
+      await ioResumed(await active(cluster));
       await writes(api, 503);
       const done = load.items.filter((item) => item.acknowledged);
       assert.ok(done.length > 0);
