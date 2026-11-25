@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { chmod, mkdir, open, readdir, rm, stat, statfs } from 'node:fs/promises';
+import { chmod, mkdir, open, readdir, rename, rm, stat, statfs } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import {
   BackupFailure,
@@ -298,6 +298,13 @@ export class FileVault implements CaptureVault, MaintainedVault {
   async hasBlob(entry: InventoryEntry): Promise<boolean> {
     const { cipher } = await this.unlocked();
     return isFileOfSize(this.blobPath(entry.id), cipher ? encryptedSize(entry.size) : entry.size);
+  }
+
+  /** A name prune removes as a leftover; the id itself is free for a new copy. */
+  async setAsideBlob(entry: InventoryEntry): Promise<void> {
+    const path = this.blobPath(entry.id);
+    await rename(path, join(path, '..', `.${entry.id}.damaged.tmp`));
+    await syncDirectory(join(path, '..'));
   }
 
   async putBlob(

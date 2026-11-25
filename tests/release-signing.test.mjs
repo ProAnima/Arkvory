@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { signRelease, verifyReleaseSignature } from '../apps/deploy/dist/release-signature.js';
 import { releaseKeys } from '../apps/deploy/dist/release-keys.js';
-import { signDirectory } from '../scripts/release-signing.mjs';
+import { signDirectory, signVerifiedDraft } from '../scripts/release-signing.mjs';
+import { releaseFiles } from '../scripts/release-files.mjs';
 import { removeTestDirectory } from './helpers.mjs';
 import { testKey } from './release-test-key.mjs';
 
@@ -62,4 +64,80 @@ test('a signed release folder carries the signature and the hub manifest', async
   }
   // A key unknown to the released updaters must never produce a release.
   await assert.rejects(signDirectory(directory, keyFile), /unknown key/);
+});
+
+test('a draft is signed only when its manifest matches the version, the commit and the assets', async (t) => {
+  const key = testKey();
+  const commit = 'c'.repeat(40);
+  const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
+  /** A draft as the release workflow uploads it; `change` alters the manifest before signing. */
+  const draft = async (change = (manifest) => manifest) => {
+    const directory = await mkdtemp(join(tmpdir(), 'arkvory-draft-'));
+    t.after(() => removeTestDirectory(directory));
+    const files = {};
+    for (const name of releaseFiles.filter((file) => file !== 'arkvory-release.json'))
+      files[name] = Buffer.from(`bytes of ${name}`);
+    files['arkvory-release.json'] = Buffer.from(
+      JSON.stringify(
+        change({
+          version: '1.2.3',
+          commit,
+          archiveSha256: sha(files['arkvory-runtime.zip']),
+          setupSha256: sha(files['arkvory-setup.mjs']),
+        }),
+      ),
+    );
+    for (const [name, bytes] of Object.entries(files))
+      await writeFile(join(directory, name), bytes);
+    const inventory = Object.fromEntries(
+      Object.entries(files).map(([name, bytes]) => [name, sha(bytes)]),
+    );
+    await writeFile(
+      join(directory, 'release-checksums.json'),
+      JSON.stringify({ format: 1, version: '1.2.3', commit, files: inventory }),
+    );
+    return directory;
+  };
+  // The key file lives outside the draft: the draft must hold exactly the release assets.
+  const keys = await mkdtemp(join(tmpdir(), 'arkvory-draft-key-'));
+  t.after(() => removeTestDirectory(keys));
+  const keyFile = join(keys, 'key.json');
+  await writeFile(keyFile, JSON.stringify({ format: 1, id: key.id, privateKey: key.pem }));
+  const sign = (directory, version = '1.2.3', at = commit) =>
+    signVerifiedDraft(directory, version, at, keyFile, key.trusted);
+  const unsigned = (directory) =>
+    assert.rejects(access(join(directory, 'arkvory-release.json.sig')), { code: 'ENOENT' });
+
+  const good = await draft();
+  await sign(good);
+  verifyReleaseSignature(
+    await readFile(join(good, 'arkvory-release.json')),
+    await readFile(join(good, 'arkvory-release.json.sig'), 'utf8'),
+    key.trusted,
+  );
+  // A manifest replaced in the draft: another archive, another version, another commit.
+  for (const change of [
+    (manifest) => ({ ...manifest, archiveSha256: 'f'.repeat(64) }),
+    (manifest) => ({ ...manifest, setupSha256: 'f'.repeat(64) }),
+    (manifest) => ({ ...manifest, version: '9.9.9' }),
+    (manifest) => ({ ...manifest, commit: 'd'.repeat(40) }),
+  ]) {
+    const directory = await draft(change);
+    await assert.rejects(sign(directory), /Release manifest mismatch/);
+    await unsigned(directory);
+  }
+  // The draft of another version or another commit than the one asked for.
+  for (const [version, at] of [
+    ['1.2.4', commit],
+    ['1.2.3', 'e'.repeat(40)],
+  ]) {
+    const directory = await draft();
+    await assert.rejects(sign(directory, version, at), /identity mismatch/);
+    await unsigned(directory);
+  }
+  // An asset whose bytes differ from the inventory.
+  const tampered = await draft();
+  await writeFile(join(tampered, 'arkvory-runtime.zip'), 'other bytes');
+  await assert.rejects(sign(tampered), /Checksum mismatch: arkvory-runtime\.zip/);
+  await unsigned(tampered);
 });

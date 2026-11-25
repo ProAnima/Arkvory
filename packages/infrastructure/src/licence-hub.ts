@@ -153,6 +153,18 @@ function refusal(status: number, text: string, retryAfterMs: number | null): Lic
   };
 }
 
+/**
+ * A failure the hub reports itself, with its machine code: its transaction was rolled back and
+ * the secret it was sent is still the current one, so the request is safe to repeat later. A
+ * gateway in front of the hub (502, 504, or any body that is not the hub's) proves nothing: the
+ * hub may have answered and the answer was lost.
+ */
+function hubRolledBack(answer: { readonly status: number; readonly text: string }): boolean {
+  if (answer.status === 502 || answer.status === 504) return false;
+  const code = objectOf(answer.text)?.['code'];
+  return typeof code === 'string' && CODE.test(code);
+}
+
 /** `200 {token, activationSecret, activationId}` or `200 {revocation}`, exactly. */
 function issued(text: string): LicenceHubAnswer {
   const body = objectOf(text);
@@ -227,8 +239,8 @@ export function httpLicenceHub(
     );
     if ('kind' in answer) return answer;
     if (answer.status === 200) return issued(answer.text);
-    // The hub rolls a failed transaction back: the secret it was sent is still the current one.
-    if (answer.status >= 500) return failure('hub_error', true, answer.retryAfterMs);
+    if (answer.status >= 500)
+      return failure('hub_error', !hubRolledBack(answer), answer.retryAfterMs);
     return refusal(answer.status, answer.text, answer.retryAfterMs);
   }
   return {

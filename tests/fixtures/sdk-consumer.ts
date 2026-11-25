@@ -41,8 +41,10 @@ export type WidenedBlockers = Assert<
 // Compile against built package exports, as an external strict TypeScript consumer does.
 // search items additionally carry size, createdAt, publishedAt, labels and stages: additive
 // response fields, so existing reads of id/name remain assignable (ExistingCallsRemainValid).
+// enqueue and job additionally take an optional AbortSignal as their last argument, like
+// status and complete: calls without it remain valid (ExistingCallsRemainValid).
 export type UnchangedMethods = Assert<
-  Equal<ChangedMethods, 'registerPackage' | 'capabilities' | 'search' | Widened>
+  Equal<ChangedMethods, 'registerPackage' | 'capabilities' | 'search' | 'enqueue' | 'job' | Widened>
 >;
 export type UnchangedKeys = Assert<
   Equal<

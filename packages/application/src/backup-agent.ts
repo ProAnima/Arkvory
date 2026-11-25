@@ -4,10 +4,10 @@ import {
   requestRetry,
   scheduleDecision,
 } from '@proanima/arkvory-domain';
-import type { BackupFailureCode, VerifyDepth } from '@proanima/arkvory-domain';
+import type { BackupFailureCode, InventoryEntry, VerifyDepth } from '@proanima/arkvory-domain';
 import type { Cancellation } from './ports.js';
 import { backupFailureOf } from './backup-capture.js';
-import { VerifyPoint } from './backup-verify.js';
+import { setAsideDamaged, VerifyPoint } from './backup-verify.js';
 import { ApplyBackupRetention, anyCancellation, syncCatalog } from './backup-retention-apply.js';
 import type {
   AgentCatalog,
@@ -41,6 +41,8 @@ export type StepOutcome = 'worked' | 'idle';
 const WEEK = 7 * 86_400_000;
 /** Progress rows are rewritten at most this often while bytes are verified. */
 const progressIntervalMs = 1000;
+/** Damaged blobs one verification prepares for the next capture; the rest waits for the next. */
+const MAX_SET_ASIDE = 64;
 
 /**
  * Writes issued from synchronous progress callbacks: they run in order, a failure is kept
@@ -294,9 +296,13 @@ export class BackupAgent {
         }),
       );
     };
+    const damaged: InventoryEntry[] = [];
     const result = await writes.settleAfter(
       this.deps.lock.shared((held) =>
         new VerifyPoint(vault, {
+          damagedBlob: (entry) => {
+            if (damaged.length < MAX_SET_ASIDE) damaged.push(entry);
+          },
           progress: ({ blobs, bytes }) => {
             const now = this.deps.clock();
             if (now - reported < progressIntervalMs) return;
@@ -313,6 +319,11 @@ export class BackupAgent {
       depth: deep ? 'deep' : 'structural',
       error,
     });
+    // The point stays flagged; what the next capture can heal is prepared for it.
+    if (damaged.length > 0)
+      await this.deps.lock.exclusive((held) =>
+        setAsideDamaged(vault, damaged, anyCancellation(cancellation, held)),
+      );
     if (!result.ok) throw new BackupFailure('integrity_mismatch', 'Point failed verification');
   }
 

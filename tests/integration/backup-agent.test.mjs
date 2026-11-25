@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { rename, rm, unlink, writeFile } from 'node:fs/promises';
+import { access, readFile, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { BackupFailure } from '@proanima/arkvory-domain';
 import { ApplyBackupRetention, VerifyPoint } from '@proanima/arkvory-application';
@@ -404,4 +404,38 @@ test('a point that was out of sight and came back is restored, never deleted by 
   } finally {
     await agent.stop();
   }
+});
+
+test('content damaged in the vault is set aside by a deep check and stored again by the next capture', async (t) => {
+  const f = await setup(t);
+  const { path: vault } = await newVault(t);
+  const item = await publish(f);
+  const p1 = await capture(f, vault, 'p1');
+  // Bit rot: the same size, other bytes. A capture checks only the size of content it shares.
+  const blob = join(vault, 'blobs', item.id.slice(0, 2), item.id);
+  const stored = await readFile(blob);
+  stored[stored.length >> 1] ^= 0xff;
+  await writeFile(blob, stored);
+  const agent = startAgent(f, vault);
+  try {
+    await eventually(() => agent.has('backup.catalog.reconciled'), 'catalog rebuild');
+    const verify = await api(f, 'POST', `/points/${p1.pointId}/verify`, { key: 'deep-1' });
+    assert.equal(verify.status, 202);
+    await eventually(() => settled(f), 'deep verification');
+    const flagged = (await api(f, 'GET', '/points')).body.items.find((p) => p.id === p1.pointId);
+    // The point stays flagged until a capture has healed it: the mismatch the check found, or
+    // the missing content a repeated check of the same request sees after the blob was moved.
+    assert.match(flagged.verifyError, /^blob_(mismatch|missing)$/);
+    await assert.rejects(access(blob), { code: 'ENOENT' }, 'the id is free for a new copy');
+  } finally {
+    await agent.stop();
+  }
+  // The source still has the good bytes: the next capture stores them again for both points.
+  await capture(f, vault, 'p2');
+  assert.deepEqual(await readFile(blob), item.bytes);
+  const verified = await new VerifyPoint(await FileVault.open(vault)).run({ deep: true }, never);
+  assert.deepEqual(
+    verified.map((result) => result.ok),
+    [true, true],
+  );
 });

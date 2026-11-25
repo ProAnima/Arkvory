@@ -43,3 +43,24 @@ test('a hub that could not be connected to did not receive the refresh', async (
   for (const code of ['ECONNRESET', 'UND_ERR_SOCKET'])
     assert.equal((await hub(code).refresh(body)).sent, true, code);
 });
+
+test('a failure the hub reports itself is repeatable; a gateway in front of it proves nothing', async () => {
+  const body = { activationId: 'act_0', activationSecret: 's', nonce: 'n', seq: 1 };
+  const answering = (status, text, headers = {}) =>
+    httpLicenceHub(
+      { url: 'https://hub.invalid', project: 'arkvory' },
+      async () => new Response(text, { status, headers }),
+    ).refresh(body);
+  // The hub's own error: its transaction was rolled back, the secret is still current.
+  assert.deepEqual(await answering(503, '{"code":"unavailable"}', { 'retry-after': '30' }), {
+    kind: 'failed',
+    failure: 'hub_error',
+    sent: false,
+    retryAfterMs: 30_000,
+  });
+  assert.equal((await answering(500, '{"code":"internal"}')).sent, false);
+  // A proxy's page, or a gateway status: the hub may have processed the request.
+  assert.equal((await answering(503, '<html>Service Unavailable</html>')).sent, true);
+  assert.equal((await answering(502, '{"code":"unavailable"}')).sent, true);
+  assert.equal((await answering(504, '')).sent, true);
+});

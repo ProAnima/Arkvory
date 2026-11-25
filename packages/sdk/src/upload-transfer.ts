@@ -143,9 +143,10 @@ export async function completeWithWorker(
   signal: AbortSignal | undefined,
   pollMs = 1000,
 ) {
-  const job = await attempts.run(() => uploads.enqueue(repository, id));
+  // The attempt signal carries the per-attempt timeout and the caller's cancellation.
+  const job = await attempts.run((s) => uploads.enqueue(repository, id, s));
   for (let wait = pollMs; ; wait = Math.min(wait * 2, 15 * pollMs)) {
-    const current = await attempts.run(() => uploads.job(job.id));
+    const current = await attempts.run((s) => uploads.job(job.id, s));
     if (current.status === 'completed')
       return attempts.run((s) => uploads.status(repository, id, s));
     if (current.status === 'failed')

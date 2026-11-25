@@ -78,16 +78,20 @@ export class UploadsApi {
       ),
     );
   }
-  async enqueue(repository: string, id: string) {
+  async enqueue(repository: string, id: string, signal?: AbortSignal) {
     return readJob(
       await this.http.call(
         repositoryPath(repository, `uploads/${encodeURIComponent(id)}/complete-async`),
         'POST',
+        undefined,
+        signal,
       ),
     );
   }
-  async job(id: string) {
-    return readJob(await this.http.call(`api/v1/jobs/${encodeURIComponent(id)}`));
+  async job(id: string, signal?: AbortSignal) {
+    return readJob(
+      await this.http.call(`api/v1/jobs/${encodeURIComponent(id)}`, 'GET', undefined, signal),
+    );
   }
   async cancel(repository: string, id: string) {
     return readUpload(

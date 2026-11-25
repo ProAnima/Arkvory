@@ -70,6 +70,8 @@ function invalidPoint(pointId: string, deep: boolean): PointVerification {
  * that fails is reported, never repaired or removed.
  */
 export interface VerifyOptions {
+  /** Called for stored content whose bytes do not have the SHA-256 of its entry (deep). */
+  readonly damagedBlob?: (entry: InventoryEntry) => void;
   /** Inventory entries checked so far and their content bytes; called after each entry. */
   readonly progress?: (done: { readonly blobs: number; readonly bytes: bigint }) => void;
 }
@@ -188,12 +190,42 @@ export class VerifyPoint {
       count++;
       bytes += BigInt(entry.size);
       if (!(await this.vault.hasBlob(entry))) problems.add('blob_missing', entry.id);
-      else if (deep && (await this.blobHash(entry, cancellation)) !== entry.sha256)
+      else if (deep && (await this.blobHash(entry, cancellation)) !== entry.sha256) {
         problems.add('blob_mismatch', entry.id);
+        this.options.damagedBlob?.(entry);
+      }
       this.options.progress?.({ blobs: count, bytes });
     }
     if (count !== manifest.inventory.count || bytes.toString() !== manifest.inventory.contentBytes)
       problems.add('inventory_invalid', INVENTORY_FILE);
     return count;
   }
+}
+
+/**
+ * Content ids are immutable, so a capture shares content an earlier point stored and checks
+ * only its size. Content that rotted in the vault would therefore be inherited by every later
+ * point while the source still holds good bytes. The caller holds the exclusive vault lock;
+ * each blob is read once more, and only one that still differs is set aside.
+ */
+export async function setAsideDamaged(
+  vault: Pick<ReadableVault, 'hasBlob' | 'blobDigest'> & {
+    setAsideBlob(entry: InventoryEntry): Promise<void>;
+  },
+  entries: readonly InventoryEntry[],
+  cancellation: Cancellation,
+): Promise<number> {
+  let moved = 0;
+  for (const entry of entries) {
+    cancellation.throwIfAborted();
+    if (!(await vault.hasBlob(entry))) continue;
+    const digest = await vault.blobDigest(entry, cancellation).catch((error: unknown) => {
+      if (isDamage(error)) return null;
+      throw error;
+    });
+    if (digest === entry.sha256) continue;
+    await vault.setAsideBlob(entry);
+    moved++;
+  }
+  return moved;
 }
