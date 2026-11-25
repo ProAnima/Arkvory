@@ -145,6 +145,16 @@
         </button>
         <button
           type="button"
+          data-nav="modules"
+          aria-controls="modules-panel"
+          id="modules-nav"
+          hidden
+        >
+          <span class="nav-icon" data-icon="module" aria-hidden="true"></span>
+          <span data-i18n="modules">Модули и лицензия</span>
+        </button>
+        <button
+          type="button"
           data-nav="backups"
           aria-controls="backups-panel"
           id="backups-nav"
@@ -1082,6 +1092,81 @@
             </div>
             <p id="cluster-no-peers" class="hint" data-i18n="clusterNoPeers" hidden></p>
             <p id="cluster-old" class="hint" data-i18n="clusterOld" hidden></p>
+          </div>
+        </section>
+        <section id="modules-panel" data-view="modules" aria-labelledby="page-title" hidden>
+          <output id="modules-status" class="hint" aria-live="polite" hidden></output>
+          <div class="card padded">
+            <div class="section-heading">
+              <h2 data-i18n="modulesInstalled">Установленные модули</h2>
+              <span id="modules-api" class="hint"></span>
+            </div>
+            <div class="table" tabindex="0" role="region" data-i18n-label="tableRegion">
+              <table class="modules-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="modulesName">Модуль</th>
+                    <th scope="col" data-i18n="modulesVersion">Версия</th>
+                    <th scope="col" data-i18n="modulesKind">Точка расширения</th>
+                    <th scope="col" data-i18n="modulesSource">Источник</th>
+                    <th scope="col" data-i18n="modulesState">Состояние</th>
+                  </tr>
+                </thead>
+                <tbody id="modules-rows"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card padded">
+            <h2 data-i18n="licenses">Лицензия</h2>
+            <div
+              id="licence-table"
+              class="table"
+              tabindex="0"
+              role="region"
+              data-i18n-label="tableRegion"
+              hidden
+            >
+              <table class="modules-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="licenseType">Тип</th>
+                    <th scope="col" data-i18n="licensee">Владелец</th>
+                    <th scope="col" data-i18n="licenseState">Состояние</th>
+                    <th scope="col" data-i18n="licenseUntil">Действует до</th>
+                    <th scope="col" data-i18n="licenseFeatures">Функции</th>
+                  </tr>
+                </thead>
+                <tbody id="licence-rows"></tbody>
+              </table>
+            </div>
+            <p id="licence-none" class="hint" data-i18n="licenseNone">
+              Лицензия не активирована. Бесплатное ядро работает без неё.
+            </p>
+          </div>
+          <div class="card padded">
+            <h2 data-i18n="modulesManage">Установка, включение и удаление</h2>
+            <p class="hint" data-i18n="modulesManageText">
+              Консоль только показывает модули: их устанавливают на хосте сервера, поэтому
+              украденная учётная запись консоли не позволит запустить там код. Проверить
+              установленные пакеты:
+            </p>
+            <pre><code data-i18n="modulesListCommand">sudo arkvory module list --root /opt/proanima-arkvory</code></pre>
+            <p class="button-row">
+              <a
+                data-docs="operate/modules"
+                data-i18n="modulesGuide"
+                href="https://proanima.github.io/Arkvory/operate/modules"
+                target="_blank"
+                rel="noopener noreferrer"
+              ></a>
+              <a
+                data-docs="operate/licenses"
+                data-i18n="licenseGuide"
+                href="https://proanima.github.io/Arkvory/operate/licenses"
+                target="_blank"
+                rel="noopener noreferrer"
+              ></a>
+            </p>
           </div>
         </section>
         <section id="backups-panel" data-view="backups" aria-labelledby="page-title" hidden>

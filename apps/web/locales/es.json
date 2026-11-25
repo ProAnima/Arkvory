@@ -4694,5 +4694,169 @@
   "fleetAlertVersionSkew": {
     "en": "runs another version than this controller.",
     "text": "ejecuta una versión distinta de la de este controlador."
+  },
+  "modules": {
+    "en": "Modules & licence",
+    "text": "Módulos y licencia"
+  },
+  "modulesInstalled": {
+    "en": "Installed modules",
+    "text": "Módulos instalados"
+  },
+  "modulesApi": {
+    "en": "Extension API {version}",
+    "text": "API de extensiones {version}"
+  },
+  "modulesName": {
+    "en": "Module",
+    "text": "Módulo"
+  },
+  "modulesVersion": {
+    "en": "Version",
+    "text": "Versión"
+  },
+  "modulesKind": {
+    "en": "Extension point",
+    "text": "Punto de extensión"
+  },
+  "modulesSource": {
+    "en": "Source",
+    "text": "Origen"
+  },
+  "modulesState": {
+    "en": "State",
+    "text": "Estado"
+  },
+  "modulesCore": {
+    "en": "Free core",
+    "text": "Núcleo gratuito"
+  },
+  "modulesSourceBuiltin": {
+    "en": "Built in",
+    "text": "Integrado"
+  },
+  "modulesSourceSigned": {
+    "en": "Signed package",
+    "text": "Paquete firmado"
+  },
+  "moduleOk": {
+    "en": "Running",
+    "text": "En ejecución"
+  },
+  "moduleDegraded": {
+    "en": "Degraded",
+    "text": "Degradado"
+  },
+  "moduleFailed": {
+    "en": "Failed to start",
+    "text": "No se pudo iniciar"
+  },
+  "moduleRevoked": {
+    "en": "Revoked",
+    "text": "Revocado"
+  },
+  "moduleUnavailable": {
+    "en": "Unavailable",
+    "text": "No disponible"
+  },
+  "moduleNotOk": {
+    "en": "Not ok: {status}",
+    "text": "No está bien: {status}"
+  },
+  "moduleIdle": {
+    "en": "Not running in this process",
+    "text": "No se ejecuta en este proceso"
+  },
+  "moduleOff": {
+    "en": "Off",
+    "text": "Desactivado"
+  },
+  "licenses": {
+    "en": "Licence",
+    "text": "Licencia"
+  },
+  "licenseType": {
+    "en": "Type",
+    "text": "Tipo"
+  },
+  "licensee": {
+    "en": "Licensee",
+    "text": "Titular"
+  },
+  "licenseState": {
+    "en": "State",
+    "text": "Estado"
+  },
+  "licenseUntil": {
+    "en": "Valid until",
+    "text": "Válida hasta"
+  },
+  "licenseFeatures": {
+    "en": "Features",
+    "text": "Funciones"
+  },
+  "licensePerpetual": {
+    "en": "No end date",
+    "text": "Sin fecha de fin"
+  },
+  "licenseValid": {
+    "en": "Valid",
+    "text": "Válida"
+  },
+  "licenseOfflineGrace": {
+    "en": "Offline, within the grace window",
+    "text": "Sin conexión, dentro del periodo de gracia"
+  },
+  "licenseGrace": {
+    "en": "Term ended, renewal grace",
+    "text": "Plazo terminado, periodo de renovación"
+  },
+  "licenseMismatch": {
+    "en": "Belongs to another installation",
+    "text": "Pertenece a otra instalación"
+  },
+  "licenseExpired": {
+    "en": "Expired",
+    "text": "Caducada"
+  },
+  "licenseRevoked": {
+    "en": "Revoked",
+    "text": "Revocada"
+  },
+  "licenseInvalid": {
+    "en": "Does not verify",
+    "text": "No se puede verificar"
+  },
+  "licenseUnknown": {
+    "en": "Not valid: {state}",
+    "text": "No válida: {state}"
+  },
+  "licenseRefreshFailing": {
+    "en": "The hub has not answered lately.",
+    "text": "El hub no responde desde hace tiempo."
+  },
+  "licenseNone": {
+    "en": "No licence is activated. The free core works without one.",
+    "text": "No hay ninguna licencia activada. El núcleo gratuito funciona sin ella."
+  },
+  "modulesManage": {
+    "en": "Install, enable or remove",
+    "text": "Instalar, activar o quitar"
+  },
+  "modulesManageText": {
+    "en": "The console only shows modules: they are installed on the server host, so a stolen console account cannot run code there. Check the installed packages on the host:",
+    "text": "La consola solo muestra los módulos: se instalan en el servidor, así que una cuenta de consola robada no puede ejecutar código allí. Compruebe los paquetes instalados en el servidor:"
+  },
+  "modulesListCommand": {
+    "en": "sudo arkvory module list --root /opt/proanima-arkvory",
+    "text": "sudo arkvory module list --root /opt/proanima-arkvory"
+  },
+  "modulesGuide": {
+    "en": "Modules guide",
+    "text": "Guía de módulos"
+  },
+  "licenseGuide": {
+    "en": "Licence guide",
+    "text": "Guía de licencias"
   }
 }

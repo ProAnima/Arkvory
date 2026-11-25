@@ -23,6 +23,7 @@ import { installDownloads } from './downloads.js';
 import { installUpdates } from './updates.js';
 import { MirrorsPage } from './mirrors-page.js';
 import { FleetPage } from './fleet-page.js';
+import { ModulesPage } from './modules-page.js';
 import { installBackups } from './backups.js';
 import { installUploadForm } from './upload-form.js';
 import { installUserTokens } from './user-tokens.js';
@@ -80,10 +81,12 @@ const mirrors = new MirrorsPage(client, (id) => {
   openRepository(id);
 });
 const fleet = new FleetPage(client);
+const modules = new ModulesPage(client);
 /** Screens that follow the signed-in role; settles once their navigation entries are known. */
 async function connectSigned(administrator: boolean) {
   report.connect(administrator);
   fleet.connect(administrator);
+  modules.connect(administrator);
   await Promise.all([updates.connect(administrator), mirrors.connect(administrator)]);
 }
 const report = installReportDialog(client);
@@ -205,6 +208,7 @@ function clearCatalog() {
   updates.clear();
   mirrors.clear();
   fleet.clear();
+  modules.clear();
   report.clear();
   management.clear();
   backups.clear();

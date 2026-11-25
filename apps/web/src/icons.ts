@@ -59,6 +59,7 @@ const paths = {
   database:
     'M12 9c4.4 0 8-1.3 8-3s-3.6-3-8-3-8 1.3-8 3 3.6 3 8 3ZM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
   flag: 'M5 21V4m0 0h11.5l-2 4 2 4H5',
+  module: 'm12 3.5 8 4.5v8l-8 4.5L4 16V8Zm-8 4.5 8 4.5 8-4.5M12 12.5v8',
   code: 'm8 7-5 5 5 5m8-10 5 5-5 5m-2.5-12-3 14',
 } as const;
 export type IconName = keyof typeof paths;

@@ -1,13 +1,15 @@
-/* Mirrors and Cluster pages (ADR 0058, ADR 0072): states in words and color, next steps in view. */
+/* Mirrors, Cluster and Modules pages (ADR 0058, ADR 0072): states in words and color, next steps in view. */
 #mirrors-panel,
 #fleet-panel,
-#cluster-panel {
+#cluster-panel,
+#modules-panel {
   display: grid;
   gap: var(--section-gap);
 }
 #mirrors-panel > .card > * + *,
 #fleet-panel > .card > * + *,
-#cluster-panel > .card > * + * {
+#cluster-panel > .card > * + *,
+#modules-panel > .card > * + * {
   margin-top: var(--space-4);
 }
 .cluster-facts dd {
@@ -50,7 +52,8 @@
   color: var(--color-error);
 }
 .mirrors-table td,
-.cluster-table td {
+.cluster-table td,
+.modules-table td {
   vertical-align: top;
   overflow-wrap: anywhere;
 }
@@ -247,4 +250,16 @@ body:has(#cluster-panel:not([hidden])) #replication-open {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
+}
+/* Modules & licence: a module's name with its core mark; a state with its code below. */
+.module-name {
+  font-weight: var(--weight-semibold);
+}
+.modules-table td > .badge + .badge,
+.module-name + .badge {
+  margin-inline-start: var(--space-2);
+}
+.modules-table td > .hint {
+  display: block;
+  margin-top: var(--space-1);
 }

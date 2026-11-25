@@ -4694,5 +4694,169 @@
   "fleetAlertVersionSkew": {
     "en": "runs another version than this controller.",
     "text": "에서 이 컨트롤러와 다른 버전을 실행합니다."
+  },
+  "modules": {
+    "en": "Modules & licence",
+    "text": "모듈 및 라이선스"
+  },
+  "modulesInstalled": {
+    "en": "Installed modules",
+    "text": "설치된 모듈"
+  },
+  "modulesApi": {
+    "en": "Extension API {version}",
+    "text": "확장 API {version}"
+  },
+  "modulesName": {
+    "en": "Module",
+    "text": "모듈"
+  },
+  "modulesVersion": {
+    "en": "Version",
+    "text": "버전"
+  },
+  "modulesKind": {
+    "en": "Extension point",
+    "text": "확장 지점"
+  },
+  "modulesSource": {
+    "en": "Source",
+    "text": "출처"
+  },
+  "modulesState": {
+    "en": "State",
+    "text": "상태"
+  },
+  "modulesCore": {
+    "en": "Free core",
+    "text": "무료 코어"
+  },
+  "modulesSourceBuiltin": {
+    "en": "Built in",
+    "text": "기본 제공"
+  },
+  "modulesSourceSigned": {
+    "en": "Signed package",
+    "text": "서명된 패키지"
+  },
+  "moduleOk": {
+    "en": "Running",
+    "text": "실행 중"
+  },
+  "moduleDegraded": {
+    "en": "Degraded",
+    "text": "성능 저하"
+  },
+  "moduleFailed": {
+    "en": "Failed to start",
+    "text": "시작 실패"
+  },
+  "moduleRevoked": {
+    "en": "Revoked",
+    "text": "폐기됨"
+  },
+  "moduleUnavailable": {
+    "en": "Unavailable",
+    "text": "사용 불가"
+  },
+  "moduleNotOk": {
+    "en": "Not ok: {status}",
+    "text": "정상 아님: {status}"
+  },
+  "moduleIdle": {
+    "en": "Not running in this process",
+    "text": "이 프로세스에서 실행되지 않음"
+  },
+  "moduleOff": {
+    "en": "Off",
+    "text": "꺼짐"
+  },
+  "licenses": {
+    "en": "Licence",
+    "text": "라이선스"
+  },
+  "licenseType": {
+    "en": "Type",
+    "text": "유형"
+  },
+  "licensee": {
+    "en": "Licensee",
+    "text": "라이선스 보유자"
+  },
+  "licenseState": {
+    "en": "State",
+    "text": "상태"
+  },
+  "licenseUntil": {
+    "en": "Valid until",
+    "text": "유효 기간"
+  },
+  "licenseFeatures": {
+    "en": "Features",
+    "text": "기능"
+  },
+  "licensePerpetual": {
+    "en": "No end date",
+    "text": "종료일 없음"
+  },
+  "licenseValid": {
+    "en": "Valid",
+    "text": "유효"
+  },
+  "licenseOfflineGrace": {
+    "en": "Offline, within the grace window",
+    "text": "오프라인, 유예 기간 내"
+  },
+  "licenseGrace": {
+    "en": "Term ended, renewal grace",
+    "text": "기간 종료, 갱신 유예 중"
+  },
+  "licenseMismatch": {
+    "en": "Belongs to another installation",
+    "text": "다른 설치에 속함"
+  },
+  "licenseExpired": {
+    "en": "Expired",
+    "text": "만료됨"
+  },
+  "licenseRevoked": {
+    "en": "Revoked",
+    "text": "폐기됨"
+  },
+  "licenseInvalid": {
+    "en": "Does not verify",
+    "text": "검증 실패"
+  },
+  "licenseUnknown": {
+    "en": "Not valid: {state}",
+    "text": "유효하지 않음: {state}"
+  },
+  "licenseRefreshFailing": {
+    "en": "The hub has not answered lately.",
+    "text": "허브가 한동안 응답하지 않았습니다."
+  },
+  "licenseNone": {
+    "en": "No licence is activated. The free core works without one.",
+    "text": "활성화된 라이선스가 없습니다. 무료 코어는 라이선스 없이 작동합니다."
+  },
+  "modulesManage": {
+    "en": "Install, enable or remove",
+    "text": "설치, 활성화 또는 제거"
+  },
+  "modulesManageText": {
+    "en": "The console only shows modules: they are installed on the server host, so a stolen console account cannot run code there. Check the installed packages on the host:",
+    "text": "콘솔은 모듈을 보여 주기만 합니다. 모듈은 서버 호스트에서 설치하므로 도난당한 콘솔 계정으로는 그곳에서 코드를 실행할 수 없습니다. 호스트에서 설치된 패키지를 확인하세요:"
+  },
+  "modulesListCommand": {
+    "en": "sudo arkvory module list --root /opt/proanima-arkvory",
+    "text": "sudo arkvory module list --root /opt/proanima-arkvory"
+  },
+  "modulesGuide": {
+    "en": "Modules guide",
+    "text": "모듈 가이드"
+  },
+  "licenseGuide": {
+    "en": "Licence guide",
+    "text": "라이선스 가이드"
   }
 }

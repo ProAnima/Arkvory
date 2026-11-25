@@ -4694,5 +4694,169 @@
   "fleetAlertVersionSkew": {
     "en": "runs another version than this controller.",
     "text": "इस नियंत्रक से अलग संस्करण चला रही है।"
+  },
+  "modules": {
+    "en": "Modules & licence",
+    "text": "मॉड्यूल और लाइसेंस"
+  },
+  "modulesInstalled": {
+    "en": "Installed modules",
+    "text": "इंस्टॉल किए गए मॉड्यूल"
+  },
+  "modulesApi": {
+    "en": "Extension API {version}",
+    "text": "एक्सटेंशन API {version}"
+  },
+  "modulesName": {
+    "en": "Module",
+    "text": "मॉड्यूल"
+  },
+  "modulesVersion": {
+    "en": "Version",
+    "text": "संस्करण"
+  },
+  "modulesKind": {
+    "en": "Extension point",
+    "text": "एक्सटेंशन पॉइंट"
+  },
+  "modulesSource": {
+    "en": "Source",
+    "text": "स्रोत"
+  },
+  "modulesState": {
+    "en": "State",
+    "text": "स्थिति"
+  },
+  "modulesCore": {
+    "en": "Free core",
+    "text": "मुफ़्त कोर"
+  },
+  "modulesSourceBuiltin": {
+    "en": "Built in",
+    "text": "अंतर्निहित"
+  },
+  "modulesSourceSigned": {
+    "en": "Signed package",
+    "text": "हस्ताक्षरित पैकेज"
+  },
+  "moduleOk": {
+    "en": "Running",
+    "text": "चल रहा है"
+  },
+  "moduleDegraded": {
+    "en": "Degraded",
+    "text": "आंशिक रूप से काम कर रहा है"
+  },
+  "moduleFailed": {
+    "en": "Failed to start",
+    "text": "शुरू नहीं हो सका"
+  },
+  "moduleRevoked": {
+    "en": "Revoked",
+    "text": "रद्द किया गया"
+  },
+  "moduleUnavailable": {
+    "en": "Unavailable",
+    "text": "उपलब्ध नहीं"
+  },
+  "moduleNotOk": {
+    "en": "Not ok: {status}",
+    "text": "ठीक नहीं: {status}"
+  },
+  "moduleIdle": {
+    "en": "Not running in this process",
+    "text": "इस प्रोसेस में नहीं चल रहा"
+  },
+  "moduleOff": {
+    "en": "Off",
+    "text": "बंद"
+  },
+  "licenses": {
+    "en": "Licence",
+    "text": "लाइसेंस"
+  },
+  "licenseType": {
+    "en": "Type",
+    "text": "प्रकार"
+  },
+  "licensee": {
+    "en": "Licensee",
+    "text": "लाइसेंसधारी"
+  },
+  "licenseState": {
+    "en": "State",
+    "text": "स्थिति"
+  },
+  "licenseUntil": {
+    "en": "Valid until",
+    "text": "मान्य तक"
+  },
+  "licenseFeatures": {
+    "en": "Features",
+    "text": "सुविधाएँ"
+  },
+  "licensePerpetual": {
+    "en": "No end date",
+    "text": "कोई अंतिम तिथि नहीं"
+  },
+  "licenseValid": {
+    "en": "Valid",
+    "text": "मान्य"
+  },
+  "licenseOfflineGrace": {
+    "en": "Offline, within the grace window",
+    "text": "ऑफ़लाइन, छूट अवधि के भीतर"
+  },
+  "licenseGrace": {
+    "en": "Term ended, renewal grace",
+    "text": "अवधि समाप्त, नवीनीकरण की छूट"
+  },
+  "licenseMismatch": {
+    "en": "Belongs to another installation",
+    "text": "किसी दूसरे इंस्टॉलेशन का है"
+  },
+  "licenseExpired": {
+    "en": "Expired",
+    "text": "समाप्त"
+  },
+  "licenseRevoked": {
+    "en": "Revoked",
+    "text": "रद्द किया गया"
+  },
+  "licenseInvalid": {
+    "en": "Does not verify",
+    "text": "सत्यापित नहीं होता"
+  },
+  "licenseUnknown": {
+    "en": "Not valid: {state}",
+    "text": "मान्य नहीं: {state}"
+  },
+  "licenseRefreshFailing": {
+    "en": "The hub has not answered lately.",
+    "text": "हब ने कुछ समय से जवाब नहीं दिया है।"
+  },
+  "licenseNone": {
+    "en": "No licence is activated. The free core works without one.",
+    "text": "कोई लाइसेंस सक्रिय नहीं है। मुफ़्त कोर इसके बिना काम करता है।"
+  },
+  "modulesManage": {
+    "en": "Install, enable or remove",
+    "text": "इंस्टॉल करें, चालू करें या हटाएँ"
+  },
+  "modulesManageText": {
+    "en": "The console only shows modules: they are installed on the server host, so a stolen console account cannot run code there. Check the installed packages on the host:",
+    "text": "कंसोल केवल मॉड्यूल दिखाता है: वे सर्वर होस्ट पर इंस्टॉल होते हैं, इसलिए चुराया गया कंसोल खाता वहाँ कोड नहीं चला सकता। होस्ट पर इंस्टॉल किए गए पैकेज जाँचें:"
+  },
+  "modulesListCommand": {
+    "en": "sudo arkvory module list --root /opt/proanima-arkvory",
+    "text": "sudo arkvory module list --root /opt/proanima-arkvory"
+  },
+  "modulesGuide": {
+    "en": "Modules guide",
+    "text": "मॉड्यूल गाइड"
+  },
+  "licenseGuide": {
+    "en": "Licence guide",
+    "text": "लाइसेंस गाइड"
   }
 }

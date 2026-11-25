@@ -5,7 +5,8 @@
   width: var(--sidebar-width);
   padding: 0 0 var(--space-3);
   background: var(--color-sidebar);
-  border-inline-end: var(--border-width) solid var(--color-border);
+  color: var(--color-sidebar-text);
+  border-inline-end: var(--border-width) solid var(--color-sidebar-border);
   display: flex;
   flex-direction: column;
   z-index: var(--z-sidebar);
@@ -20,7 +21,7 @@
   text-decoration: none;
   min-height: var(--topbar-height);
   padding: 0 var(--space-4);
-  border-bottom: var(--border-width) solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-sidebar-border);
   flex-shrink: 0;
 }
 .brand-mark {
@@ -49,11 +50,11 @@
   display: block;
   font-size: var(--text-xs);
   letter-spacing: var(--tracking-label);
-  color: var(--color-muted);
+  color: var(--color-sidebar-muted);
   line-height: var(--leading-tight);
 }
 .brand-dot {
-  color: var(--color-accent);
+  color: var(--color-sidebar-indicator);
 }
 nav {
   display: grid;
@@ -62,7 +63,7 @@ nav {
 }
 .nav-group-label {
   padding: var(--space-4) var(--space-3) var(--space-1);
-  color: var(--color-muted);
+  color: var(--color-sidebar-muted);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-label);
@@ -78,14 +79,22 @@ nav button {
   background: transparent;
   font-size: var(--text-base);
   font-weight: var(--weight-medium);
-  color: var(--color-muted);
+  color: var(--color-sidebar-muted);
   padding: var(--space-2) var(--space-3);
   min-height: var(--nav-height);
 }
+/* The chosen section: a lighter ink ground and an indicator on its inline-start edge. */
 nav button[aria-current='page'] {
-  background: var(--color-nav-active);
-  color: var(--color-nav-text);
+  background: var(--color-sidebar-active);
+  color: var(--color-sidebar-active-text);
   font-weight: var(--weight-semibold);
+  box-shadow: inset var(--indicator-width) 0 0 var(--color-sidebar-indicator);
+}
+:root[dir='rtl'] nav button[aria-current='page'] {
+  box-shadow: inset calc(-1 * var(--indicator-width)) 0 0 var(--color-sidebar-indicator);
+}
+nav button[aria-current='page'] .nav-icon {
+  color: var(--color-sidebar-indicator);
 }
 nav button {
   min-width: 0;
@@ -98,14 +107,30 @@ nav button span[data-i18n] {
   display: inline-flex;
   flex-shrink: 0;
 }
-nav button[aria-current='page']:hover {
-  background: var(--color-nav-active);
-  color: var(--color-nav-text);
+@media (hover: hover) and (pointer: fine) {
+  .sidebar button:hover:where(:not(:disabled)) {
+    background: var(--color-sidebar-hover);
+    color: var(--color-sidebar-text);
+  }
+  nav button[aria-current='page']:hover {
+    background: var(--color-sidebar-active);
+    color: var(--color-sidebar-active-text);
+  }
+}
+/* Buttons of the ink panel (collapse, the phone menu) are outlined in its own colors. */
+.sidebar button.secondary {
+  background: transparent;
+  color: var(--color-sidebar-text);
+  border-color: var(--color-sidebar-border);
+  box-shadow: none;
+}
+.sidebar :where(button, a):focus-visible {
+  outline-color: var(--color-sidebar-focus);
 }
 .sidebar-bottom {
   margin-top: auto;
   padding: var(--space-4) var(--space-3) 0;
-  color: var(--color-muted);
+  color: var(--color-sidebar-muted);
   font-size: var(--text-xs);
 }
 .sidebar-bottom p {

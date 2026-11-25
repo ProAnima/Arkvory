@@ -251,7 +251,7 @@ button[data-icon-only] > .action-label {
     padding: 0;
     margin: var(--space-2) var(--space-2);
     overflow: hidden;
-    border-top: var(--border-width) solid var(--color-border);
+    border-top: var(--border-width) solid var(--color-sidebar-border);
   }
   [data-navigation='compact'] .nav-group-label:first-child {
     margin-block: 0;

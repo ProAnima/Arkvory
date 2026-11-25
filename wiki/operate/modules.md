@@ -163,6 +163,10 @@ The command verifies every installed package again, as the services do before th
 
 A refused package is never used. Install the package file again to repair it.
 
+### In the console {#console}
+
+A global administrator finds [[ui:modules]] in the console menu. The page lists every module with its version, extension point, source and state in the process that answered, and the licences with their state and term. It only reads: install, enable and remove modules with the commands on this page.
+
 ## Remove a module {#remove}
 
 ```bash

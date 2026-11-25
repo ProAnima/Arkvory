@@ -163,6 +163,10 @@ La commande vérifie de nouveau chaque paquet installé, comme le font les servi
 
 Un paquet refusé n'est jamais utilisé. Pour le réparer, installez de nouveau le fichier du paquet.
 
+### Dans la console {#console}
+
+Un administrateur global trouve [[ui:modules]] dans le menu de la console. La page affiche chaque module avec sa version, son point d’extension, sa source et son état dans le processus qui a répondu, ainsi que les licences avec leur état et leur terme. Elle ne fait que lire : installez, activez et retirez les modules avec les commandes de cette page.
+
 ## Supprimer un module {#remove}
 
 ```bash

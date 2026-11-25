@@ -13,6 +13,7 @@ const restricted: Partial<Record<View, string>> = {
   mirrors: 'mirrors-nav',
   cluster: 'cluster-nav',
   updates: 'updates-nav',
+  modules: 'modules-nav',
   backups: 'backups-nav',
 };
 

@@ -163,6 +163,10 @@ El comando vuelve a verificar cada paquete instalado, como hacen los servicios a
 
 Un paquete rechazado nunca se usa. Para repararlo, instale de nuevo el archivo del paquete.
 
+### En la consola {#console}
+
+Un administrador global encuentra [[ui:modules]] en el menú de la consola. La página muestra cada módulo con su versión, punto de extensión, origen y estado en el proceso que respondió, y las licencias con su estado y plazo. Solo lee: instale, active y quite módulos con los comandos de esta página.
+
 ## Eliminar un módulo {#remove}
 
 ```bash

@@ -87,7 +87,11 @@ test('both themes meet text contrast requirements and components use centralized
       ['nav-text', 'nav-active'],
       ['text', 'tooltip'],
       ['muted', 'raised'],
-      ['muted', 'sidebar'],
+      // The ink navigation has its own roles in both themes.
+      ['sidebar-text', 'sidebar'],
+      ['sidebar-muted', 'sidebar'],
+      ['sidebar-text', 'sidebar-hover'],
+      ['sidebar-active-text', 'sidebar-active'],
       ['muted', 'info-bg'],
       ['text', 'input'],
       ['on-accent', 'accent-hover'],
@@ -108,6 +112,8 @@ test('both themes meet text contrast requirements and components use centralized
       ['border-strong', 'input'],
       ['focus', 'surface'],
       ['focus', 'bg'],
+      ['sidebar-focus', 'sidebar'],
+      ['sidebar-indicator', 'sidebar-active'],
     ]) {
       const a = luminance(value(`--color-${fg}`)),
         b = luminance(value(`--color-${bg}`));
