@@ -178,6 +178,13 @@ async function updated(root: string, services: Services, release: Release): Prom
   await services.confirmBackup(release);
   const hub = await hubClient(root).catch(() => null);
   if (hub) await reportUpdated(hub, release);
+  // The updater's definition (its time limit, for one) belongs to the release: the new release
+  // registers it again, or an updated installation keeps the limits it was installed with. Last,
+  // because on Windows the task of this very run is replaced; a failure leaves the old one.
+  await services.schedule(release).catch((error: unknown) => {
+    const reason = error instanceof Error ? error.message : 'unknown error';
+    report('warning', `The host updater was not registered again: ${reason}`);
+  });
 }
 /** Completes an interrupted deployment in the direction the journal allows (ADR 0059). */
 export async function recover(root: string): Promise<void> {

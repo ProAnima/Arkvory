@@ -364,3 +364,36 @@ test('a crash between the catalog mark and the vault is completed by the next ap
   assert.equal(await f.vault.point(first.pointId), null);
   assert.deepEqual(await retention.run(lease, never), { forgotten: 0, blobs: 0, bytes: '0' });
 });
+
+test('a deep check that finds damage keeps its outcome when a capture holds the vault', async (t) => {
+  const f = await fixture(t);
+  const entry = await blob(f.vault, 64);
+  const manifest = await point(f.vault, f.identity, [entry], '2026-10-01T02:00:00.000Z');
+  await f.ports.catalog.record(lease, { manifest, newBytes: '64' });
+  // Bit rot: the same size, other bytes.
+  const { writeFile } = await import('node:fs/promises');
+  const { join } = await import('node:path');
+  await writeFile(join(f.vault.root, 'blobs', entry.id.slice(0, 2), entry.id), Buffer.alloc(64, 1));
+  // Another process captures meanwhile: the exclusive lock refuses at once.
+  f.ports.lock.exclusive = async () => {
+    throw new BackupFailure('busy', 'Another process holds the vault lock');
+  };
+  f.ports.queue.requests.push({
+    id: randomUUID(),
+    kind: 'verify',
+    pointId: manifest.pointId,
+    depth: 'deep',
+    key: 'deep-check',
+    state: 'queued',
+    attempts: 0,
+  });
+  await f.agent.step(lease, never);
+  const [request] = f.ports.queue.requests;
+  assert.deepEqual([request.state, request.errorCode], ['failed', 'integrity_mismatch']);
+  assert.deepEqual(
+    f.events.find((event) => event.code === 'blobs.set_aside'),
+    { code: 'blobs.set_aside', blobs: 0, errorCode: 'busy' },
+  );
+  // The damaged content stays in place for the next check, which can take the lock.
+  assert.equal(await f.vault.hasBlob(entry), true);
+});

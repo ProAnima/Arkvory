@@ -71,9 +71,14 @@ export function checkPlan(input: ClusterPlanInput): void {
 }
 
 /**
- * The fence-peer handler. Pacemaker promotes only after the fence is confirmed; the handler's
- * default 90 s wait for the peer to look fenced would only delay the promotion (and outlast its
- * timeout), so it waits 20 s at most.
+ * The fence-peer handler. When a peer is lost DRBD suspends I/O and asks this handler; only a
+ * confirmed fence resumes it. A handler that gives up is "broken" for DRBD and the I/O of the
+ * surviving primary stays suspended until an operator resumes it: its wait must outlast every
+ * fence Pacemaker can still complete. That is the detection of the loss (corosync token and
+ * consensus, about 7 s), the delay of the preferred node in ha-2 (15 s, pacemakerCommands) and
+ * the fence action itself. 20 s did not cover the delay: losing the preferred node as the
+ * standby froze the active node. 60 s also leaves room for a slower agent than fence_virsh and
+ * stays below the 90 s the agent gives a promotion; a confirmed fence ends the wait at once.
  *
  * ha-2: the handler counts every DRBD node outside UP_TO_DATE_NODES as a peer to fence. The
  * witness is diskless, so never up to date, and it is not a Pacemaker node: with no node state
@@ -82,8 +87,11 @@ export function checkPlan(input: ClusterPlanInput): void {
  * the constraint names only the up-to-date nodes, so the handler runs without the witness's
  * node id; the data peers are still checked as before.
  */
+/** Seconds the fence-peer handler waits for Pacemaker to confirm the fence of a lost peer. */
+export const FENCE_PEER_TIMEOUT_S = 60;
+
 function fencePeer(input: ClusterPlanInput): string {
-  const handler = '/usr/lib/drbd/crm-fence-peer.9.sh --timeout 20';
+  const handler = `/usr/lib/drbd/crm-fence-peer.9.sh --timeout ${String(FENCE_PEER_TIMEOUT_S)}`;
   return input.witness ? `env -u DRBD_NODE_ID_${String(input.witness.id)} ${handler}` : handler;
 }
 

@@ -20,13 +20,14 @@ import { DerivedCacheCatalog, derivedCacheUsage } from './derived-cache-catalog.
 import {
   CacheQueue,
   cacheLock,
-  requireBudget,
   requireKey,
+  reservationOf,
   unavailable,
 } from './derived-cache-runtime.js';
 import type { CacheBudget } from './derived-cache-runtime.js';
 import { DerivedCacheSession } from './derived-cache-session.js';
 import { GenerationBuild } from './derived-cache-build.js';
+import type { CacheBuildHost } from './derived-cache-build.js';
 import { GenerationRead, readCacheManifest } from './derived-cache-read.js';
 import { removeCacheGeneration } from './derived-cache-cleanup.js';
 import { StorageOwnership } from './storage-ownership.js';
@@ -112,16 +113,7 @@ export class ModuleDerivedCache implements DerivedCache {
 
   begin(key: string, budget: CacheBudget, signal: ModuleSignal): Promise<CacheBuild | null> {
     requireKey(key);
-    // Read caller-owned properties once, before enqueueing or awaiting anything.
-    // Validate the snapshot, never reread mutable properties/getters during admission/I/O.
-    const input: unknown = budget;
-    if (typeof input !== 'object' || input === null)
-      throw new ModuleServiceError('invalid_input', 'Invalid cache reservation');
-    const bytes: unknown = Reflect.get(input, 'bytes');
-    const files: unknown = Reflect.get(input, 'files');
-    const copied = { bytes, files };
-    requireBudget(copied);
-    const reservation = Object.freeze(copied);
+    const reservation = reservationOf(budget);
     signal.throwIfAborted();
     if (this.options.readOnly) return Promise.reject(new ModuleServiceError('read_only'));
     return this.queue
@@ -171,41 +163,14 @@ export class ModuleDerivedCache implements DerivedCache {
           await this.catalog.retire(client, this.ownerId, id).catch(() => undefined);
           throw error;
         }
-        const build = new GenerationBuild(join(this.root, id), reservation, signal, {
-          check: () => {
-            this.check();
-          },
-          room: (bytes) => requireVolumeRoom(this.root, bytes, this.options.reserve),
-          publish: (actual, hash) =>
-            this.queue.run(async () => {
-              try {
-                this.check();
-              } catch (error) {
-                if (await this.catalog.hasPublished(id)) return;
-                throw error;
-              }
-              if (
-                !(await this.catalog.publish(
-                  await this.session.get(),
-                  this.ownerId,
-                  id,
-                  actual,
-                  hash,
-                ))
-              )
-                throw unavailable();
-            }),
-          retire: () =>
-            this.queue.run(async () => {
-              this.check();
-              await this.catalog.retire(await this.session.get(), this.ownerId, id);
-              // The generation is retired; removing its files is repeated by every later sweep.
-              await this.sweep(false).catch(() => undefined);
-            }),
-          settled: () => {
+        const build: GenerationBuild = new GenerationBuild(
+          join(this.root, id),
+          reservation,
+          signal,
+          this.buildHost(id, () => {
             this.builds.delete(build);
-          },
-        });
+          }),
+        );
         this.builds.add(build);
         return build;
       })
@@ -213,6 +178,36 @@ export class ModuleDerivedCache implements DerivedCache {
         if (hasCode(error, 'busy')) return null;
         throw error;
       });
+  }
+
+  /** What a build of generation `id` does through the cache; every catalog call is queued. */
+  private buildHost(id: string, settled: () => void): CacheBuildHost {
+    return {
+      check: () => {
+        this.check();
+      },
+      room: (bytes) => requireVolumeRoom(this.root, bytes, this.options.reserve),
+      publish: (actual, hash) =>
+        this.queue.run(async () => {
+          try {
+            this.check();
+          } catch (error) {
+            if (await this.catalog.hasPublished(id)) return;
+            throw error;
+          }
+          const client = await this.session.get();
+          if (!(await this.catalog.publish(client, this.ownerId, id, actual, hash)))
+            throw unavailable();
+        }),
+      retire: () =>
+        this.queue.run(async () => {
+          this.check();
+          await this.catalog.retire(await this.session.get(), this.ownerId, id);
+          // The generation is retired; removing its files is repeated by every later sweep.
+          await this.sweep(false).catch(() => undefined);
+        }),
+      settled,
+    };
   }
 
   open(key: string, signal: ModuleSignal): Promise<CacheRead | null> {

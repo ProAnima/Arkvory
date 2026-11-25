@@ -33,7 +33,7 @@ test('ha-2 plan: witness is diskless, gets the next node id and is not a Pacemak
     'fencing resource-and-stonith;',
     'c-min-rate 20M;',
     // The diskless witness is no peer to fence: the handler would wait out its timeout for it.
-    'fence-peer "env -u DRBD_NODE_ID_2 /usr/lib/drbd/crm-fence-peer.9.sh --timeout 20";',
+    'fence-peer "env -u DRBD_NODE_ID_2 /usr/lib/drbd/crm-fence-peer.9.sh --timeout 60";',
     'hosts node-a node-b witness;',
     'address 10.0.0.3:7789;\n    disk none;',
   ])
@@ -94,7 +94,7 @@ test('ha-3 plan: three data nodes decide by majority, without a quorum device', 
   const pacemaker = pacemakerCommands(input);
   // Every other node is a data peer: the handler checks them all.
   assert.ok(
-    drbdResource(input).includes('fence-peer "/usr/lib/drbd/crm-fence-peer.9.sh --timeout 20";'),
+    drbdResource(input).includes('fence-peer "/usr/lib/drbd/crm-fence-peer.9.sh --timeout 60";'),
   );
   assert.ok(pacemaker.includes('op monitor interval=5s role=Unpromoted'));
   assert.ok(!pacemaker.includes('quorum device'));
@@ -449,4 +449,19 @@ test('the switchover wait follows a monotonic clock, not the wall clock', async 
     ),
     /Timed out waiting for arkvory on node-b/,
   );
+});
+
+test('the fence-peer handler outlasts every fence Pacemaker can still complete', async () => {
+  const { FENCE_PEER_TIMEOUT_S } = await import('../apps/deploy/dist/cluster-plan.js');
+  const pacemaker = pacemakerCommands(planInput(options()));
+  const delays = [...pacemaker.matchAll(/pcmk_delay_base=(\d+)s/g)].map((m) => Number(m[1]));
+  // Detection of the loss (corosync token 3 s and consensus 3.6 s), the largest fence delay of
+  // the plan and a fence action of 20 s or more: a handler that gives up first leaves the I/O
+  // of the surviving primary suspended until an operator resumes it.
+  const detection = 7;
+  const action = 20;
+  assert.ok(delays.length > 0, 'ha-2 staggers its fences');
+  assert.ok(FENCE_PEER_TIMEOUT_S >= detection + Math.max(...delays) + action);
+  // The agent gives a promotion 90 s by default; the handler runs within it.
+  assert.ok(FENCE_PEER_TIMEOUT_S < 90);
 });

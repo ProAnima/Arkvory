@@ -183,6 +183,8 @@ Arkvory 集群在站点中的某台服务器故障时仍能继续工作。两到
 
 不要在集群服务器上用 `systemctl` 启动或停止 Arkvory 服务。Pacemaker 会把这当作故障。需要有计划地停止整个服务时，请使用 `pcs resource disable arkvory` 和 `pcs resource enable arkvory`。
 
+使用 0.6.4 之前的计划构建的集群：在每台服务器（包括见证节点）的 `/etc/drbd.d/arkvory.res` 中，把 `fence-peer` 行里的 `--timeout 20` 改为 `--timeout 60`。使用 20 秒时，如果丢失的是 Pacemaker 延迟隔离的备用服务器，活动服务器的存储可能一直挂起，直到执行 `drbdadm resume-io arkvory`。DRBD 每次调用都会从文件读取处理程序，因此无需重启。
+
 ## 故障 {#failures}
 
 | 发生的情况                                             | `ha-2`                                                                               | `ha-3`                                               |

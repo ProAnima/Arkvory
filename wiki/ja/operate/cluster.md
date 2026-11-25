@@ -183,6 +183,8 @@ Arkvoryクラスターは、サイト内のサーバーが1台故障しても稼
 
 クラスターサーバー上で`systemctl`を使ってArkvoryサービスを起動または停止しないでください。Pacemakerが障害と見なします。サービス全体を計画的に停止する場合は、`pcs resource disable arkvory`と`pcs resource enable arkvory`を使用してください。
 
+0.6.4より前のプランで構築したクラスター：すべてのサーバー（ウィットネスを含む）の`/etc/drbd.d/arkvory.res`で、`fence-peer`行の`--timeout 20`を`--timeout 60`に変更してください。20秒のままだと、Pacemakerがフェンシングを遅らせるスタンバイサーバーが失われたとき、アクティブサーバーのストレージが`drbdadm resume-io arkvory`まで停止したままになることがありました。DRBDは呼び出しのたびにファイルからハンドラーを読み込むため、再起動は不要です。
+
 ## 障害 {#failures}
 
 | 発生した事象                                                   | `ha-2`                                                                                                                        | `ha-3`                                                                |

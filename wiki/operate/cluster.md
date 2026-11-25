@@ -183,6 +183,8 @@ Install a new package on every data server. On standby servers the package only 
 
 Do not start or stop the Arkvory services with `systemctl` on a cluster server. Pacemaker would take it as a failure. Use `pcs resource disable arkvory` and `pcs resource enable arkvory` for a planned stop of the whole service.
 
+Clusters built with a plan from before 0.6.4: in `/etc/drbd.d/arkvory.res` on every server, the witness included, change `--timeout 20` in the `fence-peer` line to `--timeout 60`. With 20 s, losing the standby server whose fence Pacemaker delays could leave the storage of the active server suspended until `drbdadm resume-io arkvory`. DRBD reads the handler from the file on every call, so no restart is needed.
+
 ## Failures {#failures}
 
 | What happens                                                    | `ha-2`                                                                                                          | `ha-3`                                                            |

@@ -332,7 +332,13 @@ export class MirrorSync {
       return 'progress';
     }
     const { page, items, anchor } = read;
-    await this.save({ head: page.head, checkedAt: this.d.now(), anchor });
+    // At cursor 0 the field still names the entry at the seed head: it stays until an entry of
+    // the replay is applied, so a step that fails before keeps the check above for the next one.
+    await this.save({
+      head: page.head,
+      checkedAt: this.d.now(),
+      ...(state.cursor === '0' ? {} : { anchor }),
+    });
     for (const change of items) {
       const replay = state.seedHead !== null && BigInt(change.sequence) <= BigInt(state.seedHead);
       if (!replay || isRegistryChange(change.action)) await this.guarded(change, cancellation);

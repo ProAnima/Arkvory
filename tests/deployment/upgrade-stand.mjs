@@ -5,7 +5,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { SCHEMA_VERSION } from '@proanima/arkvory-infrastructure';
-import { standImage, standNetwork } from './stand-hosts.mjs';
+import { standImage, standNetwork, step } from './stand-hosts.mjs';
 
 /*
  * Upgrade stand (docs/UPDATES.md): a Linux host with systemd installs the latest published
@@ -83,7 +83,9 @@ const work = await mkdtemp(join(tmpdir(), 'arkvory-upgrade-'));
 const stand = standNetwork();
 let passed = false;
 try {
+  step('downloading the latest published release');
   const previous = await previousRelease(work);
+  step(`repackaging the candidate as the successor of ${previous.version}`);
   const release = await upgradeCandidate(previous.version, work);
   const host = stand.start('arkvory-upgrade', await standImage());
   await host.booted();
@@ -92,6 +94,7 @@ try {
   host.copy(release.path, '/stand/candidate.deb');
   host.copy(resolve('tests/deployment/stand-probe.mjs'), '/stand/stand-probe.mjs');
   const version = () => host.exec(['dpkg-query', '-W', '-f=${Version}', 'proanima-arkvory']);
+  step(`installing ${previous.version}`);
   host.exec(['dpkg', '-i', '/stand/previous.deb']);
   // No update polling against the hub or GitHub from a test host.
   host.exec(['systemctl', 'stop', 'arkvory-update.timer']);
@@ -113,6 +116,7 @@ try {
       assert.equal(host.probe('content', { ...on, id: item.id }).sha256, item.sha256);
   }
 
+  step('configuring a backup vault and taking the first backup');
   // The operator's path: a vault and its first backup, then the candidate again.
   host.exec(['mkdir', '-p', '/var/lib/arkvory-vault']);
   host.exec([
@@ -127,10 +131,16 @@ try {
     ...(newer(previous.version, '0.3.99') ? ['--vault-no-encryption'] : []),
   ]);
   host.probe('backup-capture', on);
+  step(`upgrading to ${release.version}`);
   const installed = host.exec(['dpkg', '-i', '/stand/candidate.deb']);
   if (migrates) assert.match(installed, /with a database migration/);
   else assert.doesNotMatch(installed, /with a database migration/);
   assert.equal(version(), release.version);
+  // The update registered the updater again with the limits of the new release.
+  assert.equal(
+    host.exec(['systemctl', 'show', 'arkvory-update.service', '-p', 'TimeoutStartUSec']),
+    'TimeoutStartUSec=14h',
+  );
   host.probe('ready', on);
   for (const item of kept)
     assert.equal(host.probe('content', { ...on, id: item.id }).sha256, item.sha256);

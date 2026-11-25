@@ -90,13 +90,38 @@ export async function signVerifiedDraft(directory, version, commit, keyFile, tru
   return signDirectory(directory, keyFile, trusted);
 }
 
-/** The commit of the release tag; it must be part of main. */
+/**
+ * The commit of the release: its tag, or, for a draft whose tag GitHub creates only when it is
+ * published (release:local), the commit the draft targets. It must be part of main.
+ */
 function taggedCommit(version) {
   const run = (file, args) => execFileSync(file, args, { encoding: 'utf8' }).trim();
-  const ref = JSON.parse(run('gh', ['api', `repos/ProAnima/Arkvory/git/ref/tags/v${version}`]));
-  const commit = ref?.object?.sha;
-  if (ref?.object?.type !== 'commit' || !/^[0-9a-f]{40}$/.test(commit ?? ''))
-    throw Error('The release tag must point at a commit');
+  const tagged = () => {
+    try {
+      return JSON.parse(run('gh', ['api', `repos/ProAnima/Arkvory/git/ref/tags/v${version}`]));
+    } catch {
+      return null;
+    }
+  };
+  const ref = tagged();
+  const commit =
+    ref === null
+      ? run('gh', [
+          'release',
+          'view',
+          `v${version}`,
+          '--repo',
+          'ProAnima/Arkvory',
+          '--json',
+          'targetCommitish',
+          '--jq',
+          '.targetCommitish',
+        ])
+      : ref?.object?.type === 'commit'
+        ? ref.object.sha
+        : null;
+  if (!/^[0-9a-f]{40}$/.test(commit ?? ''))
+    throw Error('The draft must name its commit: a tag of a commit or a target commit SHA');
   run('git', ['fetch', '--quiet', 'origin', 'main']);
   try {
     run('git', ['merge-base', '--is-ancestor', commit, 'origin/main']);

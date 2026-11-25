@@ -196,4 +196,10 @@ export type AgentEvent =
       readonly blobs: number;
       readonly bytes: string;
     }
-  | { readonly code: 'catalog.reconciled'; readonly points: number; readonly damaged: number };
+  | { readonly code: 'catalog.reconciled'; readonly points: number; readonly damaged: number }
+  /** Damaged content taken out of the way for the next capture; errorCode when it could not be. */
+  | {
+      readonly code: 'blobs.set_aside';
+      readonly blobs: number;
+      readonly errorCode: BackupFailureCode | null;
+    };

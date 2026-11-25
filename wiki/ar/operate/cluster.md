@@ -183,6 +183,8 @@ description: شغّل Arkvory على خادمين أو ثلاثة خوادم Lin
 
 لا تبدأ خدمات Arkvory أو توقفها باستخدام `systemctl` على خادم عنقود. سيعتبر Pacemaker ذلك فشلاً. استخدم `pcs resource disable arkvory` و`pcs resource enable arkvory` لإيقاف الخدمة كلها إيقافاً مخططاً له.
 
+العناقيد التي بُنيت بخطة أقدم من 0.6.4: في `/etc/drbd.d/arkvory.res` على كل خادم، بما في ذلك الشاهد، غيّر `--timeout 20` إلى `--timeout 60` في سطر `fence-peer`. مع 20 ثانية، كان فقدان الخادم الاحتياطي الذي يؤخر Pacemaker عزله قد يترك تخزين الخادم النشط معلقًا حتى `drbdadm resume-io arkvory`. يقرأ DRBD المعالج من الملف في كل استدعاء، لذا لا حاجة إلى إعادة التشغيل.
+
 ## الأعطال {#failures}
 
 | ما يحدث                                            | `ha-2`                                                                                           | `ha-3`                                                       |
