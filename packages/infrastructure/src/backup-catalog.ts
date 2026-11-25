@@ -14,6 +14,13 @@ import { inTransaction } from './pg-transaction.js';
 import { leaseLost, requireAgentLease } from './backup-agent-lease.js';
 import { decodeCursor, encodeCursor } from './backup-cursor.js';
 
+/**
+ * Mark of a row hidden because its point was not in the vault listing, as opposed to a row
+ * retention decided to forget: both set `forgotten_at`, but only the latter may be finished by
+ * deleting the point when it is seen again. Hidden rows never reach a reader of the catalog.
+ */
+const POINT_MISSING = 'point_missing';
+
 /** Upper bound of live points read at once; equals the vault listing bound. */
 export const MAX_CATALOG_POINTS = 10000;
 
@@ -146,7 +153,8 @@ export class PostgresBackupCatalog implements BackupPointCatalog, AgentCatalog {
 
   async forgotten(vaultId: string): Promise<ReadonlySet<string>> {
     const result = await this.pool.query<{ id: string }>(
-      'SELECT id::text FROM arkvory_backup_points WHERE vault_id=$1 AND forgotten_at IS NOT NULL',
+      `SELECT id::text FROM arkvory_backup_points WHERE vault_id=$1 AND forgotten_at IS NOT NULL
+       AND verify_error IS DISTINCT FROM '${POINT_MISSING}'`,
       [requireId(vaultId)],
     );
     return new Set(result.rows.map((row) => row.id));
@@ -164,6 +172,16 @@ export class PostgresBackupCatalog implements BackupPointCatalog, AgentCatalog {
     await inTransaction(this.pool, async (client) => {
       await requireAgentLease(client, lease);
       for (const entry of change.added) await insert(client, entry, false);
+      const listed = [...change.present, ...change.damaged];
+      // A point that was only out of sight (another disk of a rotation, an older snapshot of
+      // the vault mounted for a while) is live again and is verified anew; its pin was kept.
+      await client.query(
+        `UPDATE arkvory_backup_points SET forgotten_at=NULL, verify_error=NULL, verified_at=NULL,
+          verify_depth=NULL, deep_verified_at=NULL
+         WHERE vault_id=$1 AND forgotten_at IS NOT NULL AND verify_error='${POINT_MISSING}'
+         AND id=ANY($2::uuid[])`,
+        [requireId(vaultId), listed],
+      );
       await client.query(
         `UPDATE arkvory_backup_points SET verify_error='manifest_invalid',
           verified_at=clock_timestamp(), verify_depth=COALESCE(verify_depth, 'structural')
@@ -172,9 +190,10 @@ export class PostgresBackupCatalog implements BackupPointCatalog, AgentCatalog {
         [requireId(vaultId), change.damaged],
       );
       await client.query(
-        `UPDATE arkvory_backup_points SET forgotten_at=clock_timestamp()
+        `UPDATE arkvory_backup_points SET forgotten_at=clock_timestamp(),
+          verify_error='${POINT_MISSING}'
          WHERE vault_id=$1 AND forgotten_at IS NULL AND NOT (id=ANY($2::uuid[]))`,
-        [requireId(vaultId), [...change.present, ...change.damaged]],
+        [requireId(vaultId), listed],
       );
     });
   }
@@ -197,7 +216,7 @@ export class PostgresBackupCatalog implements BackupPointCatalog, AgentCatalog {
         `UPDATE arkvory_backup_points SET verified_at=clock_timestamp(), verify_depth=$2::text,
           verify_error=$3::varchar, deep_verified_at=CASE WHEN $2::text='deep'
             AND $3::varchar IS NULL THEN clock_timestamp() ELSE deep_verified_at END
-         WHERE id=$1`,
+         WHERE id=$1 AND forgotten_at IS NULL`,
         [requireId(pointId), result.depth, result.error?.slice(0, 64) ?? null],
       );
     });

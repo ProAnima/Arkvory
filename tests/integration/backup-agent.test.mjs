@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { rm, unlink, writeFile } from 'node:fs/promises';
+import { rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { BackupFailure } from '@proanima/arkvory-domain';
 import { ApplyBackupRetention, VerifyPoint } from '@proanima/arkvory-application';
@@ -358,6 +358,49 @@ test('the catalog is rebuilt from the vault: estimates, vanished and damaged poi
     );
     const codes = (await api(f, 'GET', '/status')).body.warnings.map((warning) => warning.code);
     assert.ok(codes.includes('verify_failed'));
+  } finally {
+    await agent.stop();
+  }
+});
+
+test('a point that was out of sight and came back is restored, never deleted by retention', async (t) => {
+  const f = await setup(t);
+  const { path: vault } = await newVault(t);
+  await publish(f);
+  const p1 = await capture(f, vault, 'p1');
+  await publish(f);
+  const p2 = await capture(f, vault, 'p2');
+  const listed = async () => (await api(f, 'GET', '/points')).body.items.map((point) => point.id);
+  const aside = join(vault, '..', `aside-${randomUUID()}`);
+  t.after(() => rm(aside, { recursive: true, force: true }));
+  let agent = startAgent(f, vault);
+  try {
+    await eventually(() => agent.has('backup.catalog.reconciled'), 'catalog rebuild');
+    const pinned = await api(f, 'PUT', `/points/${p1.pointId}/pin`, { payload: { pinned: true } });
+    assert.equal(pinned.body.pinned, true);
+    await agent.stop();
+    // Another disk of a rotation, or an older snapshot of the vault: the point is not there.
+    await rename(join(vault, 'points', p1.pointId), aside);
+    agent = startAgent(f, vault);
+    await eventually(() => agent.has('backup.catalog.reconciled'), 'rebuild without the point');
+    assert.deepEqual(await listed(), [p2.pointId]);
+    await agent.stop();
+    await rename(aside, join(vault, 'points', p1.pointId));
+    agent = startAgent(f, vault);
+    await eventually(() => agent.has('backup.catalog.reconciled'), 'rebuild with the point');
+    assert.deepEqual(await listed(), [p2.pointId, p1.pointId]);
+    const applied = await api(f, 'POST', '/retention/apply', { key: 'after-return' });
+    assert.equal(applied.status, 202);
+    await eventually(() => settled(f), 'retention');
+    assert.notEqual(await (await FileVault.open(vault)).point(p1.pointId), null);
+    const points = (await api(f, 'GET', '/points')).body.items;
+    assert.deepEqual(
+      points.map((point) => [point.id, point.pinned]),
+      [
+        [p2.pointId, false],
+        [p1.pointId, true],
+      ],
+    );
   } finally {
     await agent.stop();
   }
