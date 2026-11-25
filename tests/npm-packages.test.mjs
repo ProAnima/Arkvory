@@ -273,3 +273,47 @@ test('a gzip bomb, a deep publish body and a cancelled inspection stop early', a
     { name: 'AbortError' },
   );
 });
+
+test('a tarball that npm would read differently is refused: pax size, global path, name case', async () => {
+  const paxRecord = (text) => {
+    const record = (length) => `${length} ${text}\n`;
+    let length = record(0).length;
+    while (record(length).length !== length) length = record(length).length;
+    return Buffer.from(record(length));
+  };
+  // node-tar takes the entry size from pax; this reader takes it from ustar: the two would
+  // disagree about where the next header starts.
+  for (const type of ['x', 'g']) {
+    const resized = gzipSync(
+      tar(
+        entry('PaxHeader', paxRecord('size=0'), type),
+        entry('package/readme.txt', Buffer.alloc(1536)),
+        entry('package/package.json', manifest()),
+      ),
+    );
+    await assert.rejects(inspect(resized), /must not set the entry size/, type);
+  }
+  const renamed = gzipSync(
+    tar(
+      entry('PaxHeader', paxRecord('path=package/package.json'), 'g'),
+      entry('package/package.json', manifest()),
+    ),
+  );
+  await assert.rejects(inspect(renamed), /global tar pax header must not set a path/);
+  // A harmless global header (a comment) is read and ignored.
+  const commented = gzipSync(
+    tar(
+      entry('pax_global_header', paxRecord('comment=abc'), 'g'),
+      entry('package/package.json', manifest()),
+    ),
+  );
+  assert.equal((await inspect(commented)).manifest.version, '1.2.0');
+  // On a case-insensitive file system the later entry replaces the manifest that was checked.
+  const folded = gzipSync(
+    tar(
+      entry('package/package.json', manifest()),
+      entry('package/PACKAGE.JSON', manifest({ version: '6.6.6' })),
+    ),
+  );
+  await assert.rejects(inspect(folded), /differs from package\.json only by case/);
+});

@@ -53,6 +53,8 @@ export function decode(row: Record<string, unknown> | undefined): Upload {
   };
 }
 
+/** Open cache readers of all modules of one process; more are answered as a cache miss. */
+export const MODULE_READER_CONNECTIONS = 16;
 function catalogPool(connectionString: string, max: number): Pool {
   const pool = new Pool({
     connectionString,
@@ -77,6 +79,12 @@ export class PostgresCatalog implements Catalog {
    * never take the connections of request queries (ADR 0073).
    */
   readonly sessions: Pool;
+  /**
+   * Readers of module caches (ADR 0073, addendum): every open reader holds a connection for
+   * its session pin as long as its response streams. In `sessions` three of them took what
+   * the content pins and leases of the core need.
+   */
+  readonly moduleReaders: Pool;
   private readonly locks: Pool;
   private claim: StorageOwnership | undefined;
   private claimAttempted = false;
@@ -94,6 +102,8 @@ export class PostgresCatalog implements Catalog {
     this.pool = catalogPool(connectionString, poolSize);
     // Ownership, pins and the lease, plus room for a lost session to reconnect while the old one drains.
     this.sessions = catalogPool(connectionString, 8);
+    // Connections are opened on use: a process without such modules never opens one.
+    this.moduleReaders = catalogPool(connectionString, MODULE_READER_CONNECTIONS);
     this.locks = catalogPool(connectionString, maxWriters);
   }
 
@@ -103,6 +113,7 @@ export class PostgresCatalog implements Catalog {
       [
         ['queries', this.pool],
         ['sessions', this.sessions],
+        ['module-readers', this.moduleReaders],
         ['locks', this.locks],
       ] as const
     ).map(([pool, p]) => ({
@@ -260,24 +271,26 @@ export class PostgresCatalog implements Catalog {
         this.checkOwnership();
         if (!ownership.active) throw new ArkvoryError('unavailable', 'Upload lock was lost');
       };
-      const guarded = async <R>(work: () => Promise<R>): Promise<R> => {
-        check();
-        await client.query('BEGIN');
-        try {
-          await lockServiceAccess(client, access);
-          const result = await work();
+      // Statements only, never file I/O: the liveness probe of the lock waits for them.
+      const guarded = <R>(work: () => Promise<R>): Promise<R> =>
+        ownership.during(async () => {
           check();
-          await client.query('COMMIT');
-          return result;
-        } catch (error) {
+          await client.query('BEGIN');
           try {
-            await client.query('ROLLBACK');
-          } catch {
-            await ownership.close();
+            await lockServiceAccess(client, access);
+            const result = await work();
+            check();
+            await client.query('COMMIT');
+            return result;
+          } catch (error) {
+            try {
+              await client.query('ROLLBACK');
+            } catch {
+              await ownership.close();
+            }
+            throw error;
           }
-          throw error;
-        }
-      };
+        });
       const transition = async (
         repository: string,
         target: 'available' | 'cancelled',
@@ -335,6 +348,11 @@ export class PostgresCatalog implements Catalog {
   }
   async close(): Promise<void> {
     await this.claim?.close();
-    await Promise.all([this.pool.end(), this.sessions.end(), this.locks.end()]);
+    await Promise.all([
+      this.pool.end(),
+      this.sessions.end(),
+      this.moduleReaders.end(),
+      this.locks.end(),
+    ]);
   }
 }

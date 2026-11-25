@@ -26,7 +26,7 @@ Die Routen unter `/v2`, `/lfs` und `/npm` folgen den Spezifikationen ihrer Proto
 
 ## Anmeldedaten {#credentials}
 
-Jede Anfrage benötigt Anmeldedaten, außer öffentlichen Health-Checks. Arkvory akzeptiert diese Arten:
+Die meisten Anfragen benötigen Anmeldedaten. Die Anmeldung (`POST /api/v1/auth/login`), die Selbstregistrierung (`POST /api/v1/auth/register`), die Anmeldeoptionen (`GET /api/v1/auth/options`) und die öffentlichen Health-Checks (`GET /health/live`, `GET /health/status`) benötigen keinen Header `Authorization`. Die Selbstregistrierung kann nur erfolgreich sein, wenn der Administrator `ARKVORY_ALLOW_REGISTRATION=true` setzt; ist sie deaktiviert, gibt sie `403` mit dem Grund `registration_disabled` zurück. `GET /health/ready` und `GET /health/metrics` erfordern eine Authentifizierung. Arkvory akzeptiert diese Arten:
 
 | Art                        | Sieht so aus         | Woher es kommt                                                                                                                                                          | Typische Verwendung                                          |
 | -------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |

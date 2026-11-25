@@ -25,7 +25,7 @@ The largest object is 10,000 GiB (10 737 418 240 000 bytes) unless the administr
 
 ## Authentication {#authentication}
 
-Every operation except sign-in, the public health checks and the sign-in options needs a credential in the header `Authorization: Bearer <credential>`. The credential is a console session, a personal access token, a service key or the recovery key. What a credential may do depends on its kind and on the **access rule** of each operation. Read [Authentication](./authentication) before you design the integration, and give automation a service key with only the actions it needs.
+Every operation except sign-in, self-registration, the public health checks and the sign-in options needs a credential in the header `Authorization: Bearer <credential>`. Self-registration (`POST /api/v1/auth/register`, `registerAccount`) needs no credential and can succeed only when the administrator sets `ARKVORY_ALLOW_REGISTRATION=true`; otherwise it returns `403` with the reason `registration_disabled`. The credential is a console session, a personal access token, a service key or the recovery key. What a credential may do depends on its kind and on the **access rule** of each operation. Read [Authentication](./authentication) before you design the integration, and give automation a service key with only the actions it needs.
 
 ## Discovery {#discovery}
 

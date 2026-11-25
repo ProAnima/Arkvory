@@ -9,7 +9,7 @@ Diese Seite erklärt die Begriffe, die die anderen Seiten verwenden. Jeder Absch
 
 ## Die Installation und ihre Dienste {#installation}
 
-Eine Installation ist ein Server. Sie betreibt drei Arkvory-Dienste neben einer PostgreSQL-Datenbank:
+Eine Standardinstallation läuft auf einem Server. Sie betreibt drei Arkvory-Dienste neben einer PostgreSQL-Datenbank:
 
 | Teil         | Aufgabe                                                                                                                                                                |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -98,7 +98,7 @@ Ein Dienstschlüssel wird einmal ausgegeben, einmal angezeigt und wird erst nutz
 
 ## Der Besitzer und der Wiederherstellungsschlüssel {#owner-and-recovery-key}
 
-Der **Besitzer** ist das erste Konto. Es ist ein Administrator und Mitglied der Gruppe `arkvory-owners`, die `write`-Zugriff auf `releases` hat. Der Windows-Installer erstellt es; unter Linux und Docker erstellen Sie es in der Konsole mit dem Wiederherstellungsschlüssel.
+Der **Besitzer** ist das erste Konto. Es ist ein Administrator und Mitglied der Gruppe `arkvory-owners`, die `write`-Zugriff auf `releases` hat. Der grafische Windows-Installer `Arkvory-Setup-x64.exe` erstellt es; beim PowerShell-Skript für Windows, unter Linux oder mit Docker erstellen Sie es in der Konsole mit dem Wiederherstellungsschlüssel.
 
 Der **Wiederherstellungsschlüssel** ist ein Geheimnis, das der Installer in `config/bootstrap-token.txt` im Installationsverzeichnis schreibt. Er kann den ersten Besitzer und Konten erstellen, Dienstkonten und ihre Delegierungen verwalten, Backups ausführen und Updates anfordern. Die Installationstools lesen ihn auf dem Server. Er ist nicht für CI oder die tägliche Arbeit gedacht: Behalten Sie ihn auf dem Server und kopieren Sie ihn nicht. Siehe [Eine Installation wählen](../install/index#recovery-key) und [Sicherheit](../operate/security).
 

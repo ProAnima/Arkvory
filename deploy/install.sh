@@ -10,17 +10,17 @@ command -v python3 >/dev/null
 node=''
 if [[ -z "$node" ]]; then
   case $(uname -m) in
-    x86_64) arch=x64; checksum=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6 ;;
-    aarch64) arch=arm64; checksum=6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2 ;;
+    x86_64) arch=x64; checksum=4f2b175a6d53a5c617a80dba2676238a0688cef28c6da4eba35c7d844e66fcfb ;;
+    aarch64) arch=arm64; checksum=6e51a2ada00f0011cc266f65d98922b403d7ad88f809ca2aa615a5fe1ce6e86c ;;
     *) echo 'Supported Linux architectures: x64, arm64' >&2; exit 1 ;;
   esac
-  file="node-v24.21.0-linux-$arch.tar.xz"
+  file="node-v24.22.3-linux-$arch.tar.xz"
   curl --fail --silent --show-error --proto '=https' --retry 3 --retry-delay 5 --retry-connrefused \
-    "https://nodejs.org/dist/v24.21.0/$file" -o "$work/$file"
+    "https://nodejs.org/dist/v24.22.3/$file" -o "$work/$file"
   printf '%s  %s\n' "$checksum" "$work/$file" | sha256sum --check --status
   mkdir -p "$root/runtime"
-  tar -xJf "$work/$file" -C "$root/runtime"
-  node="$root/runtime/node-v24.21.0-linux-$arch/bin/node"
+  tar -xJf "$work/$file" --no-same-owner -C "$root/runtime"
+  node="$root/runtime/node-v24.22.3-linux-$arch/bin/node"
   chmod -R a+rX "$root/runtime"
 fi
 if [[ -n "${ARKVORY_ARTIFACT_DIR:-}" ]]; then

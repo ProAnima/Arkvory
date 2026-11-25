@@ -144,9 +144,18 @@ export class PostgresBlobMoves implements BlobMoveStore {
     );
   }
 
-  heartbeat(move: ClaimedMove): Promise<boolean> {
-    return this.fenced(move, 'lease_until=now()+make_interval(secs=>$4::integer)', [
-      MOVE_LEASE_SECONDS,
-    ]);
+  /**
+   * Fenced on the claim (generation), not on the state: the holder advances the state while
+   * its timer renews the lease, and a renewal issued a moment before an advance would otherwise
+   * match no row and look like a lost lease. A finished move is never renewed.
+   */
+  async heartbeat(move: ClaimedMove): Promise<boolean> {
+    const result = await this.pool.query(
+      `UPDATE arkvory_blob_moves SET lease_until=now()+make_interval(secs=>$3::integer),
+        updated_at=now()
+       WHERE id=$1 AND generation=$2 AND state IN ('planned','copied','switched')`,
+      [move.id, move.generation, MOVE_LEASE_SECONDS],
+    );
+    return result.rowCount === 1;
   }
 }

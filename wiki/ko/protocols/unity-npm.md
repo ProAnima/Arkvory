@@ -181,7 +181,7 @@ curl -fsS -H "Authorization: Bearer $ARKVORY_TOKEN" https://arkvory.example/npm/
 | tarball                  | 설치 환경의 최대 객체 크기 `ARKVORY_MAX_OBJECT_BYTES`(기본 약 10 TiB)까지. 100배에 64 MiB를 더한 것보다 많이 확장되는 아카이브는 거부됩니다. |
 | 게시 요청의 나머지       | 최대 8 MiB의 JSON이며 최대 64단계까지 중첩됩니다. tarball은 스트림으로 읽고 메모리에 보관하지 않습니다.                                      |
 | 게시 요청 하나           | 30분 안에 끝나야 하고 30초 넘게 멈춰서는 안 됩니다(`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`)                           |
-| 동시 업로드              | 기본적으로 서버당 2개, 키당 1개입니다. 대기 중인 요청은 20초 후 포기합니다.                                                                  |
+| 동시 업로드              | 기본적으로 서버당 8개, 키당 4개입니다. 대기 중인 요청은 20초 후 포기합니다.                                                                  |
 | 검색 텍스트              | 최대 256자                                                                                                                                   |
 
 `npm publish`는 요청 하나이며, 실패하면 첫 바이트부터 다시 시작합니다. 수 GB 규모의 패키지는 [`arkvoryctl`](./cli)로 아티팩트나 [원시 파일](./raw-files)로 업로드하세요. 자주 바뀌는 대용량 바이너리 에셋은 [Git LFS](./git-lfs)에 두는 것이 좋고, 코드와 안정적인 리소스는 패키지에 두세요.

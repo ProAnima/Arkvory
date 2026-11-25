@@ -75,7 +75,7 @@ Then open `http://127.0.0.1:8080/console/` on your computer. To give other machi
 
 Skip this step if you installed with `Arkvory-Setup-x64.exe`: Setup has already created the owner.
 
-On Linux and Docker, the first account is created with the **recovery key**. The installer writes it to `config/bootstrap-token.txt` in the installation root. Only an administrator can read the file.
+For a Windows PowerShell script installation, Linux or Docker, create the first account with the **recovery key**. The installer writes it to `config/bootstrap-token.txt` in the installation root. Only an administrator can read the file.
 
 ```bash
 sudo cat /opt/proanima-arkvory/config/bootstrap-token.txt

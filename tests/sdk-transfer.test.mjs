@@ -528,6 +528,23 @@ test('large uploads complete through the worker and surface a failed job', async
     },
   };
   await assert.rejects(completeWithWorker(waiting, attempts, 'releases', 'u', stop.signal, 1));
+  // The enqueue and every poll run under the attempt signal: its timeout and a cancellation
+  // reach the request instead of waiting for the platform to give up on a stalled connection.
+  const attempt = new AbortController().signal;
+  const seen = [];
+  const observed = {
+    enqueue: async (repository, id, signal) => {
+      seen.push(signal);
+      return { id: 'job-2', uploadId: id, status: 'queued', attempts: 0, errorCode: null };
+    },
+    job: async (id, signal) => {
+      seen.push(signal);
+      return { id, uploadId: 'u', status: 'completed', attempts: 1, errorCode: null };
+    },
+    status: async (repository, id) => ({ id, status: 'available' }),
+  };
+  await completeWithWorker(observed, { run: (op) => op(attempt) }, 'releases', 'u', undefined, 1);
+  assert.deepEqual(seen, [attempt, attempt]);
 });
 
 test('retries after Retry-After are spread, so refused clients do not return in step', async () => {

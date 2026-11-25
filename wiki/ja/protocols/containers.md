@@ -220,7 +220,7 @@ curl -fsS -X DELETE -H "Authorization: Bearer $ARKVORY_CLEANUP_KEY" \
 | 1回のアップロードリクエスト | 30分以内に完了する必要があり、30秒を超えて停止してはいけません（`ARKVORY_UPLOAD_DEADLINE_MS`、`ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`）。30分は、設定できる最大値でもあります。                |
 | 未完了のアップロード        | 24時間操作がないと、そのバイト列とともに削除されます                                                                                                                                    |
 | 一時的なディスク容量        | アップロード中は、レイヤーのサイズの最大2倍                                                                                                                                             |
-| 同時アップロード数          | 既定では、キーあたり1、サーバーあたり2（`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`、`ARKVORY_MAX_UPLOADS`）。待機中のリクエストは、20秒であきらめます（`ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`）。 |
+| 同時アップロード数          | 既定では、キーあたり4、サーバーあたり8（`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`、`ARKVORY_MAX_UPLOADS`）。待機中のリクエストは、20秒であきらめます（`ARKVORY_TRANSFER_QUEUE_TIMEOUT_MS`）。 |
 | 同時ダウンロード数          | 既定では、キーあたり4、サーバーあたり16                                                                                                                                                 |
 | ページあたりのタグ数        | 1000                                                                                                                                                                                    |
 | クォータ                    | レイヤー、マニフェスト、未完了のアップロードのバイト数は、リポジトリのクォータとインストールの容量に計上されます                                                                        |

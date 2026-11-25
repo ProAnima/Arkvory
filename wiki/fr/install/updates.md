@@ -194,7 +194,7 @@ Un serveur sans accès à internet ne peut pas vérifier les versions. La page [
 
 Le programme de mise à jour vérifie le SHA-256 de l’archive par rapport au manifeste. Il ne vérifie la signature que lorsque `arkvory-release.json.sig` se trouve à côté du manifeste. Un répertoire local relève de votre choix : la mise à jour n’exige donc pas la signature. Sans elle, la comparaison du kit avec `release-checksums.json` à l’étape 1 est votre seule preuve d’origine. Les mêmes règles s’appliquent en cas de modification du schéma : vous avez d’abord besoin d’une sauvegarde vérifiée.
 
-Un paquet natif ou `Arkvory-Setup-x64.exe` embarque sa version et ne nécessite aucun accès à internet. Une mise à jour Compose construit l’image sur l’hôte. Il n’a besoin de Docker Hub que lorsque l’image de base `node:24.21.0-bookworm-slim` n’est pas encore présente sur l’hôte.
+Un paquet natif ou `Arkvory-Setup-x64.exe` embarque sa version et ne nécessite aucun accès à internet. Une mise à jour Compose construit l’image sur l’hôte. Il n’a besoin de Docker Hub que lorsque l’image de base `node:24.22.3-bookworm-slim` n’est pas encore présente sur l’hôte.
 
 ## Mise à jour par plateforme {#platforms}
 
@@ -242,3 +242,5 @@ Mettez à jour depuis la console ou avec `manage.mjs update`. Le programme de mi
 | `Interrupted update request; inspect installation and use updates-reset`     | Une demande de la console a été acceptée mais non terminée. Vérifiez l’état, puis exécutez `updates-reset`                                                                                                                                               |
 
 D’autres conseils figurent dans [Dépannage](../operate/troubleshooting) et [Autoréparation](../operate/self-healing).
+
+Avant de mettre une base existante à niveau vers PostgreSQL 18.7, consultez [les exigences du fournisseur après mise à jour](https://www.postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/).

@@ -8,6 +8,7 @@ export class StorageOwnership {
   private closed = false;
   private started = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private statements = 0;
   private readonly ended: Promise<void>;
   private readonly failed = () => {
     void this.close();
@@ -72,10 +73,31 @@ export class StorageOwnership {
       clearTimeout(deadline);
     }
   }
-  private schedule(probe: () => Promise<boolean>): void {
+  /**
+   * Statements the owner itself runs on this connection. pg sends the queries of one client in
+   * order, so a probe issued meanwhile waits behind them and its two seconds would measure
+   * the owner's own lock wait (a retention pass holding the repository gate, a migration)
+   * instead of the connection: a healthy session was destroyed and the request failed after
+   * all its bytes had been received. The probe is put off until the statement returns; the
+   * validity window of the last confirmed probe still ends on time, so a session that stays
+   * silent is given up as before.
+   */
+  async during<T>(statements: () => Promise<T>): Promise<T> {
+    this.statements++;
+    try {
+      return await statements();
+    } finally {
+      this.statements--;
+    }
+  }
+  private schedule(probe: () => Promise<boolean>, after = 2000): void {
     if (this.closed) return;
     this.timer = setTimeout(() => {
       if (!this.active) return;
+      if (this.statements > 0) {
+        this.schedule(probe, 250);
+        return;
+      }
       void this.confirm(probe).then(
         () => {
           this.schedule(probe);
@@ -84,7 +106,7 @@ export class StorageOwnership {
           void this.close();
         },
       );
-    }, 2000);
+    }, after);
     this.timer.unref();
   }
   close(): Promise<void> {

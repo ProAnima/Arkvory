@@ -232,7 +232,15 @@ export class CaptureBackup {
   }
 
   private async attempt(lease: CaptureLease, vault: VaultIdentity): Promise<CaptureResult> {
-    const stage = await this.deps.vault.stage(lease.pointId, lease.attempt);
+    const stage = await this.deps.vault
+      .stage(lease.pointId, lease.attempt)
+      .catch(async (error: unknown) => {
+        // A full or read-only vault fails here, before anything is held: without this record
+        // the job would stay "running" under a live lease until the next capture fences it.
+        const failure = backupFailureOf(error);
+        await this.deps.jobs.fail(lease, failure.code).catch(() => undefined);
+        throw failure;
+      });
     let committing = false;
     try {
       const startedAt = this.deps.identity.now();

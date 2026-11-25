@@ -136,7 +136,12 @@ curl -fL -G -H "Authorization: Bearer $DEPLOY_KEY" -o app.upack \
 ```
 
 ```typescript
-const found = await prod.packages.resolve({ name: 'app', range: '^1.4', stage: 'release' });
+const found = await prod.packages.resolve({
+  name: 'app',
+  group: 'acme/game',
+  range: '^1.4',
+  stage: 'release',
+});
 ```
 
 每个工具中的过滤器都相同：包 `name`、`group`（如果包没有组则为空）、精确版本或范围、`stage`、是否包含预发布版本以及排序。范围在 [UPack 包](./packages#versions)中有说明。

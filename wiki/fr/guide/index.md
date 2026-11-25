@@ -38,7 +38,7 @@ Chaque fichier stocké est un **artefact** immuable, doté d’une somme de cont
 - **Étapes et promotion.** Marquez un build `qa`, `release` ou `prod`, ou publiez-le dans un autre dépôt sans nouveau téléversement. Un agent de déploiement peut demander « le dernier build `release` de la plage de versions `^1.4` ».
 - **Métadonnées.** Étiquettes, métadonnées textuelles, collections et fichiers joints tels que manifestes, SBOM et signatures.
 - **Rétention.** Conservez les N derniers builds de chaque paquet, définissez des quotas et supprimez l’ancien contenu en arrière-plan.
-- **Sauvegardes.** Un agent de sauvegarde copie chaque jour la base de données et tout le contenu vers un stockage des sauvegardes situé sur un autre disque ou sur un NAS, puis vérifie les copies.
+- **Sauvegardes.** Un agent de sauvegarde copie la base de données et tout le contenu vers un stockage des sauvegardes situé sur un autre disque ou sur un NAS, selon une planification quotidienne qu’un administrateur active, puis vérifie les copies.
 - **Miroirs.** Une seconde installation peut conserver une copie en lecture seule d’un dépôt et la servir lorsque le serveur principal est indisponible.
 - **Passerelles de lecture.** Des processus de téléchargement supplémentaires, sur le même stockage partagé, se répartissent un même budget de téléchargement.
 - **Autoréparation.** Les services redémarrent après un plantage ou un blocage. Les longs transferts peuvent reprendre après le redémarrage.
@@ -65,7 +65,7 @@ Vous pouvez l’installer de trois manières :
 
 Par défaut, le serveur n’écoute que sur `127.0.0.1:8080`. Avant que d’autres machines s’y connectent, configurez [HTTPS](../install/https).
 
-Une installation correspond à un serveur : s’il s’arrête, les clients attendent son retour. Sous Linux, un [cluster à haute disponibilité](../operate/cluster) de deux ou trois serveurs prend le relais lorsque l’un d’eux tombe en panne. Utilisez les [sauvegardes](../operate/backups) et, si nécessaire, des [miroirs](../operate/mirrors) sur un second site.
+Une installation standard correspond à un serveur : s’il s’arrête, les clients attendent son retour. Sous Linux, un [cluster à haute disponibilité](../operate/cluster) de deux ou trois serveurs prend le relais lorsque l’un d’eux tombe en panne. Utilisez les [sauvegardes](../operate/backups) et, si nécessaire, des [miroirs](../operate/mirrors) sur un second site.
 
 ## Pour aller plus loin {#where-to-go-next}
 

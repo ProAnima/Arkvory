@@ -1,0 +1,115 @@
+# Актуализация Arkvory — 2026-11-16
+
+Репозиторий: `ProAnima/Arkvory`, рабочая папка `Depot`. Основа — актуальный
+`origin/main` / `2c5408afb8821da128433dc2010b14d143a9f97d`, ветка
+`codex/refresh-core-2026-11-16`. Опубликованный выпуск остаётся
+[0.6.3](https://github.com/ProAnima/Arkvory/releases/tag/v0.6.3);
+эта актуализация не меняет номер выпуска или extension API 0.13.
+
+## Зависимости и инструменты
+
+| Компонент                    | Было           | Стало          |
+| ---------------------------- | -------------- | -------------- |
+| @types/node                  | 24.13.6        | 24.19.2        |
+| dependency-cruiser           | 18.4.0         | 18.7.2         |
+| eslint                       | 10.11.0        | 10.15.0        |
+| playwright                   | 1.63.0         | 1.65.1         |
+| prettier                     | 3.9.8          | 3.10.1         |
+| typescript                   | 5.9.3          | 6.0.3          |
+| typescript-eslint            | 8.70.1         | 8.72.2         |
+| vitepress                    | 2.0.0-alpha.20 | 2.0.0-alpha.21 |
+| fastify                      | 5.12.6         | 5.12.8         |
+| pg                           | 8.23.0         | 8.23.1         |
+| @modelcontextprotocol/server | 2.3.0          | 2.4.0          |
+| zod                          | 4.6.6          | 4.6.7          |
+
+Транзитивные зависимости обновлены в пределах manifest-диапазонов;
+точные версии и integrity сохранены в `package-lock.json`. Override
+`minimatch` 11.0.8 закрывает
+[GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249).
+Исходный аудит показывал 9 moderate, после обновления — 0 уязвимостей.
+Runtime-зависимости обновлены в прежних major-линиях; новых библиотек нет.
+
+TypeScript 6.0.3 находится в
+[поддерживаемом диапазоне typescript-eslint](https://typescript-eslint.io/users/dependency-versions/)
+(`>=4.8.4 <6.1.0`). TypeScript 7 и Node 26 types не выбраны: компилятор и
+типы должны соответствовать инструментам и поддерживаемой линии Node 24.
+VitePress остаётся в уже используемом канале 2 alpha. Закреплённые бинарные
+зависимости нативных установщиков и их контрольные суммы не менялись.
+
+## Документация и CI
+
+Обновлены `CONTRIBUTING.md`, обзор текущего состояния и changelog следующего
+patch-выпуска. Контракты API, схема БД, пользовательские процедуры и условия
+лицензии прежние; историческая приёмка не переписывается.
+
+Тип `Toggle` формы регистрации теперь берётся из DOM через
+`Pick<HTMLElement, 'hidden'>`: TypeScript 6 расширил объявление `hidden`,
+поэтому прежний собственный тип `boolean` не принимал HTML-кнопки и формы.
+Действия формы прежние; helper по-прежнему записывает только boolean.
+DNS resolver webhook использует `order: 'verbatim'` вместо устаревшего
+`verbatim: true`; порядок адресов сохраняется согласно
+[Node.js DNS API](https://nodejs.org/docs/latest-v24.x/api/dns.html#dnspromiseslookuphostname-options).
+Prettier 3.10 изменил выравнивание таблиц 52 страниц арабской и хинди wiki;
+проверено, что кроме отступов и длины разделителей содержимое не изменилось.
+
+В check, release и Pages workflows обновлены закреплённые SHA checkout 7.0.1,
+setup-node 7.1.0, upload-artifact 7.0.2 и download-artifact 8.0.2.
+Cache 6.1.0 и Pages actions уже актуальны. Права токенов, ограничения публикации,
+обязательные jobs и условия агрегирующего verdict сохранены.
+
+Последний main CI на исходном коммите
+[43844066844](https://github.com/ProAnima/Arkvory/actions/runs/43844066844)
+завершился успешно 2026-11-16. Это результат исходной версии, а не новых
+зависимостей. Для актуализации требуется отдельный PR и его собственные проверки.
+
+## Проверки актуализации
+
+Локальная среда — Windows, Node 24.13.0, npm 11.6.2.
+
+| Проверка                                             | Результат                                                                                             |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `npm ci --ignore-scripts --no-audit`, `npm ls --all` | Воспроизводимая установка и корректное дерево зависимостей                                            |
+| `npm run gate -- quick security docs`                | Policy, формат, типы всех 16 пакетов, lint, границы, сборка, 1257 unit-тестов, аудит и wiki — passed  |
+| `npm run gate -- integration browser`                | 451 PostgreSQL/HTTP-тест и все 7 браузерных сценариев — passed; без skip/cancel                       |
+| `npm audit` через security gate                      | 0 уязвимостей                                                                                         |
+| `actionlint` для check, release и Pages              | Passed                                                                                                |
+| Сравнение разобранных YAML с исходной версией        | Меняются только четыре закреплённых action; структура, permissions и условия прежние                  |
+| Проверка diff 52 страниц wiki                        | Только отступы и ширина разделителей таблиц, без изменения текста и направления выравнивания столбцов |
+| `git diff --check`                                   | Passed                                                                                                |
+
+Первый PR CI обнаружил расхождение npm: runner с npm 11.19.1 отклонил lock,
+который локальный npm 11.6.2 принимал, из-за отсутствующих optional-зависимостей
+`@emnapi/core` и `@emnapi/runtime` wasm-binding Rolldown. Lock пересоздан
+в чистой временной workspace через npm 11.19.1; добавлены только эти два
+пакета и нормализованы peer-флаги. Версии и integrity ранее проверенных
+пакетов не изменились. После исправления `npm ci --ignore-scripts --no-audit`
+и `npm ls --all` через npm 11.19.1 прошли на Windows и в чистом Linux-контейнере
+(Node 24.21.0). Гейты не ослаблялись; исходный неуспешный CI сохранён в
+[run 43859130070](https://github.com/ProAnima/Arkvory/actions/runs/43859130070).
+После исправления повторно прошёл `npm run gate -- security docs`: аудит 0,
+policy, сборка и wiki — passed. Логи установки npm 11.19.1 и повторных гейтов:
+`maintenance-ci-npm-repository-2026-11-16.log`,
+`maintenance-ci-npm-linux-2026-11-16.log`,
+`maintenance-lock-followup-2026-11-16.log` в `test-results/`.
+
+PostgreSQL 18.4 работал в отдельном одноразовом контейнере и отдельной тестовой
+БД; после завершения контейнер удалён. Chromium установлен в изолированный
+кеш `.cache/maintenance-playwright`. Браузер проверил консоль, управление
+доступом, возобновляемое скачивание, обновления, обратную связь, ссылки
+скачивания и Remote Setup. Интеграционный набор занял 874 секунды при
+существующем лимите 900 секунд; лимиты и политики не менялись.
+
+Логи и JSON evidence остаются в игнорируемом `test-results/`:
+`maintenance-quick-final-2026-11-16.log`,
+`maintenance-integration-browser-2026-11-16.log`,
+`dependency-audit-after-2026-11-16.json` и `gates/`.
+Успешный quick/security/docs evidence —
+`2020063c-b18b-4c18-af42-eb8b4d77c5f8.json`.
+Успешный integration/browser evidence —
+`0f6679d6-d568-4d99-a2e4-36adbf2f58e0.json`.
+
+Полные профили `verify` и `release` локально не запускались. Нативная установка,
+службы, NAS/HA и передачи 5 GiB этим локальным прогоном не подтверждаются;
+новому PR нужен собственный зелёный CI. Подготовка и публикация нового релиза
+в эту актуализацию не входят.

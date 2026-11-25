@@ -9,6 +9,7 @@ import {
 import {
   defaultStorageReserveBytes,
   defaultStorageReserveInodes,
+  MODULE_READER_CONNECTIONS,
   ModuleHostServices,
   ModuleStorages,
   ModuleUnlinkAdmission,
@@ -49,6 +50,7 @@ export function apiHostServices(
   return new ModuleHostServices({
     dataDirectory: config.dataDirectory,
     dataPool: catalog.sessions,
+    readerPool: { pool: catalog.moduleReaders, limit: MODULE_READER_CONNECTIONS },
     reserve: {
       bytes: config.storageReserveBytes ?? defaultStorageReserveBytes,
       inodes: config.storageReserveInodes ?? defaultStorageReserveInodes,

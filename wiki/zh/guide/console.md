@@ -48,7 +48,7 @@ Web 控制台是 Arkvory 的浏览器界面。它是服务器的一部分，因�
 
 ### 第一个所有者 {#the-first-owner}
 
-全新安装没有任何账户。在 Windows 上，安装程序会创建所有者。在其他安装中，请在控制台中创建所有者：
+全新安装没有任何账户。Windows 图形安装程序 `Arkvory-Setup-x64.exe` 会创建所有者。使用 Windows PowerShell 脚本、Linux 或 Docker 安装时，请使用恢复密钥在控制台中创建所有者：
 
 1. 打开 [[ui:navStart]] 并展开 [[ui:welcomeOwner]]。
 2. 粘贴安装目录中 `config/bootstrap-token.txt` 里的恢复密钥。

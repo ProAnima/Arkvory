@@ -8,12 +8,12 @@ import { docker, exists } from './docker.mjs';
 // GitHub ubuntu runners preinstall PowerShell 7; deployment gates parse the Windows installer
 // scripts with it on Linux too. Hash from the release asset digest and release notes.
 const powershell = [
-  'https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/powershell-7.6.6-linux-x64.tar.gz',
-  'ddbc4a2d113bbd46d283cfedcbcd117a70caefd7673f41f2b4e0000badf103bc',
+  'https://github.com/PowerShell/PowerShell/releases/download/v7.6.10/powershell-7.6.10-linux-x64.tar.gz',
+  'e261cabc91c78a9afe8d1e5f24731ab0d38204735ab2ec94b0af55102652e10d',
 ];
 
 export const postgresImage =
-  'postgres:18.4@sha256:a02db8cac496f15b094798a38254f14d6e00741f709360e5e00bb6668ea31636';
+  'postgres:18.7@sha256:2ea8630df176ad090ec92136dee850397c5af8781e4bcf2e4162593691c61bbc';
 
 async function playwrightVersion(root) {
   const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));

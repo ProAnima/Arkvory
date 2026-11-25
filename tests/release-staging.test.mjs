@@ -183,8 +183,37 @@ test('downloads that an interrupted operation left are removed, and nothing else
   await mkdir(target);
   await writeFile(join(target, 'kept'), 'kept');
   await symlink(target, join(f.root, link), 'junction');
-  t.after(() => unlink(join(f.root, link)).catch(() => undefined));
+  try {
+    await stage(f.root, f.source);
+    assert.deepEqual((await downloads(f.root)).sort(), [current, foreign, folder, link].sort());
+    assert.equal(await readFile(join(target, 'kept'), 'utf8'), 'kept', 'links are not followed');
+  } finally {
+    // Remove the junction before fixture cleanup can remove its sibling target on Windows.
+    await unlink(join(f.root, link));
+  }
+});
+
+test('a failed staging and trees of an interrupted one leave nothing in releases', async (t) => {
+  const f = await fixture(t);
+  const releases = join(f.root, 'releases');
+  for (const name of [`.stage-${randomUUID()}`, `.verify-${randomUUID()}`])
+    await mkdir(join(releases, name, 'apps'), { recursive: true });
+  // An archive without a required file: extraction succeeds, the completeness check fails.
+  const incomplete = join(f.root, '..', 'incomplete.zip');
+  const zip = new ZipFile();
+  const written = pipeline(zip.outputStream, createWriteStream(incomplete));
+  zip.addBuffer(Buffer.from('api'), 'apps/api/dist/main.js');
+  zip.end();
+  await written;
+  const archiveSha256 = createHash('sha256')
+    .update(await readFile(incomplete))
+    .digest('hex');
+  const broken = {
+    release: { ...f.source.release, version: '1.2.4', archiveSha256 },
+    archive: async () => incomplete,
+  };
+  await assert.rejects(stage(f.root, broken), { code: 'ENOENT' });
+  assert.deepEqual(await readdir(releases), [], 'neither the failed tree nor the stale ones');
   await stage(f.root, f.source);
-  assert.deepEqual((await downloads(f.root)).sort(), [current, foreign, folder, link].sort());
-  assert.equal(await readFile(join(target, 'kept'), 'utf8'), 'kept', 'links are not followed');
+  assert.deepEqual(await readdir(releases), ['1.2.3']);
 });

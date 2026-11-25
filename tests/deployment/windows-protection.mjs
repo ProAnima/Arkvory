@@ -156,7 +156,7 @@ export async function verifiedRuntime(base) {
   await writeFile(join(artifact, 'arkvory-release.json'), JSON.stringify(manifest));
   const config = join(directory, 'native.json');
   await writeFile(config, '{}');
-  const current = join(root, 'runtime', 'node-v24.21.0-win-x64');
+  const current = join(root, 'runtime', 'node-v24.22.3-win-x64');
   await mkdir(current, { recursive: true });
   await writeFile(join(current, 'node.exe'), 'not the pinned runtime');
   // An extraction that an interrupted run left behind.

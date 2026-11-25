@@ -48,7 +48,7 @@ title: 웹 콘솔
 
 ### 첫 번째 소유자 {#the-first-owner}
 
-새로 설치한 환경에는 계정이 없습니다. Windows에서는 Setup이 소유자를 만듭니다. 다른 설치에서는 콘솔에서 소유자를 만드세요.
+새로 설치한 환경에는 계정이 없습니다. 소유자는 Windows 그래픽 설치 프로그램 `Arkvory-Setup-x64.exe`로 설치할 때만 자동으로 만들어집니다. PowerShell 스크립트, Linux 또는 Docker(Windows의 Docker 포함)로 설치하면 복구 키를 사용해 콘솔에서 소유자를 만드세요.
 
 1. [[ui:navStart]] 섹션을 열고 [[ui:welcomeOwner]] 항목을 펼치세요.
 2. 설치 디렉터리의 `config/bootstrap-token.txt`에 있는 복구 키를 붙여 넣으세요.
@@ -81,7 +81,7 @@ title: 웹 콘솔
 - [[ui:assetTitle]]: [[ui:assign]] 버튼은 이 아티팩트를 파일 경로의 현재 콘텐츠로 지정합니다.
 - [[ui:promotionTitle]]: [[ui:stageAdd]] 버튼은 `qa`나 `release` 같은 스테이지를 아티팩트에 표시합니다. [[ui:promoteSubmit]] 버튼은 아티팩트를 다른 리포지토리에 게시합니다. [승격](../use/promotion)을 참조하세요.
 - [[ui:attachmentsTitle]]: [[ui:attachmentAdd]] 버튼은 매니페스트, SBOM, 서명, 보고서 또는 다른 파일을 이 빌드에 연결합니다. [[ui:attachmentHistory]] 버튼은 이전 세트를 보여 줍니다.
-- [[ui:deletionTitle]]: [[ui:deletionInspect]] 버튼은 이 아티팩트를 아직 사용하고 있는 항목을 보여 줍니다. 삭제하려면 아티팩트 ID를 붙여 넣고 [[ui:deletionSubmit]] 버튼을 선택하세요.
+- [[ui:deletionTitle]]: [[ui:deletionInspect]] 버튼은 이 아티팩트를 아직 사용하고 있는 항목을 보여 줍니다. 삭제하려면 아티팩트 ID를 붙여 넣고 [[ui:deletionSubmit]] 버튼을 선택하세요. 삭제에는 `artifact.delete` 작업 권한이 있는 서비스 키가 필요합니다. 암호 로그인, 개인 액세스 토큰 및 복구 키로는 삭제할 수 없습니다.
 
 ## 전송 {#transfers}
 
@@ -110,6 +110,8 @@ title: 웹 콘솔
 ### 리포지토리 {#repositories}
 
 [[ui:repositories]] 섹션에는 볼 수 있는 리포지토리가 표시되며, 각 리포지토리에 [[ui:repositoryRights]] 정보가 함께 나옵니다. 각 카드에는 [[ui:repositoryOpen]] 버튼, [[ui:repositoryStorage]] 항목(할당량, 자동 정리, 물리적 정리), 그리고 관리자용 [[ui:repositoryAccess]] 항목이 있습니다. 미러링된 리포지토리에는 [[ui:mirrorBadge]] 배지가 표시됩니다. [리포지토리](../use/repositories)와 [스토리지](../operate/storage)를 참조하세요.
+
+스토리지 패널에는 `storage.read` 또는 `storage.manage` 작업 권한이 있는 서비스 키가 필요합니다.
 
 ### 서비스 액세스 {#service-access}
 

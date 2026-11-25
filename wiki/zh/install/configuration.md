@@ -25,7 +25,7 @@ Arkvory 有两类设置：
 | `config/hub.json`                                                              | 中心地址、更新通道和统计设置                                              | 使用 `configure`                            |
 | `config/install-id`                                                            | 随机的安装 ID，仅在开启统计时发送到中心                                   | 不要更改                                    |
 | `config/mirrors/`                                                              | 镜像列表以及工作进程用于源的密钥                                          | 使用 `configure --mirror`                   |
-| `config/webhooks/`                                                             | 订阅列表、签名密钥，以及 worker 使用的接收方证书颁发机构                  | 使用 `configure --webhook`                  |
+| `config/webhooks/`                                                             | 订阅列表、签名密钥，以及 worker 使用的接收方证书颁发机构的证书            | 使用 `configure --webhook`                  |
 | `installation.json`                                                            | 模式、引擎、自动更新设置、版本固定和已安装的发行版                        | 仅使用命令                                  |
 | `github-token.txt`                                                             | 可选的 GitHub 令牌，用于下载发行版。参见[更新](./updates#hub-unreachable) | 手动                                        |
 | `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | 仅 Compose：容器镜像、备份存储挂载和镜像挂载                              | 仅使用命令                                  |
@@ -34,13 +34,13 @@ Arkvory 有两类设置：
 
 ## 生命周期命令 {#lifecycle-commands}
 
-所有命令都需要管理员权限，并使用选项 `--root` 指定安装根目录。
+管理现有安装的命令需要通过 `--root` 指定安装根目录。修改原生服务需要管理员权限。对于 Compose，请使用能够访问安装根目录和容器引擎的账户。`help` 和 `volume-init` 的例外情况见下文。
 
 | 安装方式              | 如何运行命令                                                                                                                                                 |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Linux 软件包          | `sudo arkvory <command> --root /opt/proanima-arkvory`                                                                                                        |
 | Windows，图形安装程序 | 在提升权限的 PowerShell 中：`& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' <command> --root C:\ProgramData\ProAnima\Arkvory`                             |
-| 脚本安装，Compose     | `sudo <root>/runtime/node-v24.21.0-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`。在 Windows 上使用 `runtime\node-v24.21.0-win-x64\node.exe` |
+| 脚本安装，Compose     | `sudo <root>/runtime/node-v24.22.3-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`。在 Windows 上使用 `runtime\node-v24.22.3-win-x64\node.exe` |
 
 `arkvory help` 无需特殊权限即可列出命令。本站示例使用简写形式 `arkvory <command>`。
 
@@ -108,9 +108,11 @@ HTTPS、备份存储和镜像更改会重启服务，并在更改不生效时恢
 | 变量                         | 默认值         | 含义                                                               |
 | ---------------------------- | -------------- | ------------------------------------------------------------------ |
 | `ARKVORY_DATABASE_URL`       | 由安装程序设置 | PostgreSQL 连接 URL。托管数据库监听 `127.0.0.1` 上安装时选定的端口 |
-| `ARKVORY_DATABASE_POOL_SIZE` | `10`           | API 连接池的大小，从 4 到 200                                      |
+| `ARKVORY_DATABASE_POOL_SIZE` | `20`           | API 查询连接池的大小，从 4 到 200                                  |
 
-不要将一个安装指向另一个数据库。存储的文件和目录是一体的。迁移到新数据库就是从备份恢复：参见[备份](../operate/backups)。对于外部 PostgreSQL，请将 `max_connections` 设得足够高，以容纳 API 连接池、每个并发上传用于写锁的一个连接、工作进程的 5 个连接以及备份代理的连接。
+不要将一个安装指向另一个数据库。存储的文件和目录是一体的。迁移到新数据库就是从备份恢复：参见[备份](../operate/backups)。
+
+对于外部 PostgreSQL，请根据所有进程的连接池上限总和设置 `max_connections`。每个 API 进程（包括每个读取网关）都有三个独立的连接池：查询连接最多为 `ARKVORY_DATABASE_POOL_SIZE`（默认 20），长期会话连接最多为 8，上传写锁连接最多为 `ARKVORY_MAX_UPLOADS`（默认 8）。工作进程有独立的连接池：5 个查询连接、8 个会话连接以及 `2 + min(N, 16)` 个写锁连接，其中 N 是已配置的镜像数。备份代理有自己的连接池，最多容纳 6 个连接，并在创建备份期间另外打开一个最多容纳 6 个连接的池。这些是上限，并非永久占用的连接数。请为许可证工具、维护和数据库管理额外预留连接容量。
 
 ### 存储目录和可用空间 {#storage}
 
@@ -127,17 +129,17 @@ HTTPS、备份存储和镜像更改会重启服务，并在更改不生效时恢
 
 这些限制属于单个 API 进程。速率 `0` 表示无限制。
 
-| 变量                                  | 默认值    | 含义                                                                                        |
-| ------------------------------------- | --------- | ------------------------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | 同时进行的上传数，1 到 32                                                                   |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | 同时进行的下载数，1 到 256                                                                  |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | 一个账户或密钥同时进行的上传数                                                              |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | 一个账户或密钥同时进行的下载数                                                              |
-| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | 下载队列的顺序：`ordered`（按类别轮流）、`smallest-first` 或 `shared`（不排队，与以前相同） |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | 总上传速率，以字节/秒为单位                                                                 |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | 总下载速率，以字节/秒为单位                                                                 |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | 单个上传请求的最长时间，30 分钟                                                             |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | 上传请求在此期间未发送任何数据则停止                                                        |
+| 变量                                  | 默认值                          | 含义                                                                                        |
+| ------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `8`                             | 同时进行的上传数，1 到 32                                                                   |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`                            | 同时进行的下载数，1 到 256                                                                  |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `min(4, ARKVORY_MAX_UPLOADS)`   | 一个账户或密钥同时进行的上传数                                                              |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `min(4, ARKVORY_MAX_DOWNLOADS)` | 一个账户或密钥同时进行的下载数                                                              |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered`                       | 下载队列的顺序：`ordered`（按类别轮流）、`smallest-first` 或 `shared`（不排队，与以前相同） |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`                             | 总上传速率，以字节/秒为单位                                                                 |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`                             | 总下载速率，以字节/秒为单位                                                                 |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`                       | 单个上传请求的最长时间，30 分钟                                                             |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`                         | 上传请求在此期间未发送任何数据则停止                                                        |
 
 API 前面的代理必须允许请求的持续时间至少与 `ARKVORY_UPLOAD_DEADLINE_MS` 一样长。参见 [HTTPS](./https#reverse-proxy)。所有其他限制，例如等待队列和每账户速率，见[环境变量](../reference/environment#transfers-and-bandwidth)。
 
@@ -221,7 +223,7 @@ API 前面的代理必须允许请求的持续时间至少与 `ARKVORY_UPLOAD_DE
    & 'C:\ProgramData\ProAnima\Arkvory\runtime\node.exe' .\replace-recovery-key.mjs 'C:\ProgramData\ProAnima\Arkvory\config'
    ```
 
-   在脚本安装之后，请改用 `runtime\node-v24.21.0-…` 下的 Node.js。
+   在脚本安装之后，请改用 `runtime\node-v24.22.3-…` 下的 Node.js。
 
 4. 如[应用更改](#apply-change)所示重启服务。
 5. 从 `config/bootstrap-token.txt` 读取新密钥，并删除脚本和 `keys.json` 的副本。

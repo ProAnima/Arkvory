@@ -16,31 +16,31 @@ Diese Seite zeigt, wo die Dateien liegen, welche Befehle es gibt und wie die wic
 
 Das Installationsverzeichnis enthält alles. Unter Windows ist es `C:\ProgramData\ProAnima\Arkvory`, unter Linux `/opt/proanima-arkvory`. Eine Compose-Installation verwendet dasselbe Verzeichnis auf dem Host. Die folgenden Pfade sind relativ zum Installationsverzeichnis.
 
-| Datei                                                                          | Inhalt                                                                                                                          | Ändern mit                                                                 |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `config/runtime.json`                                                          | Die Servereinstellungen. Schlüssel beginnen mit `ARKVORY_`, und jeder Wert ist eine Zeichenkette. Enthält das Datenbankpasswort | Von Hand oder mit `configure`                                              |
-| `config/keys.json`                                                             | SHA-256-Hashes des Wiederherstellungsschlüssels und des Bereitschaftsschlüssels. Enthält nie einen Schlüssel                    | Nur zum [Ersetzen des Wiederherstellungsschlüssels](#replace-recovery-key) |
-| `config/bootstrap-token.txt`                                                   | Der Wiederherstellungsschlüssel                                                                                                 | Nur zum Ersetzen                                                           |
-| `config/health-token.txt`                                                      | Der Schlüssel, den die Installationswerkzeuge für die Bereitschaftsprüfung verwenden                                            | Nicht ändern                                                               |
-| `config/hub.json`                                                              | Die Hub-Adresse, der Update-Kanal und die Einstellung für Statistiken                                                           | Mit `configure`                                                            |
-| `config/install-id`                                                            | Eine zufällige Installations-ID, die nur bei eingeschalteten Statistiken an den Hub gesendet wird                               | Nicht ändern                                                               |
-| `config/mirrors/`                                                              | Die Spiegelliste und die Schlüssel, die der Worker für die Quellen verwendet                                                    | Mit `configure --mirror`                                                   |
-| `config/webhooks/`                                                             | Die Abonnementliste, die Signatur-Secrets und die Zertifizierungsstellen der Empfänger, die der Worker verwendet                | Mit `configure --webhook`                                                  |
-| `installation.json`                                                            | Der Modus, die Engine, die Einstellung für automatische Updates, das Anheften der Version und das installierte Release          | Nur mit Befehlen                                                           |
-| `github-token.txt`                                                             | Optionales GitHub-Token für Release-Downloads. Siehe [Updates](./updates#hub-unreachable)                                       | Von Hand                                                                   |
-| `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | Nur bei Compose: das Image, der Backup-Speicher-Mount und der Spiegel-Mount                                                     | Nur mit Befehlen                                                           |
+| Datei                                                                          | Inhalt                                                                                                                           | Ändern mit                                                                 |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `config/runtime.json`                                                          | Die Servereinstellungen. Schlüssel beginnen mit `ARKVORY_`, und jeder Wert ist eine Zeichenkette. Enthält das Datenbankpasswort  | Von Hand oder mit `configure`                                              |
+| `config/keys.json`                                                             | SHA-256-Hashes des Wiederherstellungsschlüssels und des Bereitschaftsschlüssels. Enthält nie einen Schlüssel                     | Nur zum [Ersetzen des Wiederherstellungsschlüssels](#replace-recovery-key) |
+| `config/bootstrap-token.txt`                                                   | Der Wiederherstellungsschlüssel                                                                                                  | Nur zum Ersetzen                                                           |
+| `config/health-token.txt`                                                      | Der Schlüssel, den die Installationswerkzeuge für die Bereitschaftsprüfung verwenden                                             | Nicht ändern                                                               |
+| `config/hub.json`                                                              | Die Hub-Adresse, der Update-Kanal und die Einstellung für Statistiken                                                            | Mit `configure`                                                            |
+| `config/install-id`                                                            | Eine zufällige Installations-ID, die nur bei eingeschalteten Statistiken an den Hub gesendet wird                                | Nicht ändern                                                               |
+| `config/mirrors/`                                                              | Die Spiegelliste und die Schlüssel, die der Worker für die Quellen verwendet                                                     | Mit `configure --mirror`                                                   |
+| `config/webhooks/`                                                             | Die Abonnementliste, die Signatur-Secrets und die Zertifikate der Zertifizierungsstellen der Empfänger, die der Worker verwendet | Mit `configure --webhook`                                                  |
+| `installation.json`                                                            | Der Modus, die Engine, die Einstellung für automatische Updates, das Anheften der Version und das installierte Release           | Nur mit Befehlen                                                           |
+| `github-token.txt`                                                             | Optionales GitHub-Token für Release-Downloads. Siehe [Updates](./updates#hub-unreachable)                                        | Von Hand                                                                   |
+| `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | Nur bei Compose: das Image, der Backup-Speicher-Mount und der Spiegel-Mount                                                      | Nur mit Befehlen                                                           |
 
 Bei einer nativen Linux-Installation gehören `runtime.json` und `keys.json` `root:arkvory` mit Modus `0640`, und die Dateien mit Anmeldedaten in `config/` kann nur `root` lesen. Eine Compose-Installation verwendet Modus `0644` für die Dateien, die die Container lesen: siehe [Docker Compose](./docker#owners). Behalten Sie die Besitzer und Modi bei, die der Installer gesetzt hat.
 
 ## Lebenszyklus-Befehle {#lifecycle-commands}
 
-Alle Befehle benötigen Administratorrechte und die Option `--root` mit dem Installationsverzeichnis.
+Übergeben Sie bei Befehlen zur Verwaltung einer bestehenden Installation deren Installationsverzeichnis mit `--root`. Änderungen an nativen Diensten erfordern Administratorrechte. Verwenden Sie für Compose ein Konto mit Zugriff auf das Installationsverzeichnis und die Container-Engine. Die Ausnahmen `help` und `volume-init` sind unten beschrieben.
 
 | Installation                  | So führen Sie einen Befehl aus                                                                                                                                         |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Linux-Paket                   | `sudo arkvory <command> --root /opt/proanima-arkvory`                                                                                                                  |
 | Windows, grafischer Installer | In einer PowerShell mit erhöhten Rechten: `& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' <command> --root C:\ProgramData\ProAnima\Arkvory`                         |
-| Skriptinstallation, Compose   | `sudo <root>/runtime/node-v24.21.0-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`. Unter Windows verwenden Sie `runtime\node-v24.21.0-win-x64\node.exe` |
+| Skriptinstallation, Compose   | `sudo <root>/runtime/node-v24.22.3-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`. Unter Windows verwenden Sie `runtime\node-v24.22.3-win-x64\node.exe` |
 
 `arkvory help` listet die Befehle ohne besondere Rechte auf. Die Beispiele auf dieser Seite verwenden die Kurzform `arkvory <command>`.
 
@@ -108,9 +108,11 @@ Es gibt keine Einstellung für eine öffentliche URL. Der Server erzeugt absolut
 | Variable                     | Standard              | Bedeutung                                                                                                                     |
 | ---------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `ARKVORY_DATABASE_URL`       | vom Installer gesetzt | Die PostgreSQL-Verbindungs-URL. Eine verwaltete Datenbank lauscht auf `127.0.0.1` auf dem bei der Installation gewählten Port |
-| `ARKVORY_DATABASE_POOL_SIZE` | `10`                  | Die Größe des Verbindungspools der API, von 4 bis 200                                                                         |
+| `ARKVORY_DATABASE_POOL_SIZE` | `20`                  | Die Größe des Verbindungspools für API-Abfragen, von 4 bis 200                                                                |
 
-Richten Sie eine Installation nicht auf eine andere Datenbank. Die gespeicherten Dateien und der Katalog gehören zusammen. Der Umzug auf eine neue Datenbank ist eine Wiederherstellung aus einem Backup: siehe [Backups](../operate/backups). Setzen Sie bei einem externen PostgreSQL `max_connections` hoch genug für den Pool der API, eine Verbindung pro gleichzeitigem Upload für Schreibsperren, 5 für den Worker und die Verbindungen des Backup-Agents.
+Richten Sie eine Installation nicht auf eine andere Datenbank. Die gespeicherten Dateien und der Katalog gehören zusammen. Der Umzug auf eine neue Datenbank ist eine Wiederherstellung aus einem Backup: siehe [Backups](../operate/backups).
+
+Bemessen Sie bei einem externen PostgreSQL `max_connections` anhand der Summe der Pool-Obergrenzen aller Prozesse. Jeder API-Prozess, einschließlich jedes Lese-Gateways, hat drei getrennte Pools: bis zu `ARKVORY_DATABASE_POOL_SIZE` Verbindungen für Abfragen (standardmäßig 20), 8 Verbindungen für langlebige Sitzungen und bis zu `ARKVORY_MAX_UPLOADS` Verbindungen für Schreibsperren von Uploads (standardmäßig 8). Der Worker hat getrennte Pools mit 5 Verbindungen für Abfragen, 8 für Sitzungen und `2 + min(N, 16)` für Schreibsperren, wobei N die Anzahl der konfigurierten Spiegel ist. Der Backup-Agent hat einen eigenen Pool mit 6 Verbindungen und öffnet während der Aufnahme eines Backups einen weiteren Pool mit 6. Dies sind Obergrenzen, keine dauerhaft belegten Verbindungen. Planen Sie zusätzliche Kapazität für Lizenzwerkzeuge, Wartung und Datenbankadministration ein.
 
 ### Speicherverzeichnis und freier Platz {#storage}
 
@@ -127,17 +129,17 @@ Lassen Sie `ARKVORY_DATA_DIR` dort, wo der Installer es gesetzt hat. Die Linux-U
 
 Die Limits gelten für einen API-Prozess. Eine Rate von `0` bedeutet kein Limit.
 
-| Variable                              | Standard  | Bedeutung                                                                                                                               |
-| ------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | Gleichzeitige Uploads, 1 bis 32                                                                                                         |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | Gleichzeitige Downloads, 1 bis 256                                                                                                      |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | Gleichzeitige Uploads eines Kontos oder Schlüssels                                                                                      |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | Gleichzeitige Downloads eines Kontos oder Schlüssels                                                                                    |
-| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | Reihenfolge der Download-Warteschlange: `ordered` (Klassen und reihum), `smallest-first` oder `shared` (ohne Warteschlange, wie bisher) |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | Gesamte Upload-Rate in Bytes pro Sekunde                                                                                                |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | Gesamte Download-Rate in Bytes pro Sekunde                                                                                              |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | Die längste Dauer einer Upload-Anfrage, 30 Minuten                                                                                      |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | Eine Upload-Anfrage, die so lange keine Daten sendet, wird beendet                                                                      |
+| Variable                              | Standard                        | Bedeutung                                                                                                                               |
+| ------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `8`                             | Gleichzeitige Uploads, 1 bis 32                                                                                                         |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`                            | Gleichzeitige Downloads, 1 bis 256                                                                                                      |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `min(4, ARKVORY_MAX_UPLOADS)`   | Gleichzeitige Uploads eines Kontos oder Schlüssels                                                                                      |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `min(4, ARKVORY_MAX_DOWNLOADS)` | Gleichzeitige Downloads eines Kontos oder Schlüssels                                                                                    |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered`                       | Reihenfolge der Download-Warteschlange: `ordered` (Klassen und reihum), `smallest-first` oder `shared` (ohne Warteschlange, wie bisher) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`                             | Gesamte Upload-Rate in Bytes pro Sekunde                                                                                                |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`                             | Gesamte Download-Rate in Bytes pro Sekunde                                                                                              |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`                       | Die längste Dauer einer Upload-Anfrage, 30 Minuten                                                                                      |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`                         | Eine Upload-Anfrage, die so lange keine Daten sendet, wird beendet                                                                      |
 
 Ein Proxy vor der API muss eine Anfrage mindestens so lange zulassen wie `ARKVORY_UPLOAD_DEADLINE_MS`. Siehe [HTTPS](./https#reverse-proxy). Alle anderen Limits, etwa die Warteschlange und die Raten pro Konto, stehen unter [Umgebungsvariablen](../reference/environment#transfers-and-bandwidth).
 
@@ -221,7 +223,7 @@ Ersetzen Sie den Wiederherstellungsschlüssel, wenn Sie vermuten, dass jemand `c
    & 'C:\ProgramData\ProAnima\Arkvory\runtime\node.exe' .\replace-recovery-key.mjs 'C:\ProgramData\ProAnima\Arkvory\config'
    ```
 
-   Verwenden Sie nach einer Skriptinstallation stattdessen das Node.js unter `runtime\node-v24.21.0-…`.
+   Verwenden Sie nach einer Skriptinstallation stattdessen das Node.js unter `runtime\node-v24.22.3-…`.
 
 4. Starten Sie die Dienste neu, wie unter [Eine Änderung anwenden](#apply-change) beschrieben.
 5. Lesen Sie den neuen Schlüssel aus `config/bootstrap-token.txt` und löschen Sie das Skript und die Kopie von `keys.json`.

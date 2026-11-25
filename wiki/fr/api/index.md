@@ -25,7 +25,7 @@ Le plus grand objet fait 10 000 Gio (10 737 418 240 000 octets), sauf si l’adm
 
 ## Authentification {#authentication}
 
-Chaque opération, hormis la connexion, les contrôles de santé publics et les options de connexion, exige un identifiant dans l’en-tête `Authorization: Bearer <credential>`. L’identifiant est une session de console, un jeton d’accès personnel, une clé de service ou la clé de récupération. Ce qu’un identifiant peut faire dépend de son type et de la **règle d’accès** de chaque opération. Lisez [Authentification](./authentication) avant de concevoir l’intégration, et donnez à l’automatisation une clé de service avec uniquement les actions dont elle a besoin.
+Chaque opération, hormis la connexion, l’inscription autonome, les contrôles de santé publics et les options de connexion, exige un identifiant dans l’en-tête `Authorization: Bearer <credential>`. L’inscription autonome (`POST /api/v1/auth/register`, `registerAccount`) n’exige aucun identifiant et ne peut réussir que si l’administrateur définit `ARKVORY_ALLOW_REGISTRATION=true` ; sinon, elle renvoie `403` avec la raison `registration_disabled`. L’identifiant est une session de console, un jeton d’accès personnel, une clé de service ou la clé de récupération. Ce qu’un identifiant peut faire dépend de son type et de la **règle d’accès** de chaque opération. Lisez [Authentification](./authentication) avant de concevoir l’intégration, et donnez à l’automatisation une clé de service avec uniquement les actions dont elle a besoin.
 
 ## Découverte {#discovery}
 

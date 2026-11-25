@@ -137,7 +137,7 @@ La autorrecuperación cubre fallos de un proceso. Estos necesitan un operador:
 - **Certificados.** Arkvory lee los archivos de certificado renovados sin reiniciar (cada 300 segundos de forma predeterminada), pero sus herramientas deben renovarlos.
 - **Un servicio detenido.** Un servicio que usted detuvo permanece detenido.
 - **La plataforma.** Docker debe iniciarse al arrancar. Las versiones mayores de PostgreSQL, Node.js y el sistema operativo los actualiza usted.
-- **Un servidor o disco perdidos.** No hay conmutación al espejo. Restaure desde una copia de seguridad. Consulte [Copias de seguridad](./backups).
+- **Pérdida de un servidor o disco.** Una instalación independiente no tiene conmutación por error: restaure una copia de seguridad. Un clúster de alta disponibilidad puede cambiar a otro servidor de datos según sus reglas de replicación y fencing. Consulte [Copias de seguridad](./backups) y [Clúster de alta disponibilidad](./cluster).
 
 ## Páginas relacionadas {#related-pages}
 

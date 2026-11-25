@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { rm, unlink, writeFile } from 'node:fs/promises';
+import { access, readFile, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { BackupFailure } from '@proanima/arkvory-domain';
 import { ApplyBackupRetention, VerifyPoint } from '@proanima/arkvory-application';
@@ -85,9 +85,11 @@ test('one agent holds the lease; a standby takes over and a fenced owner cannot 
       version: 'crashed',
     });
     const crashed = await leases.acquire(async () => facts);
-    await crashed.close();
     b = startAgent(f, vault, { owner: second });
+    // The owner stays alive until the standby has seen it: a loaded host may start the agent
+    // later than the three-second lease lasts, and the standby would then never be observed.
     await eventually(() => b.has('backup.agent.standby'), 'standby behind a crashed owner');
+    await crashed.close();
     const recovered = await eventually(async () => {
       const row = await agentRow(f);
       return row.owner === second ? row : null;
@@ -359,4 +361,81 @@ test('the catalog is rebuilt from the vault: estimates, vanished and damaged poi
   } finally {
     await agent.stop();
   }
+});
+
+test('a point that was out of sight and came back is restored, never deleted by retention', async (t) => {
+  const f = await setup(t);
+  const { path: vault } = await newVault(t);
+  await publish(f);
+  const p1 = await capture(f, vault, 'p1');
+  await publish(f);
+  const p2 = await capture(f, vault, 'p2');
+  const listed = async () => (await api(f, 'GET', '/points')).body.items.map((point) => point.id);
+  const aside = join(vault, '..', `aside-${randomUUID()}`);
+  t.after(() => rm(aside, { recursive: true, force: true }));
+  let agent = startAgent(f, vault);
+  try {
+    await eventually(() => agent.has('backup.catalog.reconciled'), 'catalog rebuild');
+    const pinned = await api(f, 'PUT', `/points/${p1.pointId}/pin`, { payload: { pinned: true } });
+    assert.equal(pinned.body.pinned, true);
+    await agent.stop();
+    // Another disk of a rotation, or an older snapshot of the vault: the point is not there.
+    await rename(join(vault, 'points', p1.pointId), aside);
+    agent = startAgent(f, vault);
+    await eventually(() => agent.has('backup.catalog.reconciled'), 'rebuild without the point');
+    assert.deepEqual(await listed(), [p2.pointId]);
+    await agent.stop();
+    await rename(aside, join(vault, 'points', p1.pointId));
+    agent = startAgent(f, vault);
+    await eventually(() => agent.has('backup.catalog.reconciled'), 'rebuild with the point');
+    assert.deepEqual(await listed(), [p2.pointId, p1.pointId]);
+    const applied = await api(f, 'POST', '/retention/apply', { key: 'after-return' });
+    assert.equal(applied.status, 202);
+    await eventually(() => settled(f), 'retention');
+    assert.notEqual(await (await FileVault.open(vault)).point(p1.pointId), null);
+    const points = (await api(f, 'GET', '/points')).body.items;
+    assert.deepEqual(
+      points.map((point) => [point.id, point.pinned]),
+      [
+        [p2.pointId, false],
+        [p1.pointId, true],
+      ],
+    );
+  } finally {
+    await agent.stop();
+  }
+});
+
+test('content damaged in the vault is set aside by a deep check and stored again by the next capture', async (t) => {
+  const f = await setup(t);
+  const { path: vault } = await newVault(t);
+  const item = await publish(f);
+  const p1 = await capture(f, vault, 'p1');
+  // Bit rot: the same size, other bytes. A capture checks only the size of content it shares.
+  const blob = join(vault, 'blobs', item.id.slice(0, 2), item.id);
+  const stored = await readFile(blob);
+  stored[stored.length >> 1] ^= 0xff;
+  await writeFile(blob, stored);
+  const agent = startAgent(f, vault);
+  try {
+    await eventually(() => agent.has('backup.catalog.reconciled'), 'catalog rebuild');
+    const verify = await api(f, 'POST', `/points/${p1.pointId}/verify`, { key: 'deep-1' });
+    assert.equal(verify.status, 202);
+    await eventually(() => settled(f), 'deep verification');
+    const flagged = (await api(f, 'GET', '/points')).body.items.find((p) => p.id === p1.pointId);
+    // The point stays flagged until a capture has healed it: the mismatch the check found, or
+    // the missing content a repeated check of the same request sees after the blob was moved.
+    assert.match(flagged.verifyError, /^blob_(mismatch|missing)$/);
+    await assert.rejects(access(blob), { code: 'ENOENT' }, 'the id is free for a new copy');
+  } finally {
+    await agent.stop();
+  }
+  // The source still has the good bytes: the next capture stores them again for both points.
+  await capture(f, vault, 'p2');
+  assert.deepEqual(await readFile(blob), item.bytes);
+  const verified = await new VerifyPoint(await FileVault.open(vault)).run({ deep: true }, never);
+  assert.deepEqual(
+    verified.map((result) => result.ok),
+    [true, true],
+  );
 });

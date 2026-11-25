@@ -26,7 +26,7 @@ The routes under `/v2`, `/lfs` and `/npm` follow the specifications of their pro
 
 ## Credentials {#credentials}
 
-Every request needs a credential, except public health checks. Arkvory accepts these kinds:
+Most requests need a credential. Sign-in (`POST /api/v1/auth/login`), self-registration (`POST /api/v1/auth/register`), sign-in options (`GET /api/v1/auth/options`) and public health checks (`GET /health/live`, `GET /health/status`) do not require an `Authorization` header. Self-registration can succeed only when the administrator sets `ARKVORY_ALLOW_REGISTRATION=true`; when disabled, it returns `403` with the reason `registration_disabled`. `GET /health/ready` and `GET /health/metrics` require authentication. Arkvory accepts these kinds:
 
 | Kind                  | Looks like         | Where it comes from                                                                                                   | Typical use                                     |
 | --------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |

@@ -74,7 +74,7 @@ Un module installé reste désactivé jusqu’à ce que vous l’activiez. Les s
 3. Redémarrez les services, comme dans [Appliquer une modification](../install/configuration#apply-change).
 4. Vérifiez le module en tant qu’administrateur global : `GET /api/v1/system/modules` l’affiche avec `running: true` et `health.status` `ok` sur l’API et sur chaque passerelle de lecture.
 
-Les modules signés fonctionnent dans l’API, les passerelles de lecture, le worker et l’agent de sauvegarde selon leurs rôles déclarés. Chaque processus fournit uniquement les services de son rôle déclarés dans `uses`. Les routes nécessitent `routes`. Docker Compose ne charge pas encore les modules.
+Les modules signés fonctionnent dans l’API, les passerelles de lecture, le worker et l’agent de sauvegarde selon leurs rôles déclarés. Chaque processus fournit uniquement les services de son rôle déclarés dans `uses`. Les préfixes de route nécessitent le service `routes` (`routes_unsupported` s’il est indisponible). Docker Compose ne charge pas encore les modules.
 
 Les stockages des modules sont enregistrés sous `<module>.<name>` et peuvent recevoir les nouveaux téléversements. Si un stockage refuse de nouvelles écritures, les nouveaux téléversements reviennent à `default`. Le cœur vérifie tous les octets avant de publier un objet assemblé. Le nettoyage attend les lecteurs actifs, toutes les protections des sauvegardes et la barrière de capture. Les calculs utilisent des threads limités. Les abonnements acquittent les événements après un traitement réussi et peuvent les livrer de nouveau après une erreur.
 

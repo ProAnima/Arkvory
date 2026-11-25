@@ -10,6 +10,7 @@ import {
   verifyReleaseSignature,
 } from '../apps/deploy/dist/release-signature.js';
 import { releaseKeys } from '../apps/deploy/dist/release-keys.js';
+import { releaseFiles, verifyReleaseFiles } from './release-files.mjs';
 
 /**
  * Release signing (ADR 0060). The private key never enters the repository, CI or the hub: it is
@@ -76,6 +77,35 @@ async function keygen() {
   );
 }
 
+/**
+ * Signs the manifest of a downloaded draft only after the draft was checked against the
+ * version asked for and the commit of its tag: the inventory lists exactly the supported
+ * assets, every asset has the listed SHA-256, and the manifest names that version, that commit
+ * and the hashes of the runtime archive and of Setup. The signature exists so that GitHub and
+ * the hub need not be trusted; a manifest that somebody replaced in the draft would otherwise
+ * be signed as it is and accepted by every installation.
+ */
+export async function signVerifiedDraft(directory, version, commit, keyFile, trusted) {
+  await verifyReleaseFiles(directory, version, commit);
+  return signDirectory(directory, keyFile, trusted);
+}
+
+/** The commit of the release tag; it must be part of main. */
+function taggedCommit(version) {
+  const run = (file, args) => execFileSync(file, args, { encoding: 'utf8' }).trim();
+  const ref = JSON.parse(run('gh', ['api', `repos/ProAnima/Arkvory/git/ref/tags/v${version}`]));
+  const commit = ref?.object?.sha;
+  if (ref?.object?.type !== 'commit' || !/^[0-9a-f]{40}$/.test(commit ?? ''))
+    throw Error('The release tag must point at a commit');
+  run('git', ['fetch', '--quiet', 'origin', 'main']);
+  try {
+    run('git', ['merge-base', '--is-ancestor', commit, 'origin/main']);
+  } catch {
+    throw Error('The release tag is not a commit of main');
+  }
+  return commit;
+}
+
 /** Signs a draft created by the GitHub release workflow, which has no access to the key. */
 async function signDraft(version) {
   if (!/^\d+\.\d+\.\d+$/.test(version ?? '')) throw Error(usage);
@@ -83,17 +113,10 @@ async function signDraft(version) {
   try {
     const gh = (args) => execFileSync('gh', args, { stdio: 'inherit' });
     const repository = ['--repo', 'ProAnima/Arkvory'];
-    gh([
-      'release',
-      'download',
-      `v${version}`,
-      ...repository,
-      '-p',
-      'arkvory-release.json',
-      '-D',
-      directory,
-    ]);
-    const files = await signDirectory(directory);
+    const commit = taggedCommit(version);
+    const patterns = [...releaseFiles, 'release-checksums.json'].flatMap((name) => ['-p', name]);
+    gh(['release', 'download', `v${version}`, ...repository, ...patterns, '-D', directory]);
+    const files = await signVerifiedDraft(directory, version, commit);
     gh(['release', 'upload', `v${version}`, ...repository, '--clobber', ...files]);
   } finally {
     await rm(directory, { recursive: true, force: true });

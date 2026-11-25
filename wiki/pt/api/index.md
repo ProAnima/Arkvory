@@ -25,7 +25,7 @@ O maior objeto é 10.000 GiB (10 737 418 240 000 bytes), a menos que o administr
 
 ## Autenticação {#authentication}
 
-Toda operação, exceto login, as verificações de integridade públicas e as opções de login, precisa de uma credencial no cabeçalho `Authorization: Bearer <credential>`. A credencial é uma sessão do console, um token de acesso pessoal, uma chave de serviço ou a chave de recuperação. O que uma credencial pode fazer depende do tipo dela e da **regra de acesso** de cada operação. Leia [Autenticação](./authentication) antes de projetar a integração e dê à automação uma chave de serviço com apenas as ações de que ela precisa.
+Toda operação, exceto login, o autorregistro, as verificações de integridade públicas e as opções de login, precisa de uma credencial no cabeçalho `Authorization: Bearer <credential>`. O autorregistro (`POST /api/v1/auth/register`, `registerAccount`) não precisa de credencial e só pode ser concluído com sucesso quando o administrador define `ARKVORY_ALLOW_REGISTRATION=true`; caso contrário, retorna `403` com o motivo `registration_disabled`. A credencial é uma sessão do console, um token de acesso pessoal, uma chave de serviço ou a chave de recuperação. O que uma credencial pode fazer depende do tipo dela e da **regra de acesso** de cada operação. Leia [Autenticação](./authentication) antes de projetar a integração e dê à automação uma chave de serviço com apenas as ações de que ela precisa.
 
 ## Descoberta {#discovery}
 

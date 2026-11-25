@@ -132,10 +132,28 @@ wget --header="Authorization: Bearer $ARKVORY_KEY" -O GameSetup.exe "$URL"
 
 路径随时可能获得新版本，而 `GET` 会重新解析路径。为了安全地继续下载，请记住第一个响应的 `ETag` 并把它作为 `If-Range` 发送：
 
+将最初 `GET` 响应的 `ETag` 保存到 `GameSetup.etag`，不要通过 `HEAD` 获取新值。示例根据现有部分文件的大小计算偏移量，仅在收到 `206` 后才追加临时响应。收到 `200` 或请求失败时，部分文件保持不变；请另行开始一次全新下载。使用文件前，验证最终的 SHA-256。
+
 ```bash
-etag=$(curl -sSI -H "Authorization: Bearer $ARKVORY_KEY" "$URL" | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
-curl -sS -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
-  -H "Range: bytes=1048576-" "$URL" >> GameSetup.part
+etag=$(cat GameSetup.etag) || exit 1
+test -n "$etag" || exit 1
+offset=$(wc -c < GameSetup.part) || exit 1
+offset=$(printf '%s' "$offset" | tr -d '[:space:]')
+segment=$(mktemp) || exit 1
+status=$(curl -fsS -o "$segment" -w '%{http_code}' \
+  -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
+  -H "Range: bytes=$offset-" "$URL") || {
+  rm -f "$segment"
+  exit 1
+}
+if [ "$status" != 206 ]; then
+  rm -f "$segment"
+  exit 1
+fi
+cat "$segment" >> GameSetup.part
+result=$?
+rm -f "$segment"
+test "$result" -eq 0
 ```
 
 若要在文件未更改时跳过下载，请发送您上次保存的 ETag：
@@ -189,7 +207,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ARKVORY_KEY
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | 文件大小        | 安装实例的最大对象大小，`ARKVORY_MAX_OBJECT_BYTES`（默认约 10 TiB）                                                                        |
 | 单个 `PUT` 请求 | 必须在 30 分钟内完成，且暂停不得超过 30 秒（`ARKVORY_UPLOAD_DEADLINE_MS`、`ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`）。这些也是允许的最高值。       |
-| 同时上传数      | 默认每台服务器 2 个，每个密钥 1 个（`ARKVORY_MAX_UPLOADS`、`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`）。等待的请求会在 20 秒后放弃并返回 `503`。 |
+| 同时上传数      | 默认每台服务器 8 个，每个密钥 4 个（`ARKVORY_MAX_UPLOADS`、`ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`）。等待的请求会在 20 秒后放弃并返回 `503`。 |
 | 同时下载数      | 默认每台服务器 16 个，每个密钥 4 个                                                                                                        |
 | 配额            | 文件会计入仓库配额和安装实例的容量                                                                                                         |
 

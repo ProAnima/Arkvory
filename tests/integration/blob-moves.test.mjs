@@ -137,8 +137,13 @@ test('a planned move copies, switches and releases; planning twice adds no move'
   const { id, bytes } = await m.publish();
   assert.equal(await m.plan(), 1);
   assert.equal(await m.plan(), 0, 'one active move per upload');
+  const cleaned = () =>
+    m.f.catalog.pool.query('SELECT temp_cleaned FROM arkvory_uploads WHERE id=$1', [id]);
+  await m.f.catalog.pool.query('UPDATE arkvory_uploads SET temp_cleaned=true WHERE id=$1', [id]);
   const run = await m.rehome.run(await m.claimOne(), cancellation);
   assert.deepEqual(run, { outcome: 'done', state: 'released' });
+  // The copy was staged in the target: online cleanup must visit the upload once more.
+  assert.equal((await cleaned()).rows[0].temp_cleaned, false);
   assert.deepEqual(await m.row(id), {
     storage_backend: 'volume-2',
     state: 'released',

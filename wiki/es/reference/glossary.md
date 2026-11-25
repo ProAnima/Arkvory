@@ -119,9 +119,9 @@ El validador de una descarga: el valor fuerte `"sha256:<hex>"` del artefacto. Ú
 
 ## F {#letter-f}
 
-### Conmutación al espejo {#failover}
+### Conmutación por error {#failover}
 
-Trasladar los clientes a un espejo cuando se pierde el origen. El operador separa el espejo, y este pasa a ser un repositorio normal que acepta cambios. Nada conmuta por sí solo. Consulte [Espejos](../operate/mirrors).
+Trasladar el servicio a otro servidor después de que falle el servidor activo. Un clúster de alta disponibilidad (HA) dentro de un mismo sitio puede conmutar automáticamente según sus reglas de replicación y fencing. Para un repositorio MIRROR, un operador debe separar manualmente el espejo para convertirlo en un repositorio normal con escritura habilitada; el espejo no conmuta automáticamente. Consulte [Clúster](../operate/cluster) y [Espejos](../operate/mirrors).
 
 ### Comentarios {#feedback}
 

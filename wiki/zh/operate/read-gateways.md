@@ -30,7 +30,7 @@ description: '在同一台服务器和存储上运行额外的仅下载 API 进�
 - **相同的服务密钥。** 为每个进程提供相同的 `ARKVORY_KEYS_FILE` 内容，使文件密钥及其 ID 一致。受管服务密钥存放在数据库中，因此它们自身就是一致的。
 - **独立端口。** 同一主机上的每个进程都需要自己的 `ARKVORY_PORT`。
 - **文件的只读视图。** 如果可以，请为网关以只读方式挂载存储目录。HTTP 拒绝不能替代操作系统权限。请注意，网关仍会写入数据库：租约、存储诊断、个人令牌的最后使用时间，以及保护正在读取的文件的锁。
-- **数据库连接。** 每个网关需要比 `ARKVORY_DATABASE_POOL_SIZE` 多三个连接。请把它们计入 PostgreSQL 的 `max_connections`。
+- **数据库连接。** 每个网关使用由 `ARKVORY_DATABASE_POOL_SIZE` 指定大小的查询连接池，以及一个最多 8 个连接的独立长会话连接池（用于存储所有权、下载文件防删除保护和网关租约）。请将两个连接池都计入 PostgreSQL 的 `max_connections`。
 
 ## 运行网关 {#run}
 
@@ -102,7 +102,7 @@ ARKVORY_PORT=8081
 - **时钟。** 租约依赖稳定的时钟。数据库服务器的时钟跳变，或虚拟机暂停，都可能导致进程在租约之外继续提供服务。在这种情况下，请先停止旧进程，再启动替代进程。
 - **数据库故障。** 数据库是薄弱环节。如果它变得不可达，租约会过期，所有进程都会停止提供负载。
 
-服务器只能通过 TCP keepalive 察觉丢失网络的死进程。在 PostgreSQL 上设置 `tcp_keepalives_idle`、`tcp_keepalives_interval` 和 `tcp_keepalives_count`，例如设为 10、5 和 3 秒，或设置 `tcp_user_timeout`。没有它们，新的写入端或工作进程可能会等待操作系统较长的默认超时。
+服务器只能通过 TCP keepalive 察觉丢失网络的死进程。例如，在 PostgreSQL 中将 `tcp_keepalives_idle` 设为 10 秒、`tcp_keepalives_interval` 设为 5 秒、`tcp_keepalives_count` 设为 3 次探测，或设置 `tcp_user_timeout`。没有它们，新的写入端或工作进程可能会等待操作系统较长的默认超时。
 
 ## 监控网关 {#monitoring}
 

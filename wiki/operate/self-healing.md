@@ -137,7 +137,7 @@ Self-healing covers failures of a process. These need an operator:
 - **Certificates.** Arkvory reads renewed certificate files without a restart (every 300 seconds by default), but your tools must renew them.
 - **A stopped service.** A service that you stopped stays stopped.
 - **The platform.** Docker must start at boot. PostgreSQL major versions, Node.js and the operating system are updated by you.
-- **A lost server or disk.** There is no failover. Restore from a backup. See [Backups](./backups).
+- **A lost server or disk.** A standalone installation has no failover; restore from a backup. An HA cluster can switch to another data server under its replication and fencing rules. See [Backups](./backups) and [High availability cluster](./cluster).
 
 ## Related pages {#related-pages}
 

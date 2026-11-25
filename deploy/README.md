@@ -27,7 +27,7 @@ ZIP/tar-комплекты остаются для операторской ав
 | Docker, Linux            | `sudo bash ./install.sh --mode compose` | root либо пользователь группы docker            | restart policy Docker                                 |
 | Docker, Windows          | `.\install.ps1 -Mode compose`           | пользователь Docker Desktop, повышение не нужно | restart policy Docker Desktop                         |
 
-Командным нативным вариантам нужна доступная PostgreSQL (URL запрашивается скрыто); графические EXE/DEB/RPM создают выделенный кластер. Docker-вариант поднимает API, worker, агента резервных копий и PostgreSQL 18.4 из `deploy/compose.yml`.
+Командным нативным вариантам нужна доступная PostgreSQL (URL запрашивается скрыто); графические EXE/DEB/RPM создают выделенный кластер. Docker-вариант поднимает API, worker, агента резервных копий и PostgreSQL 18.7 из `deploy/compose.yml`.
 
 Linux, нативно:
 
@@ -61,7 +61,7 @@ Docker, Windows с работающим Docker Desktop в режиме Linux con
 
 Повышение прав для Compose не требуется и не рекомендуется: Docker Desktop читает bind mounts с токеном своего пользователя, поэтому ACL корня — SYSTEM, Administrators и этот пользователь, без наследования ([ADR 0050](../docs/adr/0050-windows-compose-engine-user.md)). Корень по умолчанию — `C:\ProgramData\ProAnima\Arkvory`; другой задаётся `-Root`. Если PowerShell запрещает запуск скриптов, используйте `powershell -ExecutionPolicy Bypass -File .\install.ps1 -Mode compose` (политика меняется только для этого процесса). При запуске от администратора дополнительно регистрируется SYSTEM-задача updater, которая рассчитана на системный движок, а не на Docker Desktop.
 
-Движок и Compose должны быть установлены заранее; установщик не меняет гипервизор, WSL или Docker. Образ собирается локально из скомпилированного релиза. PostgreSQL 18.4 включён, пароль генерируется; named volumes сохраняют каталог БД и файлы. Для Podman: `--engine podman` / `-Engine podman`, нужен совместимый compose provider; приёмка конкретной версии проводится отдельно. Rootless Podman и Docker Desktop требуют планировщика в контексте пользователя движка; системный updater рассчитан на системный Docker/Podman. Windows containers не поставляются.
+Движок и Compose должны быть установлены заранее; установщик не меняет гипервизор, WSL или Docker. Образ собирается локально из скомпилированного релиза. PostgreSQL 18.7 включён, пароль генерируется; named volumes сохраняют каталог БД и файлы. Для Podman: `--engine podman` / `-Engine podman`, нужен совместимый compose provider; приёмка конкретной версии проводится отдельно. Rootless Podman и Docker Desktop требуют планировщика в контексте пользователя движка; системный updater рассчитан на системный Docker/Podman. Windows containers не поставляются.
 
 ### Docker одной командой
 
@@ -119,17 +119,17 @@ docker compose --project-name proanima-arkvory --project-directory $root --env-f
 Установка Compose без root/Administrator не регистрирует системный updater и печатает указание запланировать `updates-poll` под владельцем движка. Без него консоль не применит запросы обновления. Linux (crontab пользователя группы docker):
 
 ```bash
-* * * * * /path/to/root/runtime/node-v24.21.0-linux-x64/bin/node /path/to/root/manage.mjs updates-poll --root /path/to/root
+* * * * * /path/to/root/runtime/node-v24.22.3-linux-x64/bin/node /path/to/root/manage.mjs updates-poll --root /path/to/root
 ```
 
 Windows (обычная PowerShell от пользователя Docker Desktop; задача работает только в его сеансе, пока Docker Desktop запущен):
 
 ```powershell
 $root = 'C:\ProgramData\ProAnima\Arkvory'
-$node = "$root\runtime\node-v24.21.0-win-x64\node.exe"
+$node = "$root\runtime\node-v24.22.3-win-x64\node.exe"
 $action = New-ScheduledTaskAction -Execute $node -Argument "`"$root\manage.mjs`" updates-poll --root `"$root`"" -WorkingDirectory $root
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
-$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 14)
 Register-ScheduledTask -TaskName ProAnimaArkvoryUpdate -Action $action -Trigger $trigger -Settings $settings
 ```
 
@@ -176,7 +176,7 @@ sudo arkvory configure --root /opt/proanima-arkvory --backup-vault-off
 
 Контейнерные данные находятся в `proanima-arkvory_storage` и `proanima-arkvory_catalog`, а не в host data. Не запускайте `down --volumes` на установленном хранилище. Профиль имеет фиксированные Compose project и порт, одна установка на container host. Нельзя подключать второго writer к той же БД/root.
 
-Примеры используют `node`; при отсутствии в PATH укажите поставленный `runtime/node-v24.21.0-<platform>/bin/node` (Linux) либо `runtime/node-v24.21.0-win-x64/node.exe`. Выполняйте команды с правами администратора (для Compose без повышения — от пользователя, установившего его):
+Примеры используют `node`; при отсутствии в PATH укажите поставленный `runtime/node-v24.22.3-<platform>/bin/node` (Linux) либо `runtime/node-v24.22.3-win-x64/node.exe`. Выполняйте команды с правами администратора (для Compose без повышения — от пользователя, установившего его):
 
 ```bash
 node /opt/proanima-arkvory/manage.mjs status --root /opt/proanima-arkvory

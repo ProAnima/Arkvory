@@ -153,3 +153,28 @@ test('derived cache manifest reader retains OS handle when close fails until own
   assert.deepEqual(await readCacheManifest(f.directory, digest, handles), []);
   assert.equal(handles.size, 0, 'successful normal read releases its tracked descriptor');
 });
+
+test('derived cache abort frees its build slot when the retirement fails', async (t) => {
+  const f = await fixture(t);
+  const failure = new Error('statement timeout');
+  let settled = 0;
+  const build = new GenerationBuild(
+    f.directory,
+    { bytes: 4096, files: 8 },
+    new AbortController().signal,
+    {
+      check() {},
+      room: async () => {},
+      publish: async () => {},
+      retire: async () => {
+        throw failure;
+      },
+      settled: () => {
+        settled++;
+      },
+    },
+  );
+  // No handle is open: only the catalog call failed, the slot is no longer in use.
+  await assert.rejects(build.abort(), (error) => error === failure);
+  assert.equal(settled, 1);
+});

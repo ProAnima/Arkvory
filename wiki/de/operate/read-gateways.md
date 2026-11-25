@@ -30,7 +30,7 @@ Repository-Berechtigungen werden bei jedem Lesezugriff geprüft, wie auf dem Wri
 - **Dieselben Dienstschlüssel.** Geben Sie jedem Prozess denselben Inhalt von `ARKVORY_KEYS_FILE`, damit die Dateischlüssel und ihre IDs übereinstimmen. Verwaltete Dienstschlüssel liegen in der Datenbank und stimmen von selbst überein.
 - **Eigener Port.** Jeder Prozess auf demselben Host braucht seinen eigenen `ARKVORY_PORT`.
 - **Eine schreibgeschützte Sicht auf die Dateien.** Binden Sie das Speicherverzeichnis, wo möglich, für das Gateway schreibgeschützt ein. Die HTTP-Ablehnung ersetzt keine Betriebssystemrechte. Beachten Sie, dass das Gateway weiterhin in die Datenbank schreibt: Leases, Speicherdiagnosen, die letzte Verwendungszeit persönlicher Token und die Sperren, die Dateien während des Lesens schützen.
-- **Datenbankverbindungen.** Jedes Gateway braucht drei Verbindungen mehr als `ARKVORY_DATABASE_POOL_SIZE`. Zählen Sie sie in `max_connections` von PostgreSQL ein.
+- **Datenbankverbindungen.** Jedes Gateway verwendet den durch `ARKVORY_DATABASE_POOL_SIZE` dimensionierten Abfragepool und einen separaten Pool mit bis zu 8 Verbindungen für langlebige Sitzungen (Speicherbesitz, Schutz heruntergeladener Dateien vor Löschung und Gateway-Lease). Berücksichtigen Sie beide Pools in `max_connections` von PostgreSQL.
 
 ## Ein Gateway ausführen {#run}
 
@@ -102,7 +102,7 @@ Die Datenbank reserviert einen Slot für 10 Sekunden. Ein Prozess erneuert ihn a
 - **Uhren.** Die Leases verlassen sich auf stabile Uhren. Ein Sprung der Uhr des Datenbankservers oder eine angehaltene virtuelle Maschine können dazu führen, dass ein Prozess über seinen Lease hinaus ausliefert. Stoppen Sie in einem solchen Fall die alten Prozesse, bevor Sie einen Ersatz starten.
 - **Datenbankausfall.** Die Datenbank ist der schwache Punkt. Wird sie unerreichbar, laufen die Leases ab, und alle Prozesse stellen die Auslieferung von Nutzdaten ein.
 
-Der Server kann einen toten Prozess, der sein Netzwerk verloren hat, nur über TCP-Keepalive bemerken. Setzen Sie `tcp_keepalives_idle`, `tcp_keepalives_interval` und `tcp_keepalives_count` in PostgreSQL, zum Beispiel auf 10, 5 und 3 Sekunden, oder setzen Sie `tcp_user_timeout`. Ohne sie wartet ein neuer Writer oder Worker möglicherweise auf den langen Standard-Timeout des Betriebssystems.
+Der Server kann einen toten Prozess, der sein Netzwerk verloren hat, nur über TCP-Keepalive bemerken. Setzen Sie in PostgreSQL zum Beispiel `tcp_keepalives_idle` auf 10 Sekunden, `tcp_keepalives_interval` auf 5 Sekunden und `tcp_keepalives_count` auf 3 Prüfungen, oder setzen Sie `tcp_user_timeout`. Ohne sie wartet ein neuer Writer oder Worker möglicherweise auf den langen Standard-Timeout des Betriebssystems.
 
 ## Gateways überwachen {#monitoring}
 

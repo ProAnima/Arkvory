@@ -119,12 +119,12 @@ Un lien de téléchargement est un secret. Il ne peut pas être révoqué avant 
 
 ### Arborescences de répertoires {#directory-trees}
 
-| Commande                                                                            | Résultat                                                                                     |
-| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publie le dossier sous forme d’un seul artefact ZIP, avec reprise                            |
-| `tree pull ID DIR`                                                                  | Fait du dossier l’arborescence : archive entière, ou seulement les fichiers qui diffèrent    |
-| `tree verify ID DIR`                                                                | Liste les fichiers manquants, divergents et en trop ; code de sortie 5 si l’un d’eux diffère |
-| `tree repair ID DIR`                                                                | Réécrit les fichiers manquants et divergents ; conserve les fichiers en trop                 |
+| Commande                                                                            | Résultat                                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tree push DIR [--name NAME.zip] [--label TAG] [--file METADATA.json] [--compress]` | Publie le dossier sous forme d’un seul artefact ZIP, avec reprise                                                                                                                                                           |
+| `tree pull ID DIR`                                                                  | Fait du dossier l’arborescence : archive entière, ou seulement les fichiers qui diffèrent                                                                                                                                   |
+| `tree verify ID DIR`                                                                | Liste les fichiers `missing` (manquants), `mismatched` (divergents) et `extra` (en trop) ; code de sortie 5 uniquement si `missing` ou `mismatched` n’est pas vide. Des fichiers en trop seuls donnent le code de sortie 0. |
+| `tree repair ID DIR`                                                                | Réécrit les fichiers manquants et divergents ; conserve les fichiers en trop                                                                                                                                                |
 
 Voir [Arborescences de répertoires](../use/trees).
 

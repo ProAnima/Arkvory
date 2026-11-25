@@ -2,7 +2,7 @@
 # Docker Engine. It mirrors the GitHub ubuntu-24.04 lanes: Node.js from the same pinned archive that
 # release packages ship, rpm/postgresql for native packaging, Playwright Chromium for the browser
 # gate and systemd for the disposable service-install lane. Nothing here is a production image.
-FROM ubuntu:24.04@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3
+FROM ubuntu:24.04@sha256:73b999393d07f2bf65a40373778a44dc9a6d54ad7718d29247d8ff9413c4d6a8
 
 ARG NODE_SHA256
 ARG POWERSHELL_SHA256

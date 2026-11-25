@@ -121,7 +121,7 @@ O validador de um download: o valor forte `"sha256:<hex>"` do artefato. Use-o co
 
 ### Failover {#failover}
 
-Mover clientes para um espelho quando a origem é perdida. O operador desanexa o espelho, e ele se torna um repositório comum que aceita alterações. Nada muda por conta própria. Consulte [Espelhos](../operate/mirrors).
+Transferir o serviço para outro servidor após a falha do servidor ativo. Um cluster de alta disponibilidade (HA) dentro de um mesmo site pode fazer o failover automaticamente conforme suas regras de replicação e fencing. Para um repositório MIRROR, um operador deve desanexar manualmente o espelho para torná-lo um repositório comum que aceita gravações; o espelho não faz failover automaticamente. Consulte [Cluster](../operate/cluster) e [Espelhos](../operate/mirrors).
 
 ### Feedback {#feedback}
 

@@ -27,7 +27,7 @@ Arkvory 默认最多保留 10 TiB 的内容（`ARKVORY_CAPACITY_BYTES`），计�
 
 ### 它使用哪个数据库？ {#database}
 
-PostgreSQL，每个安装实例一个数据库。Windows 安装程序包含 PostgreSQL 18.4。Linux 软件包使用来自您的发行版的 PostgreSQL 16 到 19 服务器的专用集群。Docker Compose 栈在容器中运行 PostgreSQL 18.4。脚本安装程序使用您自己的服务器。切勿将两个安装实例连接到一个数据库。文件内容不在数据库中：它在数据目录中。
+PostgreSQL，每个安装实例一个数据库。Windows 安装程序包含 PostgreSQL 18.7。Linux 软件包使用来自您的发行版的 PostgreSQL 16 到 19 服务器的专用集群。Docker Compose 栈在容器中运行 PostgreSQL 18.7。脚本安装程序使用您自己的服务器。切勿将两个安装实例连接到一个数据库。文件内容不在数据库中：它在数据目录中。
 
 ### 我可以使用 S3 或其他对象存储吗？ {#s3}
 
@@ -116,7 +116,7 @@ PostgreSQL，每个安装实例一个数据库。Windows 安装程序包含 Post
 
 ### 什么是不允许的？ {#license-forbidden}
 
-您不得将软件或修改后的版本分发给组织外的任何人，发布包含其代码的分支、构建、容器镜像或补丁，出售、出租或出借它或对它的访问权，对它收费，或将其作为托管或管理服务提供给第三方。您不得移除版权声明、许可证或 ProAnima Arkvory 和 ProAnimaStudio 名称，或将修改后的版本呈现为原始版本。当您在公开场合描述基于 Arkvory 构建的系统时，请注明来源：“ProAnima Arkvory by ProAnimaStudio (Ian Panaev), https://github.com/ProAnima/Arkvory”。请仅从官方来源获取副本。如需其他许可，请写信至 info@proanima.net。
+您不得将软件或修改后的版本分发给组织外的任何人，发布包含其代码的分支、构建、容器镜像或补丁，出售、出租或出借它或对它的访问权，对它收费，或将其作为托管或管理服务提供给第三方。您不得移除版权声明、许可证或 ProAnima Arkvory 和 ProAnimaStudio 名称，或将修改后的版本呈现为原始版本。当您在公开场合描述基于 Arkvory 构建的系统时，请注明来源：“ProAnima Arkvory by ProAnimaStudio (Ian Panaev), <https://github.com/ProAnima/Arkvory>”。请仅从官方来源获取副本。如需其他许可，请写信至 info@proanima.net。
 
 ### 我在哪里报告问题或漏洞？ {#report}
 

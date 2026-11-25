@@ -50,11 +50,11 @@ test('install.ps1 runs Node.js only after the runtime passed verification', asyn
     '& takeown.exe /F $Root /A',
     'try { Set-ExactAccess $Root $grants }',
     "Protect-CodeDirectory $path @('S-1-5-19')",
-    "$nodeSha256 = 'BA4E6D110E8C1592A1ECD390F6B05F3DA124B13871A5BE62B341A07A853C6C32'",
+    "$nodeSha256 = '86FC4785327DB5F5C7558DC6156C543B433C313E813A222E088086222AB4AFA6'",
     'return (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash -eq $nodeSha256',
     '$node = Join-Path $current',
     'if (-not (Test-NodeRuntime $current)) {',
-    "-ne '158F7685B44DE51F6C0DF1D153526CBCD3E1BC739A8DFC607721CEF75DE9E541'",
+    "-ne 'E612AF99F626AB415EA225AF6BCE5C971FEB448CB5CAE250BB1C3FA50C5F7D9F'",
     "[IO.Directory]::GetDirectories($runtime, 'fresh-*')",
     "$fresh = Join-Path $runtime ('fresh-'",
     'try {',
@@ -73,9 +73,9 @@ test('install.ps1 runs Node.js only after the runtime passed verification', asyn
   const nodeName = /\$nodeName = '(node-v[0-9.]+-win-x64)'/.exec(install)?.[1];
   assert.match(
     install,
-    /Invoke-WebRequest "https:\/\/nodejs\.org\/dist\/v24\.21\.0\/\$nodeName\.zip"/,
+    /Invoke-WebRequest "https:\/\/nodejs\.org\/dist\/v24\.22\.3\/\$nodeName\.zip"/,
   );
-  assert.equal(`https://nodejs.org/dist/v24.21.0/${nodeName}.zip`, url);
+  assert.equal(`https://nodejs.org/dist/v24.22.3/${nodeName}.zip`, url);
   assert.ok(install.includes(`-ne '${archiveSha256.toUpperCase()}'`), 'archive SHA-256');
   assert.ok(
     (await read('scripts/package-native.mjs')).includes(

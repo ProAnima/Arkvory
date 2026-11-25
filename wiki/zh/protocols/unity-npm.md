@@ -181,7 +181,7 @@ curl -fsS -H "Authorization: Bearer $ARKVORY_TOKEN" https://arkvory.example/npm/
 | Tarball                     | 最大为安装实例的最大对象大小，`ARKVORY_MAX_OBJECT_BYTES`（默认约 10 TiB）。解压后超过 100 倍加 64 MiB 的归档会被拒绝。 |
 | 发布请求的其余部分          | 最多 8 MiB 的 JSON，最多嵌套 64 层。tarball 以流的方式读取，不保留在内存中。                                           |
 | 单个发布请求                | 必须在 30 分钟内完成，且暂停不得超过 30 秒（`ARKVORY_UPLOAD_DEADLINE_MS`、`ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`）           |
-| 同时上传数                  | 默认每台服务器 2 个，每个密钥 1 个。等待的请求会在 20 秒后放弃。                                                       |
+| 同时上传数                  | 默认每台服务器 8 个，每个密钥 4 个。等待的请求会在 20 秒后放弃。                                                       |
 | 搜索文本                    | 最多 256 个字符                                                                                                        |
 
 `npm publish` 是一个请求，失败后会从第一个字节重新开始。对于数十 GB 的包，请使用 [`arkvoryctl`](./cli) 把文件作为制品或[原始文件](./raw-files)上传。经常变化的大型二进制资源更适合放在 [Git LFS](./git-lfs) 中；把代码和稳定的资源保留在包中。

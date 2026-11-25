@@ -137,6 +137,18 @@ export async function changesAfter(
   return { page, items, anchor };
 }
 
+/** `feedAnchor` of the entry with this sequence, or null when the feed has no such entry. */
+async function anchorAt(
+  upstream: MirrorSource,
+  sequence: string,
+  cancellation: Cancellation,
+): Promise<string | null> {
+  if (sequence === '0') return null;
+  const page = await upstream.changes((BigInt(sequence) - 1n).toString(), cancellation);
+  const first = page.items[0];
+  return first?.sequence === sequence ? feedAnchor(first) : null;
+}
+
 /**
  * The source was restored or replaced: seed again (the seed re-reads the source and never deletes
  * here) and say why in the status until the mirror has caught up.
@@ -245,6 +257,9 @@ export class MirrorSync {
       const { head } = await upstream.changes('0', cancellation);
       await this.save({
         seedHead: head,
+        // Until the replay starts the cursor is 0 and has no entry of its own: the field names
+        // the entry at the seed head, so a source restored during the seed is recognised.
+        anchor: await anchorAt(upstream, head, cancellation),
         seedStep: 'artifacts',
         seedAfter: null,
         head,
@@ -281,7 +296,6 @@ export class MirrorSync {
         await this.save({
           phase: 'following',
           cursor: '0',
-          anchor: null,
           seedStep: null,
           seedAfter: null,
           ...seedProgress(state),
@@ -300,6 +314,18 @@ export class MirrorSync {
   }
 
   private async follow(state: MirrorState, cancellation: Cancellation): Promise<MirrorStep> {
+    // Entries at or below the seed head are replayed as "already listed by the seed". After a
+    // restore of the source during the seed, new entries reuse those numbers and were listed
+    // by nobody: the entry at the seed head is then another one, and the seed runs again.
+    if (
+      state.seedHead !== null &&
+      state.cursor === '0' &&
+      state.anchor !== null &&
+      (await anchorAt(this.d.upstream, state.seedHead, cancellation)) !== state.anchor
+    ) {
+      this.state = await reseed(this.d, state);
+      return 'progress';
+    }
     const read = await changesAfter(this.d.upstream, state, cancellation);
     if (!read) {
       this.state = await reseed(this.d, state);

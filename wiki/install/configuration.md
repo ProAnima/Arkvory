@@ -25,7 +25,7 @@ The installation root holds everything. It is `C:\ProgramData\ProAnima\Arkvory` 
 | `config/hub.json`                                                              | The hub address, the update channel and the statistics setting                                                  | With `configure`                                          |
 | `config/install-id`                                                            | A random installation ID, sent to the hub only with statistics on                                               | Do not change                                             |
 | `config/mirrors/`                                                              | The mirror list and the keys the worker uses for the sources                                                    | With `configure --mirror`                                 |
-| `config/webhooks/`                                                             | The subscription list, the signing secrets and the authorities of receivers that the worker uses                | With `configure --webhook`                                |
+| `config/webhooks/`                                                             | The subscription list, signing secrets and CA certificates for webhook receivers used by the worker             | With `configure --webhook`                                |
 | `installation.json`                                                            | The mode, the engine, the automatic update setting, the version pin and the installed release                   | Only with commands                                        |
 | `github-token.txt`                                                             | Optional GitHub token for release downloads. See [Updates](./updates#hub-unreachable)                           | By hand                                                   |
 | `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | Compose only: the image, the vault mount and the mirror mount                                                   | Only with commands                                        |
@@ -34,13 +34,13 @@ On a native Linux installation, `runtime.json` and `keys.json` are `root:arkvory
 
 ## Lifecycle commands {#lifecycle-commands}
 
-All commands need administrator rights and the option `--root` with the installation root.
+For commands that manage an existing installation, pass `--root` with its installation root. Changes to native services require administrator rights. For Compose, use an account with access to the installation root and the container engine. The `help` and `volume-init` exceptions are described below.
 
 | Installation                 | How to run a command                                                                                                                                      |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Linux package                | `sudo arkvory <command> --root /opt/proanima-arkvory`                                                                                                     |
 | Windows, graphical installer | In an elevated PowerShell: `& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' <command> --root C:\ProgramData\ProAnima\Arkvory`                           |
-| Script installation, Compose | `sudo <root>/runtime/node-v24.21.0-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`. On Windows use `runtime\node-v24.21.0-win-x64\node.exe` |
+| Script installation, Compose | `sudo <root>/runtime/node-v24.22.3-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`. On Windows use `runtime\node-v24.22.3-win-x64\node.exe` |
 
 `arkvory help` lists the commands without special rights. The examples on this site use the short form `arkvory <command>`.
 
@@ -108,9 +108,11 @@ There is no setting for a public URL. The server builds absolute links, such as 
 | Variable                     | Default              | Meaning                                                                                                         |
 | ---------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `ARKVORY_DATABASE_URL`       | set by the installer | The PostgreSQL connection URL. A managed database listens on `127.0.0.1` at the port chosen during installation |
-| `ARKVORY_DATABASE_POOL_SIZE` | `10`                 | The size of the API connection pool, from 4 to 200                                                              |
+| `ARKVORY_DATABASE_POOL_SIZE` | `20`                 | The size of the API query connection pool, from 4 to 200                                                        |
 
-Do not point an installation at another database. The stored files and the catalog belong together. Moving to a new database is a restore from a backup: see [Backups](../operate/backups). For an external PostgreSQL, set `max_connections` high enough for the API pool, one connection per concurrent upload for write locks, 5 for the worker and the connections of the backup agent.
+Do not point an installation at another database. The stored files and the catalog belong together. Moving to a new database is a restore from a backup: see [Backups](../operate/backups).
+
+For an external PostgreSQL, size `max_connections` for the combined pool ceilings of all processes. Each API process, including each read gateway, has three separate pools: up to `ARKVORY_DATABASE_POOL_SIZE` query connections (20 by default), 8 long-lived session connections, and up to `ARKVORY_MAX_UPLOADS` connections for upload write locks (8 by default). The worker has separate pools of 5 query connections, 8 session connections, and `2 + min(N, 16)` write-lock connections, where N is the number of configured mirrors. The backup agent has its own pool of 6 connections and opens another pool of 6 while capturing a backup. These are upper limits, not permanently occupied connections. Leave additional room for licence tools, maintenance and database administration.
 
 ### Storage directory and free space {#storage}
 
@@ -127,17 +129,17 @@ Keep `ARKVORY_DATA_DIR` where the installer put it. The Linux units can write on
 
 The limits belong to one API process. A rate of `0` means no limit.
 
-| Variable                              | Default   | Meaning                                                                                                        |
-| ------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | Uploads at the same time, 1 to 32                                                                              |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | Downloads at the same time, 1 to 256                                                                           |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | Uploads of one account or key at the same time                                                                 |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | Downloads of one account or key at the same time                                                               |
-| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | Order of the download queue: `ordered` (classes and turns), `smallest-first` or `shared` (no queue, as before) |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | Total upload rate in bytes per second                                                                          |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | Total download rate in bytes per second                                                                        |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | The longest time of one upload request, 30 minutes                                                             |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | An upload request that sends no data for this time stops                                                       |
+| Variable                              | Default                         | Meaning                                                                                                        |
+| ------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `8`                             | Uploads at the same time, 1 to 32                                                                              |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`                            | Downloads at the same time, 1 to 256                                                                           |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `min(4, ARKVORY_MAX_UPLOADS)`   | Uploads of one account or key at the same time                                                                 |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `min(4, ARKVORY_MAX_DOWNLOADS)` | Downloads of one account or key at the same time                                                               |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered`                       | Order of the download queue: `ordered` (classes and turns), `smallest-first` or `shared` (no queue, as before) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`                             | Total upload rate in bytes per second                                                                          |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`                             | Total download rate in bytes per second                                                                        |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`                       | The longest time of one upload request, 30 minutes                                                             |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`                         | An upload request that sends no data for this time stops                                                       |
 
 A proxy in front of the API must allow a request at least as long as `ARKVORY_UPLOAD_DEADLINE_MS`. See [HTTPS](./https#reverse-proxy). All other limits, such as the waiting queue and the per-account rates, are in [Environment variables](../reference/environment#transfers-and-bandwidth).
 
@@ -221,7 +223,7 @@ Replace the recovery key if you suspect that someone has read `config/bootstrap-
    & 'C:\ProgramData\ProAnima\Arkvory\runtime\node.exe' .\replace-recovery-key.mjs 'C:\ProgramData\ProAnima\Arkvory\config'
    ```
 
-   After a script installation, use the Node.js under `runtime\node-v24.21.0-…` instead.
+   After a script installation, use the Node.js under `runtime\node-v24.22.3-…` instead.
 
 4. Restart the services as shown in [Apply a change](#apply-change).
 5. Read the new key from `config/bootstrap-token.txt`, and delete the script and the copy of `keys.json`.

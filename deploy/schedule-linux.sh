@@ -17,7 +17,7 @@ After=network-online.target
 Type=oneshot
 ExecStart="$node" "$root/manage.mjs" updates-poll --root "$root"
 UnsetEnvironment=NODE_PATH
-TimeoutStartSec=1800
+TimeoutStartSec=50400
 UMask=0077
 EOF
 cat > /etc/systemd/system/arkvory-update.timer <<'EOF'

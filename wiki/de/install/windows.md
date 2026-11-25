@@ -52,7 +52,7 @@ Der Installer löscht die Besitzerdatei, nachdem er das Konto erstellt hat. Übe
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Programmdateien                     | `C:\Program Files\ProAnima\Arkvory`                                                                                                                                                       |
 | Daten, Konfiguration und Protokolle | `C:\ProgramData\ProAnima\Arkvory` (das Installationsverzeichnis)                                                                                                                          |
-| Datenbank                           | PostgreSQL 18.4 in `database\` des Installationsverzeichnisses, auf `127.0.0.1` am ersten freien Port aus 45329-45348, ausgenommen von den Ports, die Windows beim Systemstart reserviert |
+| Datenbank                           | PostgreSQL 18.7 in `database\` des Installationsverzeichnisses, auf `127.0.0.1` am ersten freien Port aus 45329-45348, ausgenommen von den Ports, die Windows beim Systemstart reserviert |
 | Konsole                             | `http://127.0.0.1:8080/console/`                                                                                                                                                          |
 | Wiederherstellungsschlüssel         | `config\bootstrap-token.txt` im Installationsverzeichnis                                                                                                                                  |
 | Update-Aufgabe                      | `ProAnimaArkvoryUpdate` in der Aufgabenplanung. Läuft jede Minute als SYSTEM                                                                                                              |
@@ -82,7 +82,7 @@ Verwenden Sie diese Methode, wenn Ihre Organisation bereits PostgreSQL betreibt.
 .\install.ps1 -AutomaticUpdates
 ```
 
-Das Skript fragt nach der PostgreSQL-Verbindungs-URL. Die Eingabe wird nicht angezeigt. Anschließend lädt es Node.js 24.21.0 von `nodejs.org` herunter, prüft dessen SHA-256-Wert und installiert das neueste stabile Release. Liegt Node.js bereits im Installationsverzeichnis, verwendet das Skript es nur, wenn `node.exe` den erwarteten SHA-256-Wert hat und der Ordner nichts anderes enthält. Andernfalls lädt es Node.js erneut herunter und verschiebt den alten Ordner nach `runtime\unverified-…`.
+Das Skript fragt nach der PostgreSQL-Verbindungs-URL. Die Eingabe wird nicht angezeigt. Anschließend lädt es Node.js 24.22.3 von `nodejs.org` herunter, prüft dessen SHA-256-Wert und installiert das neueste stabile Release. Liegt Node.js bereits im Installationsverzeichnis, verwendet das Skript es nur, wenn `node.exe` den erwarteten SHA-256-Wert hat und der Ordner nichts anderes enthält. Andernfalls lädt es Node.js erneut herunter und verschiebt den alten Ordner nach `runtime\unverified-…`.
 
 Statt der Abfrage können Sie eine geschützte JSON-Datei übergeben:
 
@@ -126,7 +126,7 @@ $root = 'C:\ProgramData\ProAnima\Arkvory'
 # Grafischer Installer
 & 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' status --root $root
 # Installation per Skript
-& "$root\runtime\node-v24.21.0-win-x64\node.exe" "$root\manage.mjs" status --root $root
+& "$root\runtime\node-v24.22.3-win-x64\node.exe" "$root\manage.mjs" status --root $root
 ```
 
 Mit `arkvory.ps1 help` sehen Sie alle Befehle. Die Befehle sind unter [Konfiguration](./configuration) und [Updates](./updates) beschrieben.

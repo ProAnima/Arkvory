@@ -84,7 +84,19 @@ export const API_PAGES = [
  * (a stub that includes it, with a notice) until someone translates it; `npm run wiki -- stubs`
  * writes the stubs and `npm run wiki -- check <code>` lists what is left.
  */
-export const COMPLETE: readonly string[] = ['en', 'ru', 'es', 'de', 'zh', 'hi', 'ko', 'fr', 'pt'];
+export const COMPLETE: readonly string[] = [
+  'en',
+  'ru',
+  'es',
+  'de',
+  'zh',
+  'hi',
+  'ko',
+  'fr',
+  'pt',
+  'ja',
+  'ar',
+];
 
 /** Pages written by the generator before a build; not in git. */
 export const GENERATED = ['api/errors', ...API_PAGES.map((page) => `api/reference/${page}`)];

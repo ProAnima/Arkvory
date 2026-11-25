@@ -51,6 +51,9 @@ export async function makeFolders(
   }
 }
 
+/** Admission attempts of an abort that meets contention: about 1.5 s in total. */
+const ABORT_ATTEMPTS = 6;
+
 /** The temporary file is a reservation shared by all hosts, including after a crash. */
 export class ModuleDataSink implements FileSink {
   private done = false;
@@ -102,18 +105,24 @@ export class ModuleDataSink implements FileSink {
         const before = await entryAt(this.target.path);
         if (before && (this.options.exclusive || !before.isFile()))
           throw new ModuleServiceError('conflict', 'File exists');
+        let linked = false;
         await publishing(async () => {
           guard.check();
           if (before) {
             this.requireRemoval?.();
             await rename(this.temporary, this.target.path);
           } else {
-            // Atomic no-replace even for non-exclusive creates of previously absent names.
-            try {
-              await link(this.temporary, this.target.path);
-            } catch (error) {
-              if (hasCode(error, 'EEXIST')) throw new ModuleServiceError('conflict', 'File exists');
-              throw error;
+            // Atomic no-replace even for non-exclusive creates of previously absent names. A
+            // retry after a held temporary name must not meet its own link as a conflict.
+            if (!linked) {
+              try {
+                await link(this.temporary, this.target.path);
+              } catch (error) {
+                if (hasCode(error, 'EEXIST'))
+                  throw new ModuleServiceError('conflict', 'File exists');
+                throw error;
+              }
+              linked = true;
             }
             guard.check();
             await unlink(this.temporary);
@@ -126,6 +135,11 @@ export class ModuleDataSink implements FileSink {
         throw error;
       }
     });
+  }
+
+  /** Read through a call: a close or abort of another caller sets the flag while this waits. */
+  private finished(): boolean {
+    return this.done;
   }
 
   private finish(): void {
@@ -149,16 +163,27 @@ export class ModuleDataSink implements FileSink {
 
   async abort(): Promise<void> {
     if (this.done) return;
-    try {
-      await this.shared.run(async (guard) => {
-        if (!this.done) await this.discard(guard);
-      }, true);
-    } catch (error) {
-      // Always release the OS handle, but never unlink after lost admission. The next owner
-      // reclaims the charged temporary file only after acquiring this owner's session lock.
-      await this.closeHandle();
-      this.finish();
-      throw error;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await this.shared.run(async (guard) => {
+          if (!this.done) await this.discard(guard);
+        }, true);
+        return;
+      } catch (error) {
+        // Contention is not lost admission: another host holds the module lock for a moment or
+        // the local queue is full. Giving up here would charge the temporary file to the quota
+        // until this process exits, so the removal waits a bounded time for its turn.
+        if (hasCode(error, 'busy') && attempt < ABORT_ATTEMPTS) {
+          await new Promise<void>((resolve) => setTimeout(resolve, 50 * 2 ** (attempt - 1)));
+          if (this.finished()) return;
+          continue;
+        }
+        // Always release the OS handle, but never unlink after lost admission. The next owner
+        // reclaims the charged temporary file only after acquiring this owner's session lock.
+        await this.closeHandle();
+        this.finish();
+        throw error;
+      }
     }
   }
 }

@@ -17,6 +17,16 @@ export const labels = (text) => [...text.matchAll(UI)].map((m) => m[1]).sort();
 const fences = (text) => text.split(/\r?\n/).filter((line) => /^\s*(```|~~~)/.test(line)).length;
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+// These names are executable configuration, permissions, flags and wire identifiers.
+// Unlike surrounding prose and example placeholders, translations must retain them.
+const TECHNICAL =
+  /\bARKVORY_[A-Z0-9_*]+|--[a-z][a-z0-9-]*|\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b|\b(?:artifact|repository|storage|backup|upload|package|account|site|audit|token)\.(?:[a-z](?:[A-Za-z0-9_.]*[A-Za-z0-9_])?|\*(?!\*))|\b(?:X-(?:[A-Za-z]+-)*[A-Za-z]+|Retry-After|If-Range|If-Match|If-None-Match|Content-Range|Content-Type|ETag)\b/g;
+
+export function missingTechnicalTerms(source, translation) {
+  const own = new Set(translation.match(TECHNICAL) ?? []);
+  return [...new Set(source.match(TECHNICAL) ?? [])].filter((name) => !own.has(name)).sort();
+}
+
 /** Differences of a translated page from the English one; empty when it keeps what it must. */
 export function comparePage(code, page) {
   const path = `${code}/${page}.md`;
@@ -53,6 +63,9 @@ export function comparePage(code, page) {
       `${path}: ${String(fences(text) / 2)} code blocks, English has ${String(fences(english) / 2)}`,
     );
   if (/\bSTUB\b/.test(text)) problems.push(`${path}: stub`);
+  const missing = missingTechnicalTerms(english, text);
+  if (missing.length)
+    problems.push(`${path}: technical identifiers missing — [${missing.join(', ')}]`);
   // A link to the site's root stays in the language: /guide/ is /de/guide/ in German.
   for (const match of text.matchAll(/\]\((\/[^)\s]*)\)|link:\s*(\/\S*)/g)) {
     const target = match[1] ?? match[2] ?? '';

@@ -239,7 +239,7 @@ Quando um servidor de dados é perdido de vez, substitua-o por um novo com o mes
 Quando um servidor de dados fica ausente por muito tempo (uma troca de disco, por exemplo) e as gravações paradas custam mais do que o risco, um operador pode aceitar gravações com uma cópia por um tempo limitado:
 
 ```bash
-arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
+arkvory cluster-single-copy --root /opt/proanima-arkvory --until "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --reason "disk replacement on node-b"
 ```
 
 - O horário deve estar dentro dos próximos 7 dias e trazer o fuso: `Z` para UTC ou um deslocamento como `+03:00`. Sem fuso, o comando se recusa, porque o servidor ativo o leria no seu próprio horário local. O comando só funciona enquanto faltam cópias.
@@ -275,4 +275,4 @@ O agente de backup executa somente no servidor ativo, como parte do grupo. Mante
 - Cada gravação espera os outros servidores de dados, por isso a latência do link se soma a cada gravação.
 - O Arkvory nunca volta sozinho para um servidor reparado.
 
-Em ha-2, o plano atrasa em 15 segundos o fencing do nó com o menor ID DRBD (`pcmk_delay_base`); o outro destino não tem atraso. Verifique se a margem supera o tempo de fencing e a diferença na detecção de falhas. Em clusters existentes, aplique os comandos `pcs stonith update` correspondentes e teste falhas nas duas direções. Regenerar o plano não atualiza o cluster. Quórum e fencing continuam obrigatórios.
+Em ha-2, o plano gerado atrasa em 15 segundos o fencing do nó com o menor ID de nó DRBD (`pcmk_delay_base`); o outro destino não tem atraso. Isso impede que solicitações simultâneas de fencing desliguem os dois nós quando o atraso supera o tempo de fencing medido e a diferença na detecção de falhas. Valide essa margem com o agente de fencing que você realmente utiliza. Os clusters existentes devem aplicar os comandos `pcs stonith update` correspondentes e repetir os testes de falha nas duas direções; apenas regenerar o plano não atualiza o cluster. O quórum e o fencing obrigatório continuam habilitados.

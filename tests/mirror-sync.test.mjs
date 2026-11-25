@@ -442,3 +442,28 @@ test('a detached mirror is never picked up again by another source', async () =>
   assert.equal(state.detachedAt, '2026-10-12T10:00:00.000Z', 'the mark stays');
   assert.equal(state.source, 'https://a|releases');
 });
+
+test('a source restored during the seed is seeded again: entries that reuse numbers are not skipped as replay', async () => {
+  const st = states();
+  const s = source({ artifacts: ['a', 'b', 'c'], head: '9' });
+  const t = target();
+  const sync = mirror(s, t, st);
+  // The seed took its head (9) and listed the artifacts that existed then.
+  while (st.rows.get('releases')?.seedStep !== 'packages') await sync.step(never);
+  assert.equal(st.rows.get('releases').seedHead, '9');
+  // Restored to 4 while the seed ran, then busy again: a new artifact took a number below 9.
+  s.artifacts.set('late', {
+    id: 'late',
+    descriptor: { name: 'f', size: 1, sha256: 'b'.repeat(64) },
+  });
+  restore(s, '9', [
+    { sequence: '6', action: 'artifact.publish', artifactId: 'late', detail: null },
+    { sequence: '9', action: 'annotations.replace', artifactId: 'late', detail: null },
+  ]);
+  await settle(sync);
+  // Without the check entry 6 is "replay" (below the seed head, not a registry entry) and the
+  // artifact listing had already passed: the mirror would report itself synchronised without it.
+  assert.ok(t.log.includes('copy late'));
+  assert.equal(st.rows.get('releases').cursor, '9');
+  assert.equal(st.rows.get('releases').errorCode, null);
+});

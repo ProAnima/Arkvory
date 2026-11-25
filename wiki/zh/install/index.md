@@ -17,11 +17,11 @@ Arkvory 运行在一台服务器上。每种安装都包含相同的组成部分
 
 | 选项                                                                                    | 平台                                          | 重启后无需登录即可启动                             | 数据库                                                | 安装后的自动更新                                      | 适用场景                                          |
 | --------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------- |
-| [图形安装程序](./windows) `Arkvory-Setup-x64.exe`                                       | Windows x64                                   | 是（Windows 服务）                                 | 内置 PostgreSQL 18.4，由 Arkvory 管理                 | 关闭                                                  | Windows 服务器和工作站，无法访问互联网时的安装    |
+| [图形安装程序](./windows) `Arkvory-Setup-x64.exe`                                       | Windows x64                                   | 是（Windows 服务）                                 | 内置 PostgreSQL 18.7，由 Arkvory 管理                 | 关闭                                                  | Windows 服务器和工作站，无法访问互联网时的安装    |
 | [Linux 软件包](./linux) `Arkvory-amd64.deb`、`Arkvory-x86_64.rpm`                       | 带 systemd 的 Linux x64                       | 是（systemd 单元）                                 | 使用发行版自带的独立 PostgreSQL 集群（16 到 19 版本） | 关闭                                                  | Debian、Ubuntu 和基于 RPM 的服务器                |
 | 脚本，原生服务：`install.sh`（[Linux](./linux)）、`install.ps1`（[Windows](./windows)） | 带 systemd 的 Linux x64 或 arm64，Windows x64 | 是                                                 | 您现有的 PostgreSQL 服务器                            | 关闭；使用 `--automatic` / `-AutomaticUpdates` 可开启 | 自动化部署、已有的 PostgreSQL 服务器、Linux arm64 |
-| [Docker Compose](./docker)                                                              | 装有 Docker Engine 的 Linux                   | 是，前提是容器引擎在开机时启动                     | PostgreSQL 18.4 容器                                  | 关闭；使用 `--automatic` 可开启                       | 容器主机                                          |
-| [Docker Desktop](./docker)                                                              | Windows x64                                   | 否。容器仅在用户登录且 Docker Desktop 启动后才运行 | PostgreSQL 18.4 容器                                  | 关闭；使用 `-AutomaticUpdates` 可开启                 | 在工作站上试用                                    |
+| [Docker Compose](./docker)                                                              | 装有 Docker Engine 的 Linux                   | 是，前提是容器引擎在开机时启动                     | PostgreSQL 18.7 容器                                  | 关闭；使用 `--automatic` 可开启                       | 容器主机                                          |
+| [Docker Desktop](./docker)                                                              | Windows x64                                   | 否。容器仅在用户登录且 Docker Desktop 启动后才运行 | PostgreSQL 18.7 容器                                  | 关闭；使用 `-AutomaticUpdates` 可开启                 | 在工作站上试用                                    |
 
 所有选项安装的 API、worker 和备份代理都相同。内置 HTTPS 仅适用于原生安装。Compose 安装需要反向代理来提供 HTTPS。参见 [HTTPS 与反向代理](./https)。
 
@@ -71,20 +71,20 @@ Arkvory 没有规定固定的处理器或内存最低配置。请按您的文件
 
 | 主机                                                | 用途                                                                       |
 | --------------------------------------------------- | -------------------------------------------------------------------------- |
-| `nodejs.org`                                        | `install.sh` 和 `install.ps1` 下载 Node.js 24.21.0 并检查其 SHA-256        |
+| `nodejs.org`                                        | `install.sh` 和 `install.ps1` 下载 Node.js 24.22.3 并检查其 SHA-256        |
 | `api.github.com`、`github.com` 以及 GitHub 下载主机 | 脚本安装程序，以及无法连接更新中心时的更新                                 |
 | `hub.proanima.net`                                  | 检查和下载更新。参见[更新](./updates)                                      |
-| Docker Hub                                          | Compose 基于 `node:24.21.0-bookworm-slim` 构建镜像，并运行 `postgres:18.4` |
+| Docker Hub                                          | Compose 基于 `node:24.22.3-bookworm-slim` 构建镜像，并运行 `postgres:18.7` |
 
 没有互联网访问时，请从发行版的本地副本安装和更新。参见[更新](./updates)。
 
 ## 端口 {#ports}
 
-| 端口                         | 服务                                                                                              | 默认暴露范围                                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 8080/TCP                     | API 和控制台（HTTP，或使用内置 TLS 的 HTTPS）                                                     | 仅限 `127.0.0.1`。配置 HTTPS 之后，原生安装可以监听其他地址。Compose 始终把它发布在 `127.0.0.1:8080` 上 |
-| 54329/TCP 或 45329-45348/TCP | 图形安装程序和 Linux 软件包所管理的 PostgreSQL；安装时占用第一个空闲端口，在 Windows 上低于 49152 | 仅限 `127.0.0.1`                                                                                        |
-| 5432/TCP                     | Compose 安装的 PostgreSQL 容器                                                                    | 不发布。仅在 Compose 网络内部可访问                                                                     |
+| 端口                         | 服务                                                                                              | 默认暴露范围                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 8080/TCP                     | API 和控制台（HTTP，或使用内置 TLS 的 HTTPS）                                                     | 仅限 `127.0.0.1`。配置 HTTPS 之后，或在可信代理之后，原生安装可以监听其他地址。Compose 始终把它发布在 `127.0.0.1:8080` 上 |
+| 54329/TCP 或 45329-45348/TCP | 图形安装程序和 Linux 软件包所管理的 PostgreSQL；安装时占用第一个空闲端口，在 Windows 上低于 49152 | 仅限 `127.0.0.1`                                                                                                          |
+| 5432/TCP                     | Compose 安装的 PostgreSQL 容器                                                                    | 不发布。仅在 Compose 网络内部可访问                                                                                       |
 
 只向客户端网络开放 HTTPS 端口。切勿开放数据库端口。
 

@@ -245,3 +245,61 @@ test('derived cache: close drains a build with both pool slots held by owner and
     0,
   );
 });
+
+test('derived cache: readers take their connections from their own pool and overflow as a miss', async (t) => {
+  const f = await cacheFixture(t);
+  // Sessions: the owner, the data coordinator and one connection for short statements.
+  const pools = [3, 2].map(
+    (max) =>
+      new Pool({
+        connectionString: f.config.databaseUrl,
+        max,
+        connectionTimeoutMillis: 500,
+        statement_timeout: 5000,
+      }),
+  );
+  const poolErrors = [];
+  for (const pool of pools) pool.on('error', (error) => poolErrors.push(error));
+  const [sessions, readers] = pools;
+  t.after(() => readers.end());
+  // As in a process: the sessions pool has no slot to spare for two readers.
+  const cache = new ModuleDerivedCache({
+    pool: sessions,
+    readerPool: readers,
+    readerLimit: 8,
+    dataDirectory: f.directory,
+    moduleId: f.moduleId,
+    quota: reservation,
+    reserve: { bytes: 0, inodes: 0 },
+    readOnly: false,
+  });
+  f.instances.push({ cache, pool: sessions, poolErrors });
+  const expected = payload('S');
+  const build = await cache.begin('served', reservation, signal);
+  assert.ok(build);
+  await writeBuild(build, expected);
+  await build.commit(signal);
+  const held = sessions.totalCount - sessions.idleCount;
+  assert.equal(held, 2, 'the owner session and the data coordinator');
+  const open = [await cache.open('served', signal), await cache.open('served', signal)];
+  try {
+    assert.ok(open.every(Boolean), 'two readers beside a full sessions pool');
+    assert.equal(
+      sessions.totalCount - sessions.idleCount,
+      held,
+      'no reader holds a session of the core',
+    );
+    assert.equal(readers.totalCount, 2);
+    // No free reader connection: a miss after the pool's wait, never an error of the driver.
+    assert.equal(await cache.open('served', signal), null);
+    await assertRead(open[0], expected);
+  } finally {
+    for (const reader of open) await reader?.release();
+  }
+  const again = await cache.open('served', signal);
+  try {
+    await assertRead(again, expected);
+  } finally {
+    await again?.release();
+  }
+});

@@ -132,10 +132,28 @@ wget --header="Authorization: Bearer $ARKVORY_KEY" -O GameSetup.exe "$URL"
 
 У пути в любой момент может появиться новая версия, а `GET` каждый раз разрешает путь заново. Чтобы безопасно продолжить скачивание, запомните `ETag` первого ответа и отправьте его в `If-Range`:
 
+Сохраните `ETag` исходного `GET` в `GameSetup.etag`; не получайте новое значение через `HEAD`. Пример берёт смещение из размера частичного файла и дописывает временный ответ только после `206`. При `200` или ошибке запроса частичный файл остаётся прежним: начните новое скачивание отдельно. Перед использованием проверьте итоговый SHA-256.
+
 ```bash
-etag=$(curl -sSI -H "Authorization: Bearer $ARKVORY_KEY" "$URL" | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
-curl -sS -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
-  -H "Range: bytes=1048576-" "$URL" >> GameSetup.part
+etag=$(cat GameSetup.etag) || exit 1
+test -n "$etag" || exit 1
+offset=$(wc -c < GameSetup.part) || exit 1
+offset=$(printf '%s' "$offset" | tr -d '[:space:]')
+segment=$(mktemp) || exit 1
+status=$(curl -fsS -o "$segment" -w '%{http_code}' \
+  -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
+  -H "Range: bytes=$offset-" "$URL") || {
+  rm -f "$segment"
+  exit 1
+}
+if [ "$status" != 206 ]; then
+  rm -f "$segment"
+  exit 1
+fi
+cat "$segment" >> GameSetup.part
+result=$?
+rm -f "$segment"
+test "$result" -eq 0
 ```
 
 Чтобы пропустить скачивание, если файл не изменился, отправьте ETag, который вы сохранили в прошлый раз:
@@ -189,7 +207,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ARKVORY_KEY
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Размер файла             | Максимальный размер объекта в установке, `ARKVORY_MAX_OBJECT_BYTES` (по умолчанию около 10 ТиБ)                                                                                         |
 | Один запрос `PUT`        | Должен завершиться в течение 30 минут и не должен простаивать дольше 30 секунд (`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`). Это же наибольшие допустимые значения. |
-| Одновременные загрузки   | По умолчанию 2 на сервер и 1 на ключ (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). Ожидающий запрос сдаётся через 20 секунд с ответом `503`.                            |
+| Одновременные загрузки   | По умолчанию 8 на сервер и 4 на ключ (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). Ожидающий запрос сдаётся через 20 секунд с ответом `503`.                            |
 | Одновременные скачивания | По умолчанию 16 на сервер и 4 на ключ                                                                                                                                                   |
 | Квота                    | Файл учитывается в квоте репозитория и в ёмкости установки                                                                                                                              |
 

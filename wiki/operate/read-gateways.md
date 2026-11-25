@@ -30,7 +30,7 @@ Repository permissions are checked on every read, as on the writer. Sessions, pe
 - **The same service keys.** Give every process the same `ARKVORY_KEYS_FILE` content, so the file keys and their IDs match. Managed service keys live in the database, so they match by themselves.
 - **Own port.** Every process on the same host needs its own `ARKVORY_PORT`.
 - **A read-only view of the files.** Where you can, mount the storage directory read-only for the gateway. The HTTP refusal does not replace operating system rights. Note that the gateway still writes to the database: leases, storage diagnostics, the last-use time of personal tokens and the locks that protect files being read.
-- **Database connections.** Every gateway needs three more connections than `ARKVORY_DATABASE_POOL_SIZE`. Count them in `max_connections` of PostgreSQL.
+- **Database connections.** Each gateway uses the query pool sized by `ARKVORY_DATABASE_POOL_SIZE` and a separate pool of up to 8 connections for long-lived sessions (ownership, download pins and the gateway lease). Include both pools in PostgreSQL's `max_connections`.
 
 ## Run a gateway {#run}
 
@@ -102,7 +102,7 @@ The database reserves a slot for 10 seconds. A process renews it every 2 seconds
 - **Clocks.** The leases rely on steady clocks. A jump of the clock of the database server, or a stopped virtual machine, can leave a process serving beyond its lease. Stop the old processes before you start a replacement in such a case.
 - **Database failure.** The database is the weak point. If it becomes unreachable, the leases expire and all processes stop serving payload.
 
-The server can notice a dead process that lost its network only through TCP keepalive. Set `tcp_keepalives_idle`, `tcp_keepalives_interval` and `tcp_keepalives_count` on PostgreSQL, for example to 10, 5 and 3 seconds, or set `tcp_user_timeout`. Without them, a new writer or worker may wait for the long default timeout of the operating system.
+The server can notice a dead process that lost its network only through TCP keepalive. For example, set `tcp_keepalives_idle` to 10 seconds, `tcp_keepalives_interval` to 5 seconds and `tcp_keepalives_count` to 3 probes in PostgreSQL, or set `tcp_user_timeout`. Without them, a new writer or worker may wait for the long default timeout of the operating system.
 
 ## Monitor gateways {#monitoring}
 

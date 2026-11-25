@@ -116,12 +116,24 @@ export async function source(
  */
 export async function stage(root: string, source: Source): Promise<void> {
   await removeStaleDownloads(root, Date.now());
+  await removeStaleStages(root);
   const destination = inside(root, 'releases', source.release.version);
   if (await present(destination)) {
     await reuse(root, source, destination);
     return;
   }
   await withVerifiedArchive(root, source, (archive) => extract(root, source, destination, archive));
+}
+/** Trees an interrupted staging left; the caller holds the operation lock, so none is in use. */
+async function removeStaleStages(root: string): Promise<void> {
+  const releases = join(root, 'releases');
+  const names = await readdir(releases).catch((error: unknown) => {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return [];
+    throw error;
+  });
+  for (const name of names)
+    if (name.startsWith('.stage-') || name.startsWith('.verify-'))
+      await rm(inside(root, 'releases', name), { recursive: true, force: true });
 }
 async function extract(
   root: string,
@@ -132,6 +144,18 @@ async function extract(
   await mkdir(join(root, 'releases'), { recursive: true });
   await chmod(join(root, 'releases'), 0o755);
   const temporary = inside(root, 'releases', `.stage-${randomUUID()}`);
+  try {
+    await populate(source, temporary, archive);
+    await rename(temporary, destination);
+  } catch (error) {
+    // A failed attempt must not leave a release tree behind on the volume of the data: the
+    // daily automatic update would add another one every day. rm does not follow links.
+    await rm(temporary, { recursive: true, force: true }).catch(() => undefined);
+    throw error;
+  }
+  await syncDirectory(join(root, 'releases'));
+}
+async function populate(source: Source, temporary: string, archive: string): Promise<void> {
   await extractArchive(archive, temporary);
   for (const name of [
     'apps/api/dist/main.js',
@@ -144,8 +168,6 @@ async function extract(
     await access(inside(temporary, name));
   await atomicJson(join(temporary, 'release.json'), source.release);
   await readableTree(temporary);
-  await rename(temporary, destination);
-  await syncDirectory(join(root, 'releases'));
 }
 async function present(path: string): Promise<boolean> {
   try {

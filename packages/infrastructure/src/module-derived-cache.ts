@@ -33,6 +33,10 @@ import { StorageOwnership } from './storage-ownership.js';
 
 export interface ModuleDerivedCacheOptions {
   readonly pool: Pool;
+  /** Connections of open readers; absent, they come from `pool` (a host with few readers). */
+  readonly readerPool?: Pool;
+  /** Open and waiting readers of this cache; the default is the bound of the contract. */
+  readonly readerLimit?: number;
   readonly dataDirectory: string;
   readonly moduleId: string;
   readonly quota: CacheBudget;
@@ -41,6 +45,12 @@ export interface ModuleDerivedCacheOptions {
   /** Host-wide coordinator avoids an extra long-lived session per cache module. */
   readonly coordinator?: PostgresModuleDataCoordinator;
 }
+
+/**
+ * No free connection within the pool's wait is a miss, like any other full queue: the module
+ * has its path without the cache, and nothing of the core waits behind readers.
+ */
+const readerConnection = (pool: Pool) => pool.connect().catch(() => null);
 
 /** Shared derived groups. The module receives only build/read handles; it cannot mutate
  * their physical namespace through ModuleFiles. Neither locks nor timeouts prove OS death. */
@@ -189,7 +199,8 @@ export class ModuleDerivedCache implements DerivedCache {
             this.queue.run(async () => {
               this.check();
               await this.catalog.retire(await this.session.get(), this.ownerId, id);
-              await this.sweep(false);
+              // The generation is retired; removing its files is repeated by every later sweep.
+              await this.sweep(false).catch(() => undefined);
             }),
           settled: () => {
             this.builds.delete(build);
@@ -208,13 +219,15 @@ export class ModuleDerivedCache implements DerivedCache {
     requireKey(key);
     signal.throwIfAborted();
     // Serialize registration with close and bound waiting acquisitions before taking a pool slot.
-    if (this.pendingReaders + this.readers.size >= 64) return Promise.resolve(null);
+    if (this.pendingReaders + this.readers.size >= (this.options.readerLimit ?? 64))
+      return Promise.resolve(null);
     this.pendingReaders++;
     return this.queue
       .run(async () => {
         await this.ready();
         signal.throwIfAborted();
-        const client = await this.options.pool.connect();
+        const client = await readerConnection(this.options.readerPool ?? this.options.pool);
+        if (!client) return null;
         const ownership = new StorageOwnership(client);
         const ref = randomUUID();
         try {

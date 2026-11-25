@@ -2,6 +2,7 @@ import type {
   BackupFailureCode,
   BackupManifest,
   BackupRequestKind,
+  InventoryEntry,
   VaultIdentity,
   VerifyDepth,
 } from '@proanima/arkvory-domain';
@@ -125,6 +126,12 @@ export interface VaultListing {
   readonly damaged: readonly string[];
 }
 export interface MaintainedVault extends ReadableVault {
+  /**
+   * Takes stored content out of the way under the exclusive vault lock: the id has no content
+   * any more, so the next capture copies it again from the source. The bytes stay in the vault
+   * under a temporary name until the next prune removes them.
+   */
+  setAsideBlob(entry: InventoryEntry): Promise<void>;
   listing(): Promise<VaultListing>;
   /** Content bytes of `point` that `previous` lists too (sorted merge of both inventories). */
   sharedBytes(

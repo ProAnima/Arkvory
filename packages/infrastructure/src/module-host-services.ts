@@ -35,6 +35,8 @@ export interface HostServiceSources {
   /** ARKVORY_DATA_DIR, where `module-data/<id>/` lives. */
   readonly dataDirectory: string;
   readonly dataPool?: Pool;
+  /** Connections of cache readers, apart from the sessions the core itself needs. */
+  readonly readerPool?: { readonly pool: Pool; readonly limit: number };
   readonly reserve: VolumeReserve;
   /** A read gateway: data directories are read-only there. */
   readonly readOnly: boolean;
@@ -240,6 +242,12 @@ export class ModuleHostServices {
     if (!pool) throw new ModuleServiceError('unavailable', 'Derived cache requires database');
     const cache = new ModuleDerivedCache({
       pool,
+      ...(this.sources.readerPool
+        ? {
+            readerPool: this.sources.readerPool.pool,
+            readerLimit: this.sources.readerPool.limit,
+          }
+        : {}),
       ...(this.coordinator ? { coordinator: this.coordinator } : {}),
       dataDirectory: this.sources.dataDirectory,
       moduleId,

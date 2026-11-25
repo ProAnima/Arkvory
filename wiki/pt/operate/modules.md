@@ -74,7 +74,7 @@ Um módulo instalado fica desativado até você ativá-lo. Os serviços carregam
 3. Reinicie os serviços, como em [Aplicar uma alteração](../install/configuration#apply-change).
 4. Verifique o módulo como administrador global: `GET /api/v1/system/modules` o mostra com `running: true` e `health.status` `ok` na API e em cada gateway de leitura.
 
-Os módulos assinados executam na API, nos gateways de leitura, no worker e no agente de backup conforme os papéis declarados. Cada processo fornece apenas os serviços do seu papel declarados em `uses`. As rotas exigem `routes`. O Docker Compose ainda não carrega módulos.
+Os módulos assinados executam na API, nos gateways de leitura, no worker e no agente de backup conforme os papéis declarados. Cada processo fornece apenas os serviços do seu papel declarados em `uses`. Os prefixos de rota exigem o serviço `routes` (`routes_unsupported` se ele estiver indisponível). O Docker Compose ainda não carrega módulos.
 
 Os armazenamentos de módulos são registrados como `<module>.<name>` e podem receber novos uploads. Quando deixam de aceitar gravações, os novos uploads usam `default`. O núcleo verifica todos os bytes antes de publicar objetos montados de partes. A limpeza aguarda leitores ativos, todas as proteções de backup e a barreira de captura. Os cálculos usam threads limitadas. As assinaturas confirmam eventos após processamento bem-sucedido e podem repetir a entrega após erros.
 

@@ -1,7 +1,7 @@
 name: arkvory-tests
 services:
   postgres:
-    image: postgres:18.4
+    image: postgres:18.7
     environment:
       POSTGRES_USER: arkvory_test
       POSTGRES_PASSWORD: arkvory_test

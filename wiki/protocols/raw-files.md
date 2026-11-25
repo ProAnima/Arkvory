@@ -132,10 +132,28 @@ Only one range per request is supported. A request with several ranges returns t
 
 A path can get a new version at any time, and a `GET` resolves the path again. To continue a download safely, remember the `ETag` of the first answer and send it as `If-Range`:
 
+Save the `ETag` from the original `GET` in `GameSetup.etag`; do not obtain a new value with `HEAD`. This example derives the offset from the existing partial file and appends a temporary response only after `206`. On `200` or a request failure, it keeps the partial file unchanged: start a separate new download. Verify the final SHA-256 before using the file.
+
 ```bash
-etag=$(curl -sSI -H "Authorization: Bearer $ARKVORY_KEY" "$URL" | awk 'tolower($1)=="etag:" {print $2}' | tr -d '\r')
-curl -sS -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
-  -H "Range: bytes=1048576-" "$URL" >> GameSetup.part
+etag=$(cat GameSetup.etag) || exit 1
+test -n "$etag" || exit 1
+offset=$(wc -c < GameSetup.part) || exit 1
+offset=$(printf '%s' "$offset" | tr -d '[:space:]')
+segment=$(mktemp) || exit 1
+status=$(curl -fsS -o "$segment" -w '%{http_code}' \
+  -H "Authorization: Bearer $ARKVORY_KEY" -H "If-Range: $etag" \
+  -H "Range: bytes=$offset-" "$URL") || {
+  rm -f "$segment"
+  exit 1
+}
+if [ "$status" != 206 ]; then
+  rm -f "$segment"
+  exit 1
+fi
+cat "$segment" >> GameSetup.part
+result=$?
+rm -f "$segment"
+test "$result" -eq 0
 ```
 
 To skip a download when the file has not changed, send the ETag you stored last time:
@@ -189,7 +207,7 @@ A [read gateway](../operate/read-gateways) accepts `GET` and `HEAD` only. A [mir
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | File size                  | The maximum object size of the installation, `ARKVORY_MAX_OBJECT_BYTES` (about 10 TiB by default)                                                                                      |
 | One `PUT` request          | Must finish within 30 minutes and must not pause for more than 30 seconds (`ARKVORY_UPLOAD_DEADLINE_MS`, `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`). These are also the highest allowed values. |
-| Uploads at the same time   | 2 per server and 1 per key by default (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). A waiting request gives up after 20 seconds with `503`.                            |
+| Uploads at the same time   | 8 per server and 4 per key by default (`ARKVORY_MAX_UPLOADS`, `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`). A waiting request gives up after 20 seconds with `503`.                            |
 | Downloads at the same time | 16 per server and 4 per key by default                                                                                                                                                 |
 | Quota                      | The file counts against the repository quota and the capacity of the installation                                                                                                      |
 

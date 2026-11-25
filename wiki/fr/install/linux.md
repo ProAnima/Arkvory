@@ -234,7 +234,7 @@ Utilisez une version PostgreSQL de 16 à 19. Utilisez une base de données pour 
 4. Supprimez le répertoire temporaire `/opt/proanima-arkvory/bootstrap.*` lorsque l’installation est terminée. Si vous avez saisi l’URL à l’invite, le répertoire la contient dans `native.json`.
 5. Créez le propriétaire comme décrit dans [Premier démarrage et premiers pas](#first-start).
 
-Le script télécharge Node.js 24.21.0 depuis `nodejs.org`, vérifie son SHA-256 et installe la dernière version stable. Omettez `--automatic` pour laisser les mises à jour automatiques désactivées. Les variables d’environnement modifient les valeurs par défaut :
+Le script télécharge Node.js 24.22.3 depuis `nodejs.org`, vérifie son SHA-256 et installe la dernière version stable. Omettez `--automatic` pour laisser les mises à jour automatiques désactivées. Les variables d’environnement modifient les valeurs par défaut :
 
 | Variable                  | Signification                                                                    | Valeur par défaut       |
 | ------------------------- | -------------------------------------------------------------------------------- | ----------------------- |
@@ -248,7 +248,7 @@ Sans la commande `arkvory`, appelez le programme de gestion avec le Node.js inst
 
 ```bash
 root=/opt/proanima-arkvory
-sudo "$root/runtime/node-v24.21.0-linux-x64/bin/node" "$root/manage.mjs" status --root "$root"
+sudo "$root/runtime/node-v24.22.3-linux-x64/bin/node" "$root/manage.mjs" status --root "$root"
 ```
 
 Vous sauvegardez et maintenez vous-même le serveur PostgreSQL. L’agent de sauvegarde d’Arkvory copie le contenu de la base de données dans le stockage des sauvegardes via l’URL de connexion. Voir [Sauvegardes](../operate/backups).

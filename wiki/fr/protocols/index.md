@@ -26,15 +26,15 @@ Les routes sous `/v2`, `/lfs` et `/npm` suivent les spécifications de leurs pro
 
 ## Identifiants {#credentials}
 
-Chaque requête exige un identifiant, sauf les contrôles de santé publics. Arkvory accepte ces types :
+La plupart des requêtes exigent un identifiant. La connexion (`POST /api/v1/auth/login`), l’inscription autonome (`POST /api/v1/auth/register`), les options de connexion (`GET /api/v1/auth/options`) et les contrôles de santé publics (`GET /health/live`, `GET /health/status`) n’exigent pas d’en-tête `Authorization`. L’inscription autonome ne peut réussir que si l’administrateur définit `ARKVORY_ALLOW_REGISTRATION=true` ; lorsqu’elle est désactivée, elle renvoie `403` avec la raison `registration_disabled`. `GET /health/ready` et `GET /health/metrics` exigent une authentification. Arkvory accepte ces types :
 
-| Type                    | Aspect                | Origine                                                                                                                         | Usage courant                                             |
-| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Jeton d’accès personnel | `pat_...`             | Créé par un utilisateur dans la console. Portée `read` ou `read-write`. Expire (90 jours par défaut, 365 au plus).              | Développeurs : Unity, git, Docker sur un poste de travail |
-| Clé de service          | `arkvory_...`         | Émise par un administrateur pour un compte de service, avec des actions précises par dépôt                                      | CI/CD, agents de déploiement, serveurs de build           |
-| Clé de fichier          | n’importe quel secret | Le fichier de clés du serveur (`ARKVORY_KEYS_FILE`), avec `read` ou `write` par dépôt ; la clé du propriétaire administre aussi | Propriétaire de l’installation, intégrations héritées     |
-| Session                 | `dps_...`             | Connexion à la console ; valable 12 heures                                                                                      | Travail interactif dans la console                        |
-| Lien de téléchargement  | URL avec `?token=`    | Créé pour un artefact ; de 60 secondes à 24 heures                                                                              | Transmettre un fichier à quelqu’un qui n’a pas de clé     |
+| Type                    | Aspect                | Origine                                                                                                                                    | Usage courant                                             |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| Jeton d’accès personnel | `pat_...`             | Créé par un utilisateur dans la console. Portée `read` ou `read-write`. Expire (90 jours par défaut, 365 au plus).                         | Développeurs : Unity, git, Docker sur un poste de travail |
+| Clé de service          | `arkvory_...`         | Émise pour un compte de service, avec des actions précises par dépôt, au moyen de la clé de récupération ou d’une clé d’opérateur déléguée | CI/CD, agents de déploiement, serveurs de build           |
+| Clé de fichier          | n’importe quel secret | Le fichier de clés du serveur (`ARKVORY_KEYS_FILE`), avec `read` ou `write` par dépôt ; la clé du propriétaire administre aussi            | Propriétaire de l’installation, intégrations héritées     |
+| Session                 | `dps_...`             | Connexion à la console ; valable 12 heures                                                                                                 | Travail interactif dans la console                        |
+| Lien de téléchargement  | URL avec `?token=`    | Créé pour un artefact ; de 60 secondes à 24 heures                                                                                         | Transmettre un fichier à quelqu’un qui n’a pas de clé     |
 
 Les protocoles ne diffèrent que par la manière d’envoyer la clé :
 

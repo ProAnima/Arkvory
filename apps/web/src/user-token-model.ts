@@ -26,9 +26,8 @@ export function tokenState(token: UserTokenResponse, nowMs: number): TokenState 
   return 'active';
 }
 
-export interface Toggle {
-  hidden: boolean;
-}
+/** Follow the DOM declaration, whose hidden state is wider than boolean in TypeScript 6. */
+export type Toggle = Pick<HTMLElement, 'hidden'>;
 /** Sign-up stays hidden unless the server explicitly reports self-registration as enabled. */
 export function applyRegistrationOption(
   enabled: boolean,

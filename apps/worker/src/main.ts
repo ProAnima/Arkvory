@@ -7,6 +7,7 @@ import { StorageService } from '@proanima/arkvory-application';
 import { ArkvoryError } from '@proanima/arkvory-domain';
 import {
   DiagnosticLogger,
+  MODULE_READER_CONNECTIONS,
   ModuleStorages,
   createLicenseService,
   PostgresLicenceStore,
@@ -194,6 +195,7 @@ try {
       license: () => license,
       dataDirectory: acquired.dataDirectory,
       dataPool: catalog.sessions,
+      readerPool: { pool: catalog.moduleReaders, limit: MODULE_READER_CONNECTIONS },
       reserve: {
         bytes: storageReserveBytes(process.env['ARKVORY_STORAGE_RESERVE_BYTES']),
         inodes: storageReserveInodes(process.env['ARKVORY_STORAGE_RESERVE_INODES']),

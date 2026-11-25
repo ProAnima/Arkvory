@@ -239,7 +239,7 @@ Lorsqu’un serveur de données est définitivement perdu, remplacez-le par un n
 Lorsqu’un serveur de données reste absent longtemps (un remplacement de disque, par exemple) et que les écritures arrêtées coûtent plus cher que le risque, un opérateur peut accepter des écritures avec une seule copie pour une durée limitée :
 
 ```bash
-arkvory cluster-single-copy --root /opt/proanima-arkvory --until 2026-10-12T18:00:00Z --reason "disk replacement on node-b"
+arkvory cluster-single-copy --root /opt/proanima-arkvory --until "$(date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%SZ)" --reason "disk replacement on node-b"
 ```
 
 - L’heure doit se situer dans les 7 prochains jours et porter son fuseau : `Z` pour UTC ou un décalage tel que `+03:00`. Sans fuseau, la commande refuse, car le serveur actif la lirait dans sa propre heure locale. La commande ne fonctionne que tant que des copies manquent.
@@ -275,4 +275,4 @@ L’agent de sauvegarde s’exécute uniquement sur le serveur actif, au sein du
 - Chaque écriture attend les autres serveurs de données : la latence du lien s’ajoute donc à chaque écriture.
 - Arkvory ne revient jamais de lui-même sur un serveur réparé.
 
-Pour ha-2, le plan retarde de 15 secondes le fencing du nœud ayant le plus petit ID DRBD (`pcmk_delay_base`), sans délai pour l’autre cible. Vérifiez que ce délai dépasse la durée du fencing et l’écart de détection des pannes. Pour un cluster existant, appliquez les commandes `pcs stonith update` correspondantes et testez les deux sens. Régénérer le plan ne modifie pas le cluster. Le quorum et le fencing restent obligatoires.
+Pour ha-2, le plan généré retarde de 15 secondes le fencing du nœud ayant le plus petit ID de nœud DRBD (`pcmk_delay_base`) ; l’autre cible n’a aucun délai. Cela empêche des demandes de fencing simultanées d’éteindre les deux nœuds lorsque le délai dépasse la durée de fencing mesurée et l’écart de détection des pannes. Validez cette marge avec l’agent de fencing que vous utilisez réellement. Les clusters existants doivent appliquer les commandes `pcs stonith update` correspondantes et répéter les tests de panne dans les deux sens ; régénérer le plan seul ne met pas le cluster à jour. Le quorum et le fencing obligatoire restent activés.

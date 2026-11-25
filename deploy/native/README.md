@@ -1,6 +1,6 @@
 # Нативные пакеты Arkvory
 
-Сборка запускается через `npm run gate -- native-package`; нужны готовые build-зависимости проекта. Windows скачивает проверенный компилятор Inno Setup 6.7.3 (или использует `ARKVORY_ISCC`), Linux требует dpkg-deb/rpmbuild. Зависимости скачиваются только при сборке, SHA-256 закреплены в `scripts/native-dependencies.mjs`. Для выпуска используется runtime из `ARKVORY_RELEASE_ARTIFACT`, а не произвольная пересборка.
+Сборка запускается через `npm run gate -- native-package`; нужны готовые build-зависимости проекта. Windows скачивает проверенный компилятор Inno Setup 6.7.4 (или использует `ARKVORY_ISCC`), Linux требует dpkg-deb/rpmbuild. Зависимости скачиваются только при сборке, SHA-256 закреплены в `scripts/native-dependencies.mjs`. Для выпуска используется runtime из `ARKVORY_RELEASE_ARTIFACT`, а не произвольная пересборка.
 
 Выход: `test-results/native-candidate` либо `ARKVORY_NATIVE_ARTIFACT`:
 

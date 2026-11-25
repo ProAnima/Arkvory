@@ -93,6 +93,8 @@ export async function finishInstall(root: string): Promise<void> {
   await services.confirmBackup(state.current);
   await services.schedule(state.current);
 }
+/** Journal phases after which no deployment is in flight. */
+const settledPhases: readonly string[] = ['committed', 'rolled-back', 'recovered'];
 export async function checkJournal(root: string): Promise<void> {
   let journal: Record<string, unknown>;
   try {
@@ -101,7 +103,7 @@ export async function checkJournal(root: string): Promise<void> {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return;
     throw error;
   }
-  if (!['committed', 'rolled-back', 'recovered'].includes(String(journal['phase'])))
+  if (!settledPhases.includes(String(journal['phase'])))
     throw new Error('Interrupted deployment; use recover after inspecting journal.json');
 }
 function updatePort(root: string, selected: Source, services: Services): UpdatePort {
@@ -179,8 +181,12 @@ async function updated(root: string, services: Services, release: Release): Prom
 }
 /** Completes an interrupted deployment in the direction the journal allows (ADR 0059). */
 export async function recover(root: string): Promise<void> {
-  const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   const journal = record(await jsonFile(join(root, 'journal.json')));
+  // A settled journal describes a finished deployment: acting on it again would repeat a
+  // migration that was rolled back or undo an update that was committed.
+  if (settledPhases.includes(String(journal['phase'])))
+    throw new Error('Nothing to recover: the last deployment is settled');
+  const state = parseInstallation(await jsonFile(join(root, 'installation.json')));
   const previous = parseRelease(journal['previous']);
   const next = parseRelease(journal['next']);
   // A module set change (same release) touched no service: its previous set returns.

@@ -25,7 +25,7 @@ Arkvory에는 두 종류의 설정이 있습니다:
 | `config/hub.json`                                                              | 허브 주소, 업데이트 채널, 통계 설정                                                              | `configure` 사용                             |
 | `config/install-id`                                                            | 무작위 설치 ID로, 통계가 켜져 있을 때만 허브로 전송됩니다                                        | 변경하지 마세요                              |
 | `config/mirrors/`                                                              | 미러 목록과 워커가 소스에 사용하는 키                                                            | `configure --mirror` 사용                    |
-| `config/webhooks/`                                                             | 구독 목록, 서명 시크릿, worker가 사용하는 수신자의 인증 기관                                     | `configure --webhook` 사용                   |
+| `config/webhooks/`                                                             | 구독 목록, 서명 시크릿, worker가 사용하는 수신자의 인증 기관(CA) 인증서                          | `configure --webhook` 사용                   |
 | `installation.json`                                                            | 모드, 엔진, 자동 업데이트 설정, 버전 고정, 설치된 릴리스                                         | 명령으로만                                   |
 | `github-token.txt`                                                             | 릴리스 다운로드를 위한 선택적 GitHub 토큰. [업데이트](./updates#hub-unreachable) 참조            | 직접 편집                                    |
 | `config/compose.env`, `config/compose.vault.yml`, `config/compose.mirrors.yml` | Compose 전용: 이미지, 보관소 마운트, 미러 마운트                                                 | 명령으로만                                   |
@@ -34,13 +34,13 @@ Arkvory에는 두 종류의 설정이 있습니다:
 
 ## 수명 주기 명령 {#lifecycle-commands}
 
-모든 명령에는 관리자 권한과 설치 루트를 지정하는 `--root` 옵션이 필요합니다.
+기존 설치를 관리하는 명령에는 `--root`로 설치 루트를 지정하세요. 네이티브 서비스를 변경하려면 관리자 권한이 필요합니다. Compose에서는 설치 루트와 컨테이너 엔진에 접근할 수 있는 계정을 사용하세요. `help`와 `volume-init`의 예외는 아래에서 설명합니다.
 
 | 설치                          | 명령 실행 방법                                                                                                                                                        |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Linux 패키지                  | `sudo arkvory <command> --root /opt/proanima-arkvory`                                                                                                                 |
 | Windows, 그래픽 설치 프로그램 | 관리자 권한 PowerShell에서: `& 'C:\Program Files\ProAnima\Arkvory\arkvory.ps1' <command> --root C:\ProgramData\ProAnima\Arkvory`                                      |
-| 스크립트 설치, Compose        | `sudo <root>/runtime/node-v24.21.0-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`. Windows에서는 `runtime\node-v24.21.0-win-x64\node.exe`를 사용하세요 |
+| 스크립트 설치, Compose        | `sudo <root>/runtime/node-v24.22.3-linux-x64/bin/node <root>/manage.mjs <command> --root <root>`. Windows에서는 `runtime\node-v24.22.3-win-x64\node.exe`를 사용하세요 |
 
 `arkvory help`는 특별한 권한 없이 명령을 나열합니다. 이 사이트의 예제에서는 짧은 형식 `arkvory <command>`를 사용합니다.
 
@@ -108,9 +108,11 @@ Linux에서 서비스는 권한 없는 계정으로 실행되며, 일반적으�
 | 변수                         | 기본값               | 의미                                                                                        |
 | ---------------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
 | `ARKVORY_DATABASE_URL`       | 설치 프로그램이 설정 | PostgreSQL 연결 URL. 관리형 데이터베이스는 `127.0.0.1`에서 설치 중 선택된 포트로 수신합니다 |
-| `ARKVORY_DATABASE_POOL_SIZE` | `10`                 | API 연결 풀의 크기, 4~200                                                                   |
+| `ARKVORY_DATABASE_POOL_SIZE` | `20`                 | API 쿼리 연결 풀의 크기, 4~200                                                              |
 
-설치를 다른 데이터베이스로 연결하지 마세요. 저장된 파일과 카탈로그는 함께 속해 있습니다. 새 데이터베이스로 이동하는 것은 백업에서 복원하는 것입니다: [백업](../operate/backups)을 참조하세요. 외부 PostgreSQL의 경우 `max_connections`를 API 풀에 충분히 높게 설정하세요: 쓰기 잠금을 위해 동시 업로드당 연결 하나, 워커용 5개, 그리고 백업 에이전트의 연결 수를 더한 값입니다.
+설치를 다른 데이터베이스로 연결하지 마세요. 저장된 파일과 카탈로그는 함께 속해 있습니다. 새 데이터베이스로 이동하는 것은 백업에서 복원하는 것입니다: [백업](../operate/backups)을 참조하세요.
+
+외부 PostgreSQL에서는 모든 프로세스의 연결 풀 상한을 합산해 `max_connections`를 설정하세요. 각 읽기 게이트웨이를 포함한 각 API 프로세스에는 세 개의 별도 풀이 있습니다. 쿼리용은 최대 `ARKVORY_DATABASE_POOL_SIZE`개(기본값 20), 장기 세션용은 8개, 업로드 쓰기 잠금용은 최대 `ARKVORY_MAX_UPLOADS`개(기본값 8)입니다. 워커의 별도 풀은 쿼리용 5개, 세션용 8개, 쓰기 잠금용 `2 + min(N, 16)`개이며, N은 설정된 미러 수입니다. 백업 에이전트에는 연결 6개짜리 자체 풀이 있고, 백업을 캡처하는 동안 연결 6개짜리 풀을 하나 더 엽니다. 이 수치는 상한이며 항상 점유되는 연결 수가 아닙니다. 라이선스 도구, 유지 관리 및 데이터베이스 관리를 위한 여유 용량도 확보하세요.
 
 ### 스토리지 디렉터리와 여유 공간 {#storage}
 
@@ -127,17 +129,17 @@ Linux에서 서비스는 권한 없는 계정으로 실행되며, 일반적으�
 
 한도는 API 프로세스 하나에 속합니다. 속도 `0`은 제한 없음을 의미합니다.
 
-| 변수                                  | 기본값    | 의미                                                                                                     |
-| ------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------- |
-| `ARKVORY_MAX_UPLOADS`                 | `2`       | 동시 업로드 수, 1~32                                                                                     |
-| `ARKVORY_MAX_DOWNLOADS`               | `16`      | 동시 다운로드 수, 1~256                                                                                  |
-| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `1`       | 하나의 계정 또는 키의 동시 업로드 수                                                                     |
-| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `4`       | 하나의 계정 또는 키의 동시 다운로드 수                                                                   |
-| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered` | 다운로드 대기열 순서: `ordered`(클래스와 차례), `smallest-first` 또는 `shared`(대기열 없음, 이전과 동일) |
-| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`       | 초당 총 업로드 속도(바이트)                                                                              |
-| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`       | 초당 총 다운로드 속도(바이트)                                                                            |
-| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000` | 업로드 요청 하나의 최대 시간, 30분                                                                       |
-| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`   | 이 시간 동안 데이터를 보내지 않는 업로드 요청은 중단됩니다                                               |
+| 변수                                  | 기본값                          | 의미                                                                                                     |
+| ------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `ARKVORY_MAX_UPLOADS`                 | `8`                             | 동시 업로드 수, 1~32                                                                                     |
+| `ARKVORY_MAX_DOWNLOADS`               | `16`                            | 동시 다운로드 수, 1~256                                                                                  |
+| `ARKVORY_MAX_UPLOADS_PER_PRINCIPAL`   | `min(4, ARKVORY_MAX_UPLOADS)`   | 하나의 계정 또는 키의 동시 업로드 수                                                                     |
+| `ARKVORY_MAX_DOWNLOADS_PER_PRINCIPAL` | `min(4, ARKVORY_MAX_DOWNLOADS)` | 하나의 계정 또는 키의 동시 다운로드 수                                                                   |
+| `ARKVORY_DOWNLOAD_STRATEGY`           | `ordered`                       | 다운로드 대기열 순서: `ordered`(클래스와 차례), `smallest-first` 또는 `shared`(대기열 없음, 이전과 동일) |
+| `ARKVORY_UPLOAD_BYTES_PER_SECOND`     | `0`                             | 초당 총 업로드 속도(바이트)                                                                              |
+| `ARKVORY_DOWNLOAD_BYTES_PER_SECOND`   | `0`                             | 초당 총 다운로드 속도(바이트)                                                                            |
+| `ARKVORY_UPLOAD_DEADLINE_MS`          | `1800000`                       | 업로드 요청 하나의 최대 시간, 30분                                                                       |
+| `ARKVORY_UPLOAD_IDLE_TIMEOUT_MS`      | `30000`                         | 이 시간 동안 데이터를 보내지 않는 업로드 요청은 중단됩니다                                               |
 
 API 앞의 프록시는 최소한 `ARKVORY_UPLOAD_DEADLINE_MS`만큼 긴 요청을 허용해야 합니다. [HTTPS](./https#reverse-proxy)를 참조하세요. 대기 큐와 계정별 속도 같은 다른 모든 한도는 [환경 변수](../reference/environment#transfers-and-bandwidth)에 있습니다.
 
@@ -221,7 +223,7 @@ API 앞의 프록시는 최소한 `ARKVORY_UPLOAD_DEADLINE_MS`만큼 긴 요청�
    & 'C:\ProgramData\ProAnima\Arkvory\runtime\node.exe' .\replace-recovery-key.mjs 'C:\ProgramData\ProAnima\Arkvory\config'
    ```
 
-   스크립트 설치 후에는 대신 `runtime\node-v24.21.0-…` 아래의 Node.js를 사용하세요.
+   스크립트 설치 후에는 대신 `runtime\node-v24.22.3-…` 아래의 Node.js를 사용하세요.
 
 4. [변경 적용](#apply-change)에 표시된 대로 서비스를 다시 시작하세요.
 5. `config/bootstrap-token.txt`에서 새 키를 읽고, 스크립트와 `keys.json`의 사본을 삭제하세요.

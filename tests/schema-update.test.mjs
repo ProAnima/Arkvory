@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { BackupRequired, verifiedBackup } from '../apps/deploy/dist/backup-guard.js';
 import { applyMigration, recoveryDirection } from '../apps/deploy/dist/migration-update.js';
 import { DeploymentCommandTimeout } from '../apps/deploy/dist/process.js';
+import { recover } from '../apps/deploy/dist/operations.js';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const previous = {
   format: 1,
@@ -241,4 +245,20 @@ test('recovery goes back before a migration began and forward from any later pha
   const same = { ...next, schema: previous.schema };
   for (const phase of ['stopped', 'rolling-back', 'recovery-required', 'maintenance-required'])
     assert.equal(recoveryDirection(previous, same, phase), 'back');
+});
+
+test('recover refuses a settled journal before it reads or changes anything', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'arkvory-recover-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  // No installation.json: a recover that went on would fail on it, with another message.
+  for (const phase of ['committed', 'rolled-back', 'recovered']) {
+    await writeFile(join(root, 'journal.json'), JSON.stringify({ phase, previous, next }));
+    await assert.rejects(recover(root), /Nothing to recover/, phase);
+  }
+  assert.deepEqual(await readdir(root), ['journal.json']);
+  await writeFile(
+    join(root, 'journal.json'),
+    JSON.stringify({ phase: 'migrating', previous, next }),
+  );
+  await assert.rejects(recover(root), (error) => !/Nothing to recover/.test(error.message));
 });

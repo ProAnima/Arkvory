@@ -26,7 +26,7 @@ Las rutas bajo `/v2`, `/lfs` y `/npm` siguen las especificaciones de sus protoco
 
 ## Credenciales {#credentials}
 
-Toda solicitud necesita una credencial, salvo las comprobaciones de estado públicas. Arkvory acepta estos tipos:
+La mayoría de las solicitudes necesita una credencial. El inicio de sesión (`POST /api/v1/auth/login`), el autorregistro (`POST /api/v1/auth/register`), las opciones de inicio de sesión (`GET /api/v1/auth/options`) y las comprobaciones públicas de estado (`GET /health/live`, `GET /health/status`) no requieren el encabezado `Authorization`. El autorregistro solo puede completarse correctamente si el administrador fija `ARKVORY_ALLOW_REGISTRATION=true`; cuando está desactivado, devuelve `403` con el motivo `registration_disabled`. `GET /health/ready` y `GET /health/metrics` requieren autenticación. Arkvory acepta estos tipos:
 
 | Tipo                     | Aspecto           | Origen                                                                                                                                             | Uso habitual                                                   |
 | ------------------------ | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |

@@ -25,7 +25,7 @@ JSON 数字无法表示所有 64 位值。因此，Arkvory 将**大小和字节�
 
 ## 身份验证 {#authentication}
 
-除登录、公开健康检查和登录选项外，每个操作都需要头部 `Authorization: Bearer <credential>` 中的凭据。凭据是控制台会话、个人访问令牌、服务密钥或恢复密钥。凭据可以做什么取决于其种类以及每个操作的**访问规则**。在设计集成之前，请阅读[身份验证](./authentication)，并给自动化提供一个仅具有所需操作的服务密钥。
+除登录、自助注册、公开健康检查和登录选项外，每个操作都需要头部 `Authorization: Bearer <credential>` 中的凭据。自助注册（`POST /api/v1/auth/register`、`registerAccount`）不需要凭据，且只有管理员设置 `ARKVORY_ALLOW_REGISTRATION=true` 后才可能成功；否则会返回 `403`，原因为 `registration_disabled`。凭据是控制台会话、个人访问令牌、服务密钥或恢复密钥。凭据可以做什么取决于其种类以及每个操作的**访问规则**。在设计集成之前，请阅读[身份验证](./authentication)，并给自动化提供一个仅具有所需操作的服务密钥。
 
 ## 发现 {#discovery}
 
