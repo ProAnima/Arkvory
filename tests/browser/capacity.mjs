@@ -61,8 +61,12 @@ export async function exerciseCapacity(browser, origin, f) {
     await chooseLanguage(page, 'en');
     await page.setViewportSize({ width: 1440, height: 900 });
     await row.getByRole('button', { name: 'releases' }).click();
-    await page.locator('#catalog-panel').waitFor();
-    assert.equal(await page.locator('#storage-panel').getAttribute('open'), '');
+    // The repository connects first, then the catalog shows with its storage panel open.
+    await page.waitForFunction(
+      () =>
+        !document.querySelector('#catalog-panel').hidden &&
+        document.querySelector('#storage-panel').open,
+    );
     assert.deepEqual(errors, []);
   } finally {
     await context.close();
