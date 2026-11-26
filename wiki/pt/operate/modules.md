@@ -11,7 +11,7 @@ Os serviços verificam de novo os módulos instalados e os carregam sempre que i
 
 ## Arkvory Pro {#pro}
 
-Arkvory Pro é um conjunto opcional de módulos pagos e assinados da ProAnimaStudio para o núcleo gratuito do Arkvory. Pro 0.1.0 funciona com Arkvory 0.6.3 em Windows/Linux x64. Obtenha os pacotes e a licença com a ProAnimaStudio; os módulos são instalados separadamente do núcleo. Veja [Instalação](#install) e [Licenças](licenses).
+Arkvory Pro é um conjunto opcional de módulos pagos e assinados da ProAnimaStudio para o núcleo gratuito do Arkvory. Pro 0.1.1 funciona com Arkvory 0.6.3 a 0.7.0 (API de extensões 0.13) em Windows/Linux x64. Obtenha os pacotes e a licença com a ProAnimaStudio; os módulos são instalados separadamente do núcleo. Veja [Instalação](#install) e [Licenças](licenses).
 
 - **Deduplicação:** armazena os chunks compartilhados uma vez e os reutiliza entre objetos. O catálogo compartilhado coordena a coleta de lixo com publicação, leitores e backups.
 - **Transferências delta:** reutilizam conteúdo disponível em um cliente compatível e transferem os dados ausentes ou patches. O conjunto inclui módulos de armazenamento e transferência do servidor e um módulo cliente delta. A economia depende dos dados e do cliente; downloads HTTP comuns não viram transferências delta automaticamente.
