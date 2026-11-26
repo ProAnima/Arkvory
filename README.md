@@ -6,6 +6,8 @@
 
 **Your own repository for builds, packages, container images and large files.**
 
+<a href="https://proanima.github.io/Arkvory/media/arkvory-tour.mp4"><img src="branding/media/arkvory-tour-poster.jpg" alt="Watch the Arkvory product tour (3:45): what Arkvory does, its console and Arkvory Pro" width="720"></a>
+
 [Documentation](https://proanima.github.io/Arkvory/) · [Download](https://github.com/ProAnima/Arkvory/releases/latest) · [HTTP API](https://proanima.github.io/Arkvory/api/) · [License](LICENSE.md)
 
 A **ProAnimaStudio** product. **Ian Panaev** is the author, copyright holder and owner of the Arkvory and ProAnimaStudio brands. [Brand assets](branding/README.md) · [Product identity](docs/PRODUCT_IDENTITY.md)
@@ -30,13 +32,13 @@ It is a standalone product with its own HTTP API, command-line client and TypeSc
 - **The whole cluster in one place.** Pair the other installations, mirrors and second sites with a one-time code over a pinned certificate, and see on one page whether each answers, its version, HA copies, read gateways, mirror lag and download queue.
 - **Mirrors and read gateways.** A second installation keeps a read-only copy of repositories and serves it when the first site is lost; extra download processes share one bandwidth budget.
 - **Runs by itself.** Windows services, Linux packages or Docker Compose. Services restart after a crash or a hang; signed stable updates install by hand or in a maintenance hour, behind a fresh verified backup, with rollback.
-- **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark. All 46 user documentation pages are translated into the same eleven languages.
+- **A console in eleven languages.** English, Russian, Spanish, French, German, Portuguese, Chinese, Japanese, Korean, Hindi and Arabic, light and dark, with a dark ink navigation and an indigo accent. A storage overview shows the use and quota of every repository on one page; administrators see every module and licence of the installation. All 64 pages of the documentation are available in the same eleven languages.
 
 ## Modules and Arkvory Pro
 
 Arkvory supports signed ProAnimaStudio modules for additional storage, transfer protocols and HTTP routes. Modules are installed on the host and loaded at service startup; Docker Compose does not load them. Third-party plugins cannot yet be installed or run; the host can only maintain their trusted author keys.
 
-**Arkvory Pro** is an optional paid module bundle for deduplication and delta transfers with compatible clients. Pro 0.1.0 works with Arkvory 0.6.3 on Windows/Linux x64. It reuses shared chunks in storage and transfers missing content or patches instead of always sending complete files. Savings depend on the data and client. Existing Pro data remains readable without an active licence; new uploads fall back to core storage and ordinary transfers when paid features are unavailable. The core remains free of charge under its existing licence.
+**Arkvory Pro** is an optional paid module bundle for deduplication and delta transfers with compatible clients. Pro modules check the extension API of the core, not its version: Pro 0.1 needs extension API 0.13, which Arkvory 0.6.3 to 0.7.0 provide, on Windows/Linux x64. It reuses shared chunks in storage and transfers missing content or patches instead of always sending complete files. Savings depend on the data and client. Existing Pro data remains readable without an active licence; new uploads fall back to core storage and ordinary transfers when paid features are unavailable. The core remains free of charge under its existing licence.
 
 Obtain Pro packages and a licence from ProAnimaStudio. See [modules, Pro features and operating limits](https://proanima.github.io/Arkvory/operate/modules#pro) and [licence activation](https://proanima.github.io/Arkvory/operate/licenses) before deployment.
 
@@ -81,7 +83,7 @@ The full walkthrough: [Quick start](https://proanima.github.io/Arkvory/guide/qui
 
 ## Documentation
 
-**[proanima.github.io/Arkvory](https://proanima.github.io/Arkvory/)** — installation, everyday work, clients and protocols, operation (backups, mirrors, the high-availability cluster, storage, monitoring, security, troubleshooting) and the HTTP API reference generated from the contract the server enforces. With search, the eleven-language selector of the console and complete translations of all 46 user pages, including Japanese and Arabic. The [current implementation and limits](docs/CURRENT_STATE.md) distinguish shipped features from historical plans. The engineering documents (architecture, contracts, decisions) are in Russian in [`docs/`](docs/) and in the site's developers' section.
+**[proanima.github.io/Arkvory](https://proanima.github.io/Arkvory/)** — installation, everyday work, clients and protocols, operation (backups, mirrors, the high-availability cluster, storage, monitoring, security, troubleshooting) and the HTTP API reference generated from the contract the server enforces. With search, the eleven-language selector of the console and complete translations of all 64 pages, including Japanese and Arabic. The [current implementation and limits](docs/CURRENT_STATE.md) distinguish shipped features from historical plans. The engineering documents (architecture, contracts, decisions) are in Russian in [`docs/`](docs/) and in the site's developers' section.
 
 ## Limits
 
