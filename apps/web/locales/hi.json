@@ -4916,8 +4916,8 @@
     "text": "ऐसी कोई रिपॉज़िटरी नहीं जिसका स्टोरेज आप पढ़ सकें।"
   },
   "capacityTruncated": {
-    "en": "Only the first 500 repositories in name order are shown.",
-    "text": "नाम के क्रम में केवल पहली 500 रिपॉज़िटरी दिखाई गई हैं।"
+    "en": "Not every repository is listed: the page reads at most 500 of them, in name order.",
+    "text": "सभी रिपॉज़िटरी सूचीबद्ध नहीं हैं: पेज नाम के क्रम में अधिकतम 500 पढ़ता है।"
   },
   "capacityNoQuota": {
     "en": "No quota",
@@ -4950,5 +4950,13 @@
   "capacityExceeded": {
     "en": "Over the quota",
     "text": "कोटा से ऊपर"
+  },
+  "licenseGraceUntil": {
+    "en": "Paid writes until {date}",
+    "text": "{date} तक सशुल्क लेखन"
+  },
+  "capacityPartial": {
+    "en": "Left out of the totals because their usage could not be read: {count}.",
+    "text": "योग में वे {count} रिपॉज़िटरी शामिल नहीं हैं जिनका उपयोग पढ़ा नहीं जा सका।"
   }
 }

@@ -4916,8 +4916,8 @@
     "text": "没有您可以读取其存储的仓库。"
   },
   "capacityTruncated": {
-    "en": "Only the first 500 repositories in name order are shown.",
-    "text": "仅显示按名称排序的前 500 个仓库。"
+    "en": "Not every repository is listed: the page reads at most 500 of them, in name order.",
+    "text": "未列出所有仓库：该页面最多按名称顺序读取 500 个。"
   },
   "capacityNoQuota": {
     "en": "No quota",
@@ -4950,5 +4950,13 @@
   "capacityExceeded": {
     "en": "Over the quota",
     "text": "超过配额"
+  },
+  "licenseGraceUntil": {
+    "en": "Paid writes until {date}",
+    "text": "付费写入截至 {date}"
+  },
+  "capacityPartial": {
+    "en": "Left out of the totals because their usage could not be read: {count}.",
+    "text": "合计未包含 {count} 个无法读取用量的仓库。"
   }
 }

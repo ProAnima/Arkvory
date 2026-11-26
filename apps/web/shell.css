@@ -112,6 +112,9 @@ nav button span[data-i18n] {
     background: var(--color-sidebar-hover);
     color: var(--color-sidebar-text);
   }
+  .sidebar button.secondary:hover:where(:not(:disabled)) {
+    border-color: var(--color-sidebar-border);
+  }
   nav button[aria-current='page']:hover {
     background: var(--color-sidebar-active);
     color: var(--color-sidebar-active-text);

@@ -18,6 +18,8 @@ export async function exerciseModules(browser, origin, f) {
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(`${origin}/console/#/modules`);
     await chooseLanguage(page, 'en');
+    // Until the licences are read the page claims nothing about them.
+    assert.equal(await page.locator('#licence-none').isVisible(), false);
     await connectWithKey(page, f.headers.authorization.slice(7));
     await page.locator('#modules-panel').waitFor();
     await page.locator('#modules-rows tr').first().waitFor();

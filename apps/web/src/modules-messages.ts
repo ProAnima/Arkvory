@@ -35,6 +35,7 @@ export const modulesEnglish = {
   licenseInvalid: 'Does not verify',
   licenseUnknown: 'Not valid: {state}',
   licenseRefreshFailing: 'The hub has not answered lately.',
+  licenseGraceUntil: 'Paid writes until {date}',
   licenseNone: 'No licence is activated. The free core works without one.',
   modulesManage: 'Install, enable or remove',
   modulesManageText:
@@ -80,6 +81,7 @@ export const modulesRussian: Record<keyof typeof modulesEnglish, string> = {
   licenseInvalid: 'Не проходит проверку',
   licenseUnknown: 'Не действует: {state}',
   licenseRefreshFailing: 'Хаб давно не отвечал.',
+  licenseGraceUntil: 'Платная запись до {date}',
   licenseNone: 'Лицензия не активирована. Бесплатное ядро работает без неё.',
   modulesManage: 'Установка, включение и удаление',
   modulesManageText:
@@ -106,7 +108,9 @@ export const capacityEnglish = {
   capacityLogical:
     'Sizes are logical: what each repository counts against its quota, not the space on disk.',
   capacityEmpty: 'No repository whose storage you may read.',
-  capacityTruncated: 'Only the first 500 repositories in name order are shown.',
+  capacityTruncated:
+    'Not every repository is listed: the page reads at most 500 of them, in name order.',
+  capacityPartial: 'Left out of the totals because their usage could not be read: {count}.',
   capacityNoQuota: 'No quota',
   capacityShare: '{percent}% of the quota',
   capacityUnreadable: 'Cannot read usage',
@@ -133,7 +137,9 @@ export const capacityRussian: Record<keyof typeof capacityEnglish, string> = {
   capacityLogical:
     'Размеры логические: столько репозиторий учитывает в своей квоте, а не место на диске.',
   capacityEmpty: 'Нет репозиториев, хранилище которых вам можно читать.',
-  capacityTruncated: 'Показаны только первые 500 репозиториев по имени.',
+  capacityTruncated: 'Показаны не все репозитории: страница читает не больше 500, по порядку имён.',
+  capacityPartial:
+    'Итоги не включают репозитории, использование которых не удалось прочитать: {count}.',
   capacityNoQuota: 'Без квоты',
   capacityShare: '{percent}% квоты',
   capacityUnreadable: 'Не удалось прочитать',
