@@ -14,6 +14,7 @@ const restricted: Partial<Record<View, string>> = {
   cluster: 'cluster-nav',
   updates: 'updates-nav',
   modules: 'modules-nav',
+  capacity: 'capacity-nav',
   backups: 'backups-nav',
 };
 

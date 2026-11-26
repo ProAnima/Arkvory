@@ -10,7 +10,7 @@ import { promotionRussian } from './promotion-messages.js';
 import { errorRussian } from './error-messages.js';
 import { mirrorRussian } from './mirror-messages.js';
 import { clusterRussian } from './cluster-messages.js';
-import { modulesRussian } from './modules-messages.js';
+import { modulesRussian, capacityRussian } from './modules-messages.js';
 import { fleetRussian } from './fleet-messages.js';
 import { fleetChangeRussian } from './fleet-change-messages.js';
 import { reportRussian } from './report-messages.js';
@@ -28,6 +28,7 @@ export const ru: Record<keyof typeof en, string> = {
   ...mirrorRussian,
   ...clusterRussian,
   ...modulesRussian,
+  ...capacityRussian,
   ...fleetRussian,
   ...fleetChangeRussian,
   ...reportRussian,

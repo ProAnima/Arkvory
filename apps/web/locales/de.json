@@ -4858,5 +4858,97 @@
   "licenseGuide": {
     "en": "Licence guide",
     "text": "Anleitung zu Lizenzen"
+  },
+  "capacity": {
+    "en": "Storage overview",
+    "text": "Speicherübersicht"
+  },
+  "capacitySummary": {
+    "en": "Totals across repositories",
+    "text": "Summen über alle Repositorys"
+  },
+  "capacityRefresh": {
+    "en": "Refresh",
+    "text": "Aktualisieren"
+  },
+  "capacityRepositories": {
+    "en": "Repositories",
+    "text": "Repositorys"
+  },
+  "capacityInUse": {
+    "en": "In use",
+    "text": "Belegt"
+  },
+  "capacityPublished": {
+    "en": "Published",
+    "text": "Veröffentlicht"
+  },
+  "capacityPending": {
+    "en": "Unfinished uploads",
+    "text": "Unvollständige Uploads"
+  },
+  "capacityRetired": {
+    "en": "Awaiting cleanup",
+    "text": "Wartet auf Bereinigung"
+  },
+  "capacityQuota": {
+    "en": "Quota",
+    "text": "Kontingent"
+  },
+  "capacityState": {
+    "en": "State",
+    "text": "Zustand"
+  },
+  "capacityAttention": {
+    "en": "Near or over quota",
+    "text": "Nahe am oder über dem Kontingent"
+  },
+  "capacityCountValue": {
+    "en": "{count}",
+    "text": "{count}"
+  },
+  "capacityLogical": {
+    "en": "Sizes are logical: what each repository counts against its quota, not the space on disk.",
+    "text": "Größen sind logisch: das, was jedes Repository auf sein Kontingent anrechnet, nicht der Platz auf der Festplatte."
+  },
+  "capacityEmpty": {
+    "en": "No repository whose storage you may read.",
+    "text": "Kein Repository, dessen Speicher Sie lesen dürfen."
+  },
+  "capacityTruncated": {
+    "en": "Only the first 500 repositories in name order are shown.",
+    "text": "Nur die ersten 500 Repositorys nach Namen werden angezeigt."
+  },
+  "capacityNoQuota": {
+    "en": "No quota",
+    "text": "Kein Kontingent"
+  },
+  "capacityShare": {
+    "en": "{percent}% of the quota",
+    "text": "{percent} % des Kontingents"
+  },
+  "capacityUnreadable": {
+    "en": "Cannot read usage",
+    "text": "Nutzung nicht lesbar"
+  },
+  "capacityUnlimited": {
+    "en": "No quota",
+    "text": "Kein Kontingent"
+  },
+  "capacityNormal": {
+    "en": "Below thresholds",
+    "text": "Unter den Schwellen"
+  },
+  "capacityWarning": {
+    "en": "Near the quota",
+    "text": "Nahe am Kontingent"
+  },
+  "capacityCritical": {
+    "en": "Almost full",
+    "text": "Fast voll"
+  },
+  "capacityExceeded": {
+    "en": "Over the quota",
+    "text": "Über dem Kontingent"
   }
 }

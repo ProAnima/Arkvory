@@ -4858,5 +4858,97 @@
   "licenseGuide": {
     "en": "Licence guide",
     "text": "许可证指南"
+  },
+  "capacity": {
+    "en": "Storage overview",
+    "text": "存储概览"
+  },
+  "capacitySummary": {
+    "en": "Totals across repositories",
+    "text": "所有仓库的合计"
+  },
+  "capacityRefresh": {
+    "en": "Refresh",
+    "text": "刷新"
+  },
+  "capacityRepositories": {
+    "en": "Repositories",
+    "text": "仓库"
+  },
+  "capacityInUse": {
+    "en": "In use",
+    "text": "已用"
+  },
+  "capacityPublished": {
+    "en": "Published",
+    "text": "已发布"
+  },
+  "capacityPending": {
+    "en": "Unfinished uploads",
+    "text": "未完成的上传"
+  },
+  "capacityRetired": {
+    "en": "Awaiting cleanup",
+    "text": "等待清理"
+  },
+  "capacityQuota": {
+    "en": "Quota",
+    "text": "配额"
+  },
+  "capacityState": {
+    "en": "State",
+    "text": "状态"
+  },
+  "capacityAttention": {
+    "en": "Near or over quota",
+    "text": "接近或超过配额"
+  },
+  "capacityCountValue": {
+    "en": "{count}",
+    "text": "{count}"
+  },
+  "capacityLogical": {
+    "en": "Sizes are logical: what each repository counts against its quota, not the space on disk.",
+    "text": "这些是逻辑大小：即每个仓库计入其配额的量，而不是磁盘上的空间。"
+  },
+  "capacityEmpty": {
+    "en": "No repository whose storage you may read.",
+    "text": "没有您可以读取其存储的仓库。"
+  },
+  "capacityTruncated": {
+    "en": "Only the first 500 repositories in name order are shown.",
+    "text": "仅显示按名称排序的前 500 个仓库。"
+  },
+  "capacityNoQuota": {
+    "en": "No quota",
+    "text": "无配额"
+  },
+  "capacityShare": {
+    "en": "{percent}% of the quota",
+    "text": "配额的 {percent}%"
+  },
+  "capacityUnreadable": {
+    "en": "Cannot read usage",
+    "text": "无法读取用量"
+  },
+  "capacityUnlimited": {
+    "en": "No quota",
+    "text": "无配额"
+  },
+  "capacityNormal": {
+    "en": "Below thresholds",
+    "text": "低于阈值"
+  },
+  "capacityWarning": {
+    "en": "Near the quota",
+    "text": "接近配额"
+  },
+  "capacityCritical": {
+    "en": "Almost full",
+    "text": "快满了"
+  },
+  "capacityExceeded": {
+    "en": "Over the quota",
+    "text": "超过配额"
   }
 }

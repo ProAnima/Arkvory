@@ -4858,5 +4858,97 @@
   "licenseGuide": {
     "en": "Licence guide",
     "text": "लाइसेंस गाइड"
+  },
+  "capacity": {
+    "en": "Storage overview",
+    "text": "स्टोरेज का सारांश"
+  },
+  "capacitySummary": {
+    "en": "Totals across repositories",
+    "text": "सभी रिपॉज़िटरी का योग"
+  },
+  "capacityRefresh": {
+    "en": "Refresh",
+    "text": "रीफ़्रेश करें"
+  },
+  "capacityRepositories": {
+    "en": "Repositories",
+    "text": "रिपॉज़िटरी"
+  },
+  "capacityInUse": {
+    "en": "In use",
+    "text": "उपयोग में"
+  },
+  "capacityPublished": {
+    "en": "Published",
+    "text": "प्रकाशित"
+  },
+  "capacityPending": {
+    "en": "Unfinished uploads",
+    "text": "अधूरे अपलोड"
+  },
+  "capacityRetired": {
+    "en": "Awaiting cleanup",
+    "text": "सफ़ाई की प्रतीक्षा में"
+  },
+  "capacityQuota": {
+    "en": "Quota",
+    "text": "कोटा"
+  },
+  "capacityState": {
+    "en": "State",
+    "text": "स्थिति"
+  },
+  "capacityAttention": {
+    "en": "Near or over quota",
+    "text": "कोटा के पास या उससे ऊपर"
+  },
+  "capacityCountValue": {
+    "en": "{count}",
+    "text": "{count}"
+  },
+  "capacityLogical": {
+    "en": "Sizes are logical: what each repository counts against its quota, not the space on disk.",
+    "text": "आकार तार्किक हैं: हर रिपॉज़िटरी अपने कोटा में जितना गिनती है, डिस्क पर जगह नहीं।"
+  },
+  "capacityEmpty": {
+    "en": "No repository whose storage you may read.",
+    "text": "ऐसी कोई रिपॉज़िटरी नहीं जिसका स्टोरेज आप पढ़ सकें।"
+  },
+  "capacityTruncated": {
+    "en": "Only the first 500 repositories in name order are shown.",
+    "text": "नाम के क्रम में केवल पहली 500 रिपॉज़िटरी दिखाई गई हैं।"
+  },
+  "capacityNoQuota": {
+    "en": "No quota",
+    "text": "कोई कोटा नहीं"
+  },
+  "capacityShare": {
+    "en": "{percent}% of the quota",
+    "text": "कोटा का {percent}%"
+  },
+  "capacityUnreadable": {
+    "en": "Cannot read usage",
+    "text": "उपयोग पढ़ा नहीं जा सका"
+  },
+  "capacityUnlimited": {
+    "en": "No quota",
+    "text": "कोई कोटा नहीं"
+  },
+  "capacityNormal": {
+    "en": "Below thresholds",
+    "text": "सीमाओं से नीचे"
+  },
+  "capacityWarning": {
+    "en": "Near the quota",
+    "text": "कोटा के पास"
+  },
+  "capacityCritical": {
+    "en": "Almost full",
+    "text": "लगभग भरा"
+  },
+  "capacityExceeded": {
+    "en": "Over the quota",
+    "text": "कोटा से ऊपर"
   }
 }

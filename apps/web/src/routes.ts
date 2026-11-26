@@ -9,6 +9,7 @@ export const views = [
   'cluster',
   'updates',
   'modules',
+  'capacity',
   'backups',
   'upload',
   'downloads',

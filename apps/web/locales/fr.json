@@ -4858,5 +4858,97 @@
   "licenseGuide": {
     "en": "Licence guide",
     "text": "Guide des licences"
+  },
+  "capacity": {
+    "en": "Storage overview",
+    "text": "Vue d’ensemble du stockage"
+  },
+  "capacitySummary": {
+    "en": "Totals across repositories",
+    "text": "Totaux de tous les dépôts"
+  },
+  "capacityRefresh": {
+    "en": "Refresh",
+    "text": "Actualiser"
+  },
+  "capacityRepositories": {
+    "en": "Repositories",
+    "text": "Dépôts"
+  },
+  "capacityInUse": {
+    "en": "In use",
+    "text": "Utilisé"
+  },
+  "capacityPublished": {
+    "en": "Published",
+    "text": "Publié"
+  },
+  "capacityPending": {
+    "en": "Unfinished uploads",
+    "text": "Envois inachevés"
+  },
+  "capacityRetired": {
+    "en": "Awaiting cleanup",
+    "text": "En attente de nettoyage"
+  },
+  "capacityQuota": {
+    "en": "Quota",
+    "text": "Quota"
+  },
+  "capacityState": {
+    "en": "State",
+    "text": "État"
+  },
+  "capacityAttention": {
+    "en": "Near or over quota",
+    "text": "Proche du quota ou au-delà"
+  },
+  "capacityCountValue": {
+    "en": "{count}",
+    "text": "{count}"
+  },
+  "capacityLogical": {
+    "en": "Sizes are logical: what each repository counts against its quota, not the space on disk.",
+    "text": "Les tailles sont logiques : ce que chaque dépôt compte dans son quota, pas l’espace sur le disque."
+  },
+  "capacityEmpty": {
+    "en": "No repository whose storage you may read.",
+    "text": "Aucun dépôt dont vous pouvez lire le stockage."
+  },
+  "capacityTruncated": {
+    "en": "Only the first 500 repositories in name order are shown.",
+    "text": "Seuls les 500 premiers dépôts par nom sont affichés."
+  },
+  "capacityNoQuota": {
+    "en": "No quota",
+    "text": "Sans quota"
+  },
+  "capacityShare": {
+    "en": "{percent}% of the quota",
+    "text": "{percent} % du quota"
+  },
+  "capacityUnreadable": {
+    "en": "Cannot read usage",
+    "text": "Utilisation illisible"
+  },
+  "capacityUnlimited": {
+    "en": "No quota",
+    "text": "Sans quota"
+  },
+  "capacityNormal": {
+    "en": "Below thresholds",
+    "text": "Sous les seuils"
+  },
+  "capacityWarning": {
+    "en": "Near the quota",
+    "text": "Proche du quota"
+  },
+  "capacityCritical": {
+    "en": "Almost full",
+    "text": "Presque plein"
+  },
+  "capacityExceeded": {
+    "en": "Over the quota",
+    "text": "Au-delà du quota"
   }
 }

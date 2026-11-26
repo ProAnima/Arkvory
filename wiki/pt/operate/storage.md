@@ -186,6 +186,10 @@ O uso contabilizado é o tamanho de todos os arquivos ainda não removidos do di
 
 Os números são reservas lógicas, não espaço livre no disco. Um repositório pode estar abaixo da cota com o disco cheio, pois o disco também contém arquivos temporários e outros repositórios.
 
+### Todos os repositórios de uma vez {#overview}
+
+[[ui:capacity]] no menu do console mostra cada repositório cujo armazenamento sua conta pode ler (`storage.read`): o uso, a cota, os arquivos publicados, os envios inacabados, os arquivos aguardando limpeza e o estado, com uma barra para a parte da cota. Os maiores vêm primeiro; selecione um nome para abrir as configurações de armazenamento desse repositório. A página lê os mesmos números que `GET …/storage/usage`, para até 500 repositórios.
+
 ## Política de retenção {#retention}
 
 Uma política exclui automaticamente **builds UPack registrados** antigos e mantém os últimos N. Não exclui outros arquivos: arquivos por caminho, imagens de contêineres, objetos Git LFS e pacotes npm ficam fora. Sem uma política, nada é excluído automaticamente.

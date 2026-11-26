@@ -4858,5 +4858,97 @@
   "licenseGuide": {
     "en": "Licence guide",
     "text": "ライセンスガイド"
+  },
+  "capacity": {
+    "en": "Storage overview",
+    "text": "ストレージの概要"
+  },
+  "capacitySummary": {
+    "en": "Totals across repositories",
+    "text": "全リポジトリの合計"
+  },
+  "capacityRefresh": {
+    "en": "Refresh",
+    "text": "更新"
+  },
+  "capacityRepositories": {
+    "en": "Repositories",
+    "text": "リポジトリ"
+  },
+  "capacityInUse": {
+    "en": "In use",
+    "text": "使用中"
+  },
+  "capacityPublished": {
+    "en": "Published",
+    "text": "公開済み"
+  },
+  "capacityPending": {
+    "en": "Unfinished uploads",
+    "text": "未完了のアップロード"
+  },
+  "capacityRetired": {
+    "en": "Awaiting cleanup",
+    "text": "クリーンアップ待ち"
+  },
+  "capacityQuota": {
+    "en": "Quota",
+    "text": "クォータ"
+  },
+  "capacityState": {
+    "en": "State",
+    "text": "状態"
+  },
+  "capacityAttention": {
+    "en": "Near or over quota",
+    "text": "クォータ間近または超過"
+  },
+  "capacityCountValue": {
+    "en": "{count}",
+    "text": "{count}"
+  },
+  "capacityLogical": {
+    "en": "Sizes are logical: what each repository counts against its quota, not the space on disk.",
+    "text": "サイズは論理値です。各リポジトリがクォータに計上する量で、ディスク上の容量ではありません。"
+  },
+  "capacityEmpty": {
+    "en": "No repository whose storage you may read.",
+    "text": "ストレージを読み取れるリポジトリがありません。"
+  },
+  "capacityTruncated": {
+    "en": "Only the first 500 repositories in name order are shown.",
+    "text": "名前順で最初の 500 リポジトリのみ表示しています。"
+  },
+  "capacityNoQuota": {
+    "en": "No quota",
+    "text": "クォータなし"
+  },
+  "capacityShare": {
+    "en": "{percent}% of the quota",
+    "text": "クォータの {percent}%"
+  },
+  "capacityUnreadable": {
+    "en": "Cannot read usage",
+    "text": "使用量を読み取れません"
+  },
+  "capacityUnlimited": {
+    "en": "No quota",
+    "text": "クォータなし"
+  },
+  "capacityNormal": {
+    "en": "Below thresholds",
+    "text": "しきい値未満"
+  },
+  "capacityWarning": {
+    "en": "Near the quota",
+    "text": "クォータ間近"
+  },
+  "capacityCritical": {
+    "en": "Almost full",
+    "text": "ほぼ満杯"
+  },
+  "capacityExceeded": {
+    "en": "Over the quota",
+    "text": "クォータ超過"
   }
 }

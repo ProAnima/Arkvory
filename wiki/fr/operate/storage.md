@@ -186,6 +186,10 @@ L’utilisation qui compte contre le quota est la taille de tous les fichiers du
 
 Les chiffres sont des réservations logiques, pas de l’espace disque libre. Un dépôt peut être sous son quota alors que le disque est plein, car le disque contient aussi les fichiers de staging et d’autres dépôts.
 
+### Tous les dépôts d’un coup d’œil {#overview}
+
+[[ui:capacity]] dans le menu de la console affiche chaque dépôt dont votre compte peut lire le stockage (`storage.read`) : l’utilisation, le quota, les fichiers publiés, les envois inachevés, les fichiers en attente de nettoyage et l’état, avec une barre pour la part du quota. Les plus grands viennent en premier ; sélectionnez un nom pour ouvrir les réglages de stockage de ce dépôt. La page lit les mêmes chiffres que `GET …/storage/usage`, pour 500 dépôts au plus.
+
 ## Politique de rétention {#retention}
 
 Une politique de rétention supprime automatiquement les anciens **builds UPack enregistrés** et conserve les N derniers. Elle ne supprime pas les autres fichiers : les fichiers simples par chemin, les images de conteneurs, les objets Git LFS et les paquets npm en sont exclus. Sans politique, rien n’est supprimé automatiquement.

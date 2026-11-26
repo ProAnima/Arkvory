@@ -186,6 +186,10 @@ El uso que cuenta para la cuota es el tamaño de todos los archivos del reposito
 
 Las cifras son reservas lógicas, no espacio libre en disco. Un repositorio puede estar por debajo de su cuota mientras el disco está lleno, porque el disco también contiene archivos de staging y otros repositorios.
 
+### Todos los repositorios a la vez {#overview}
+
+[[ui:capacity]] en el menú de la consola muestra cada repositorio cuyo almacenamiento puede leer su cuenta (`storage.read`): el uso, la cuota, los archivos publicados, las cargas sin terminar, los archivos pendientes de limpieza y el estado, con una barra para la parte de la cuota. Los más grandes aparecen primero; seleccione un nombre para abrir la configuración de almacenamiento de ese repositorio. La página lee los mismos números que `GET …/storage/usage`, para hasta 500 repositorios.
+
 ## Política de retención {#retention}
 
 Una política de retención elimina automáticamente las **compilaciones UPack registradas** antiguas y conserva las últimas N. No elimina otros archivos: los archivos sueltos por ruta, las imágenes de contenedor, los objetos de Git LFS y los paquetes npm quedan fuera de ella. Sin una política, no se elimina nada automáticamente.

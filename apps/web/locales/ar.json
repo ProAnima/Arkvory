@@ -4858,5 +4858,97 @@
   "licenseGuide": {
     "en": "Licence guide",
     "text": "دليل التراخيص"
+  },
+  "capacity": {
+    "en": "Storage overview",
+    "text": "نظرة عامة على التخزين"
+  },
+  "capacitySummary": {
+    "en": "Totals across repositories",
+    "text": "الإجماليات عبر المستودعات"
+  },
+  "capacityRefresh": {
+    "en": "Refresh",
+    "text": "تحديث"
+  },
+  "capacityRepositories": {
+    "en": "Repositories",
+    "text": "المستودعات"
+  },
+  "capacityInUse": {
+    "en": "In use",
+    "text": "قيد الاستخدام"
+  },
+  "capacityPublished": {
+    "en": "Published",
+    "text": "منشور"
+  },
+  "capacityPending": {
+    "en": "Unfinished uploads",
+    "text": "عمليات رفع غير مكتملة"
+  },
+  "capacityRetired": {
+    "en": "Awaiting cleanup",
+    "text": "بانتظار التنظيف"
+  },
+  "capacityQuota": {
+    "en": "Quota",
+    "text": "الحصة"
+  },
+  "capacityState": {
+    "en": "State",
+    "text": "الحالة"
+  },
+  "capacityAttention": {
+    "en": "Near or over quota",
+    "text": "قريب من الحصة أو تجاوزها"
+  },
+  "capacityCountValue": {
+    "en": "{count}",
+    "text": "{count}"
+  },
+  "capacityLogical": {
+    "en": "Sizes are logical: what each repository counts against its quota, not the space on disk.",
+    "text": "الأحجام منطقية: ما يحسبه كل مستودع ضمن حصته، وليس المساحة على القرص."
+  },
+  "capacityEmpty": {
+    "en": "No repository whose storage you may read.",
+    "text": "لا يوجد مستودع يُسمح لك بقراءة تخزينه."
+  },
+  "capacityTruncated": {
+    "en": "Only the first 500 repositories in name order are shown.",
+    "text": "تُعرض أول 500 مستودع فقط حسب الاسم."
+  },
+  "capacityNoQuota": {
+    "en": "No quota",
+    "text": "بلا حصة"
+  },
+  "capacityShare": {
+    "en": "{percent}% of the quota",
+    "text": "{percent}% من الحصة"
+  },
+  "capacityUnreadable": {
+    "en": "Cannot read usage",
+    "text": "تعذّرت قراءة الاستخدام"
+  },
+  "capacityUnlimited": {
+    "en": "No quota",
+    "text": "بلا حصة"
+  },
+  "capacityNormal": {
+    "en": "Below thresholds",
+    "text": "دون الحدود"
+  },
+  "capacityWarning": {
+    "en": "Near the quota",
+    "text": "قريب من الحصة"
+  },
+  "capacityCritical": {
+    "en": "Almost full",
+    "text": "ممتلئ تقريبًا"
+  },
+  "capacityExceeded": {
+    "en": "Over the quota",
+    "text": "تجاوز الحصة"
   }
 }

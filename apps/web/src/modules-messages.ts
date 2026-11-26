@@ -88,3 +88,58 @@ export const modulesRussian: Record<keyof typeof modulesEnglish, string> = {
   modulesGuide: 'Руководство по модулям',
   licenseGuide: 'Руководство по лицензиям',
 };
+
+/** The Storage overview page: logical usage of every repository the account may read. */
+export const capacityEnglish = {
+  capacity: 'Storage overview',
+  capacitySummary: 'Totals across repositories',
+  capacityRefresh: 'Refresh',
+  capacityRepositories: 'Repositories',
+  capacityInUse: 'In use',
+  capacityPublished: 'Published',
+  capacityPending: 'Unfinished uploads',
+  capacityRetired: 'Awaiting cleanup',
+  capacityQuota: 'Quota',
+  capacityState: 'State',
+  capacityAttention: 'Near or over quota',
+  capacityCountValue: '{count}',
+  capacityLogical:
+    'Sizes are logical: what each repository counts against its quota, not the space on disk.',
+  capacityEmpty: 'No repository whose storage you may read.',
+  capacityTruncated: 'Only the first 500 repositories in name order are shown.',
+  capacityNoQuota: 'No quota',
+  capacityShare: '{percent}% of the quota',
+  capacityUnreadable: 'Cannot read usage',
+  capacityUnlimited: 'No quota',
+  capacityNormal: 'Below thresholds',
+  capacityWarning: 'Near the quota',
+  capacityCritical: 'Almost full',
+  capacityExceeded: 'Over the quota',
+};
+
+export const capacityRussian: Record<keyof typeof capacityEnglish, string> = {
+  capacity: 'Обзор хранилища',
+  capacitySummary: 'Итоги по репозиториям',
+  capacityRefresh: 'Обновить',
+  capacityRepositories: 'Репозитории',
+  capacityInUse: 'Занято',
+  capacityPublished: 'Опубликовано',
+  capacityPending: 'Незавершённые загрузки',
+  capacityRetired: 'Ждёт очистки',
+  capacityQuota: 'Квота',
+  capacityState: 'Состояние',
+  capacityAttention: 'Близко к квоте или сверх неё',
+  capacityCountValue: '{count}',
+  capacityLogical:
+    'Размеры логические: столько репозиторий учитывает в своей квоте, а не место на диске.',
+  capacityEmpty: 'Нет репозиториев, хранилище которых вам можно читать.',
+  capacityTruncated: 'Показаны только первые 500 репозиториев по имени.',
+  capacityNoQuota: 'Без квоты',
+  capacityShare: '{percent}% квоты',
+  capacityUnreadable: 'Не удалось прочитать',
+  capacityUnlimited: 'Без квоты',
+  capacityNormal: 'В пределах порогов',
+  capacityWarning: 'Близко к квоте',
+  capacityCritical: 'Почти заполнено',
+  capacityExceeded: 'Сверх квоты',
+};
