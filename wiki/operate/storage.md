@@ -186,6 +186,10 @@ The usage that counts against the quota is the size of all files of the reposito
 
 The numbers are logical reservations, not free disk space. A repository can be under its quota while the disk is full, because the disk also holds staging files and other repositories.
 
+### All repositories at once {#overview}
+
+[[ui:capacity]] in the console menu shows every repository whose storage your account may read (`storage.read`): its use, quota, published files, unfinished uploads, files that wait for cleanup and the state, with a bar for the share of the quota. The largest come first; select a name to open the storage settings of that repository. The page reads the same numbers as `GET …/storage/usage`, for up to 500 repositories.
+
 ## Retention policy {#retention}
 
 A retention policy deletes old **registered UPack builds** automatically and keeps the last N of them. It does not delete other files: plain files by path, container images, Git LFS objects and npm packages are outside it. Without a policy, nothing is deleted automatically.

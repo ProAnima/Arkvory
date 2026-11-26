@@ -186,6 +186,10 @@ Die Nutzung, die gegen das Kontingent zählt, ist die Größe aller Dateien des 
 
 Die Zahlen sind logische Reservierungen, kein freier Datenträgerspeicher. Ein Repository kann unter seinem Kontingent liegen, während der Datenträger voll ist, weil der Datenträger auch Staging-Dateien und andere Repositorys enthält.
 
+### Alle Repositorys auf einen Blick {#overview}
+
+[[ui:capacity]] im Menü der Konsole zeigt jedes Repository, dessen Speicher Ihr Konto lesen darf (`storage.read`): Belegung, Kontingent, veröffentlichte Dateien, unvollständige Uploads, Dateien, die auf die Bereinigung warten, und den Zustand, den Anteil am Kontingent als Balken. Die größten stehen oben; wählen Sie einen Namen, um die Speichereinstellungen dieses Repositorys zu öffnen. Die Seite liest dieselben Zahlen wie `GET …/storage/usage`, für bis zu 500 Repositorys.
+
 ## Aufbewahrungsrichtlinie {#retention}
 
 Eine Aufbewahrungsrichtlinie löscht alte **registrierte UPack-Builds** automatisch und behält die letzten N davon. Sie löscht keine anderen Dateien: einfache Dateien nach Pfad, Container-Images, Git-LFS-Objekte und npm-Pakete liegen außerhalb davon. Ohne Richtlinie wird nichts automatisch gelöscht.

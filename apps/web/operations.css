@@ -2,14 +2,16 @@
 #mirrors-panel,
 #fleet-panel,
 #cluster-panel,
-#modules-panel {
+#modules-panel,
+#capacity-panel {
   display: grid;
   gap: var(--section-gap);
 }
 #mirrors-panel > .card > * + *,
 #fleet-panel > .card > * + *,
 #cluster-panel > .card > * + *,
-#modules-panel > .card > * + * {
+#modules-panel > .card > * + *,
+#capacity-panel > .card > * + * {
   margin-top: var(--space-4);
 }
 .cluster-facts dd {
@@ -53,7 +55,8 @@
 }
 .mirrors-table td,
 .cluster-table td,
-.modules-table td {
+.modules-table td,
+.capacity-table td {
   vertical-align: top;
   overflow-wrap: anywhere;
 }
@@ -262,4 +265,24 @@ body:has(#cluster-panel:not([hidden])) #replication-open {
 .modules-table td > .hint {
   display: block;
   margin-top: var(--space-1);
+}
+/* Storage overview: the share of the quota under the size, in the tone of the quota state. */
+.capacity-table progress {
+  margin: var(--space-1) 0 0;
+  min-width: var(--label-min);
+}
+.capacity-table progress[data-tone='warning']::-webkit-progress-value {
+  background: var(--color-warning);
+}
+.capacity-table progress[data-tone='error']::-webkit-progress-value {
+  background: var(--color-error);
+}
+.capacity-table progress[data-tone='warning']::-moz-progress-bar {
+  background: var(--color-warning);
+}
+.capacity-table progress[data-tone='error']::-moz-progress-bar {
+  background: var(--color-error);
+}
+.capacity-table td:not(:first-child, :last-child) {
+  white-space: nowrap;
 }

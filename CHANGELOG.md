@@ -7,6 +7,7 @@ Entries for the next release, copied into its GitHub release notes when it is pu
 **Added**
 
 - Console: a Modules & licence page for global administrators. It lists every module with its version, extension point, source and state, and the licences with their state and term. It only reads; modules are still installed and enabled on the server host.
+- Console: a Storage overview page. It lists every repository whose storage the account may read with its use, quota, published files, unfinished uploads, files that wait for cleanup and state, largest first, with a bar for the share of the quota; a name opens the storage settings of that repository. See [Storage](https://github.com/ProAnima/Arkvory/blob/main/wiki/operate/storage.md#overview).
 
 **Changed**
 

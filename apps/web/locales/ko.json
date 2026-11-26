@@ -4858,5 +4858,97 @@
   "licenseGuide": {
     "en": "Licence guide",
     "text": "라이선스 가이드"
+  },
+  "capacity": {
+    "en": "Storage overview",
+    "text": "스토리지 개요"
+  },
+  "capacitySummary": {
+    "en": "Totals across repositories",
+    "text": "모든 저장소의 합계"
+  },
+  "capacityRefresh": {
+    "en": "Refresh",
+    "text": "새로 고침"
+  },
+  "capacityRepositories": {
+    "en": "Repositories",
+    "text": "저장소"
+  },
+  "capacityInUse": {
+    "en": "In use",
+    "text": "사용 중"
+  },
+  "capacityPublished": {
+    "en": "Published",
+    "text": "게시됨"
+  },
+  "capacityPending": {
+    "en": "Unfinished uploads",
+    "text": "완료되지 않은 업로드"
+  },
+  "capacityRetired": {
+    "en": "Awaiting cleanup",
+    "text": "정리 대기"
+  },
+  "capacityQuota": {
+    "en": "Quota",
+    "text": "할당량"
+  },
+  "capacityState": {
+    "en": "State",
+    "text": "상태"
+  },
+  "capacityAttention": {
+    "en": "Near or over quota",
+    "text": "할당량에 가깝거나 초과"
+  },
+  "capacityCountValue": {
+    "en": "{count}",
+    "text": "{count}"
+  },
+  "capacityLogical": {
+    "en": "Sizes are logical: what each repository counts against its quota, not the space on disk.",
+    "text": "크기는 논리적 값입니다. 각 저장소가 할당량에 계산하는 양이며 디스크 공간이 아닙니다."
+  },
+  "capacityEmpty": {
+    "en": "No repository whose storage you may read.",
+    "text": "스토리지를 읽을 수 있는 저장소가 없습니다."
+  },
+  "capacityTruncated": {
+    "en": "Only the first 500 repositories in name order are shown.",
+    "text": "이름순으로 처음 500개 저장소만 표시합니다."
+  },
+  "capacityNoQuota": {
+    "en": "No quota",
+    "text": "할당량 없음"
+  },
+  "capacityShare": {
+    "en": "{percent}% of the quota",
+    "text": "할당량의 {percent}%"
+  },
+  "capacityUnreadable": {
+    "en": "Cannot read usage",
+    "text": "사용량을 읽을 수 없음"
+  },
+  "capacityUnlimited": {
+    "en": "No quota",
+    "text": "할당량 없음"
+  },
+  "capacityNormal": {
+    "en": "Below thresholds",
+    "text": "임계값 미만"
+  },
+  "capacityWarning": {
+    "en": "Near the quota",
+    "text": "할당량에 가까움"
+  },
+  "capacityCritical": {
+    "en": "Almost full",
+    "text": "거의 가득 참"
+  },
+  "capacityExceeded": {
+    "en": "Over the quota",
+    "text": "할당량 초과"
   }
 }

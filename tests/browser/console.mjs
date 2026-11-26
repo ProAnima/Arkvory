@@ -21,6 +21,7 @@ import { exerciseMirror } from './mirror.mjs';
 import { exerciseFleet } from './fleet.mjs';
 import { exerciseCluster } from './cluster.mjs';
 import { exerciseModules } from './modules.mjs';
+import { exerciseCapacity } from './capacity.mjs';
 import { exerciseLanguageMenu, exerciseLanguages } from './languages.mjs';
 import { chromium } from 'playwright';
 import { chooseLanguage } from './language.mjs';
@@ -304,6 +305,7 @@ try {
   // Before density: that pass then also measures the populated Backups screen.
   await exerciseBackups(browser, origin, f);
   await exerciseModules(browser, origin, f);
+  await exerciseCapacity(browser, origin, f);
   await exerciseDesktopDensity(browser, origin, f);
   // It exhausts the sign-in budget of this server's loopback client.
   await exerciseErrorFeedback(browser, origin, f);

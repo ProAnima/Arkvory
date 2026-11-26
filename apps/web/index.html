@@ -111,6 +111,16 @@
         </button>
         <button
           type="button"
+          id="capacity-nav"
+          data-nav="capacity"
+          aria-controls="capacity-panel"
+          hidden
+        >
+          <span class="nav-icon" data-icon="gauge" aria-hidden="true"></span>
+          <span data-i18n="capacity">Обзор хранилища</span>
+        </button>
+        <button
+          type="button"
           id="mirrors-nav"
           data-nav="mirrors"
           aria-controls="mirrors-panel"
@@ -1092,6 +1102,73 @@
             </div>
             <p id="cluster-no-peers" class="hint" data-i18n="clusterNoPeers" hidden></p>
             <p id="cluster-old" class="hint" data-i18n="clusterOld" hidden></p>
+          </div>
+        </section>
+        <section id="capacity-panel" data-view="capacity" aria-labelledby="page-title" hidden>
+          <div class="card padded">
+            <div class="section-heading">
+              <h2 class="sr-only" data-i18n="capacitySummary">Итоги по репозиториям</h2>
+              <button
+                id="capacity-refresh"
+                class="secondary"
+                type="button"
+                data-i18n="capacityRefresh"
+              >
+                Обновить
+              </button>
+            </div>
+            <dl class="update-facts">
+              <div>
+                <dt data-i18n="capacityRepositories">Репозитории</dt>
+                <dd id="capacity-count">—</dd>
+              </div>
+              <div>
+                <dt data-i18n="capacityInUse">Занято</dt>
+                <dd id="capacity-total">—</dd>
+              </div>
+              <div>
+                <dt data-i18n="capacityPublished">Опубликовано</dt>
+                <dd id="capacity-published">—</dd>
+              </div>
+              <div>
+                <dt data-i18n="capacityRetired">Ждёт очистки</dt>
+                <dd id="capacity-retired">—</dd>
+              </div>
+              <div>
+                <dt data-i18n="capacityAttention">Близко к квоте или сверх неё</dt>
+                <dd id="capacity-attention">—</dd>
+              </div>
+            </dl>
+            <output id="capacity-status" class="hint" aria-live="polite" hidden></output>
+            <p class="hint" data-i18n="capacityLogical">
+              Размеры логические: столько репозиторий учитывает в своей квоте, а не место на диске.
+            </p>
+          </div>
+          <div class="card padded">
+            <div
+              id="capacity-table"
+              class="table"
+              tabindex="0"
+              role="region"
+              data-i18n-label="tableRegion"
+            >
+              <table class="capacity-table">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="repository">Репозиторий</th>
+                    <th scope="col" data-i18n="capacityInUse">Занято</th>
+                    <th scope="col" data-i18n="capacityQuota">Квота</th>
+                    <th scope="col" data-i18n="capacityPublished">Опубликовано</th>
+                    <th scope="col" data-i18n="capacityPending">Незавершённые загрузки</th>
+                    <th scope="col" data-i18n="capacityRetired">Ждёт очистки</th>
+                    <th scope="col" data-i18n="capacityState">Состояние</th>
+                  </tr>
+                </thead>
+                <tbody id="capacity-rows"></tbody>
+              </table>
+            </div>
+            <p id="capacity-empty" class="hint" data-i18n="capacityEmpty" hidden></p>
+            <p id="capacity-truncated" class="hint" data-i18n="capacityTruncated" hidden></p>
           </div>
         </section>
         <section id="modules-panel" data-view="modules" aria-labelledby="page-title" hidden>
