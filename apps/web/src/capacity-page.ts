@@ -21,16 +21,22 @@ const states: Readonly<Record<Usage['state'], readonly [MessageKey, Tone]>> = {
   exceeded: ['capacityExceeded', 'error'],
 };
 
-/** Repositories this account may read the storage of, in id order, at most MAX_REPOSITORIES. */
-async function storageRepositories(client: ArkvoryClient, signal: AbortSignal) {
+/**
+ * Repositories this account may read the storage of, in id order, at most `limit`; paging stops
+ * as soon as more are found, so deciding whether to show the entry reads one match only.
+ */
+async function storageRepositories(
+  client: ArkvoryClient,
+  signal: AbortSignal,
+  limit = MAX_REPOSITORIES,
+) {
   const ids: string[] = [];
   let after: string | undefined;
   for (;;) {
     const page = await client.repositories({ limit: 100, ...(after ? { after } : {}) }, signal);
     if (page.next && after && page.next <= after) throw new Error('Invalid repository pagination');
     for (const card of page.items) if (card.permissions.includes('storage.read')) ids.push(card.id);
-    if (ids.length > MAX_REPOSITORIES)
-      return { ids: ids.slice(0, MAX_REPOSITORIES), truncated: true };
+    if (ids.length > limit) return { ids: ids.slice(0, limit), truncated: true };
     if (!page.next) return { ids, truncated: false };
     after = page.next;
   }
@@ -99,8 +105,9 @@ export class CapacityPage {
     this.clear();
     const signal = this.controller.signal;
     try {
-      const { ids } = await storageRepositories(this.client, signal);
-      if (!signal.aborted) this.nav.hidden = ids.length === 0;
+      // A limit of 0 stops at the first match: `truncated` then means there is at least one.
+      const { truncated } = await storageRepositories(this.client, signal, 0);
+      if (!signal.aborted) this.nav.hidden = !truncated;
     } catch {
       // Without the list the entry stays hidden; the catalog reports connection problems.
     }
