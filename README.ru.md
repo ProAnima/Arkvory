@@ -6,7 +6,7 @@
 
 **Собственный репозиторий для сборок, пакетов, образов контейнеров и больших файлов.**
 
-<a href="branding/media/arkvory-tour.mp4"><img src="branding/media/arkvory-tour-poster.jpg" alt="Видеообзор Arkvory (3:45, на английском): что умеет Arkvory, его консоль и Arkvory Pro" width="720"></a>
+<a href="https://proanima.github.io/Arkvory/media/arkvory-tour.mp4"><img src="branding/media/arkvory-tour-poster.jpg" alt="Видеообзор Arkvory (3:45, на английском): что умеет Arkvory, его консоль и Arkvory Pro" width="720"></a>
 
 [Документация](https://proanima.github.io/Arkvory/ru/) · [Скачать](https://github.com/ProAnima/Arkvory/releases/latest) · [HTTP API](https://proanima.github.io/Arkvory/ru/api/) · [Лицензия](LICENSE.ru.md)
 

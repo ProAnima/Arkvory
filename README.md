@@ -6,7 +6,7 @@
 
 **Your own repository for builds, packages, container images and large files.**
 
-<a href="branding/media/arkvory-tour.mp4"><img src="branding/media/arkvory-tour-poster.jpg" alt="Watch the Arkvory product tour (3:45): what Arkvory does, its console and Arkvory Pro" width="720"></a>
+<a href="https://proanima.github.io/Arkvory/media/arkvory-tour.mp4"><img src="branding/media/arkvory-tour-poster.jpg" alt="Watch the Arkvory product tour (3:45): what Arkvory does, its console and Arkvory Pro" width="720"></a>
 
 [Documentation](https://proanima.github.io/Arkvory/) · [Download](https://github.com/ProAnima/Arkvory/releases/latest) · [HTTP API](https://proanima.github.io/Arkvory/api/) · [License](LICENSE.md)
 
