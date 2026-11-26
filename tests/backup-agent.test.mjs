@@ -370,10 +370,15 @@ test('a deep check that finds damage keeps its outcome when a capture holds the 
   const entry = await blob(f.vault, 64);
   const manifest = await point(f.vault, f.identity, [entry], '2026-10-01T02:00:00.000Z');
   await f.ports.catalog.record(lease, { manifest, newBytes: '64' });
-  // Bit rot: the same size, other bytes.
-  const { writeFile } = await import('node:fs/promises');
+  // Bit rot: the same size, other bytes. Every byte is inverted, so the damage never matches
+  // the random fill of the helper (a fixed byte matched it in 1 of 255 runs).
+  const { readFile, writeFile } = await import('node:fs/promises');
   const { join } = await import('node:path');
-  await writeFile(join(f.vault.root, 'blobs', entry.id.slice(0, 2), entry.id), Buffer.alloc(64, 1));
+  const stored = join(f.vault.root, 'blobs', entry.id.slice(0, 2), entry.id);
+  await writeFile(
+    stored,
+    (await readFile(stored)).map((byte) => byte ^ 0xff),
+  );
   // Another process captures meanwhile: the exclusive lock refuses at once.
   f.ports.lock.exclusive = async () => {
     throw new BackupFailure('busy', 'Another process holds the vault lock');

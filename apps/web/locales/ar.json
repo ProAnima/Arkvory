@@ -4916,8 +4916,8 @@
     "text": "لا يوجد مستودع يُسمح لك بقراءة تخزينه."
   },
   "capacityTruncated": {
-    "en": "Only the first 500 repositories in name order are shown.",
-    "text": "تُعرض أول 500 مستودع فقط حسب الاسم."
+    "en": "Not every repository is listed: the page reads at most 500 of them, in name order.",
+    "text": "لا تُعرض كل المستودعات: تقرأ الصفحة 500 مستودع على الأكثر، حسب ترتيب الأسماء."
   },
   "capacityNoQuota": {
     "en": "No quota",
@@ -4950,5 +4950,13 @@
   "capacityExceeded": {
     "en": "Over the quota",
     "text": "تجاوز الحصة"
+  },
+  "licenseGraceUntil": {
+    "en": "Paid writes until {date}",
+    "text": "الكتابة المدفوعة حتى {date}"
+  },
+  "capacityPartial": {
+    "en": "Left out of the totals because their usage could not be read: {count}.",
+    "text": "لا تشمل الإجماليات {count} من المستودعات تعذّرت قراءة استخدامها."
   }
 }

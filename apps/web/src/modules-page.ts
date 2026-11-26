@@ -92,11 +92,21 @@ function licenceRow(licence: SystemLicense) {
   const until = document.createElement('span');
   if (licence.notAfter) dateMessage(until, licence.notAfter);
   else message(until, 'licensePerpetual');
+  const term = cell(until);
+  // In a grace state paid writes stop earlier than the term: show when, below the term.
+  const graceEnd =
+    licence.state === 'offline-grace' ? licence.offlineGraceUntil : licence.graceUntil;
+  if (['grace', 'offline-grace', 'mismatch'].includes(licence.state) && graceEnd) {
+    const grace = document.createElement('span');
+    grace.className = 'hint';
+    message(grace, 'licenseGraceUntil', { date: graceEnd }, [], ['date']);
+    term.append(grace);
+  }
   row.append(
     cell(data(licence.licenseType ?? '—')),
     cell(data(licence.licensee ?? '—')),
     state,
-    cell(until),
+    term,
     cell(data(licence.features.join(', ') || '—')),
   );
   return row;
@@ -124,13 +134,21 @@ export class ModulesPage {
     this.nav.hidden = true;
     clearMessage(this.status);
     this.status.hidden = true;
+    this.forget();
+    if (!element('modules-panel', HTMLElement).hidden) showView('catalog');
+  }
+  /** Nothing of an earlier account or load stays on screen, and no licence state is guessed. */
+  private forget() {
+    clearMessage(element('modules-api', HTMLElement));
     element('modules-rows', HTMLTableSectionElement).replaceChildren();
     element('licence-rows', HTMLTableSectionElement).replaceChildren();
-    if (!element('modules-panel', HTMLElement).hidden) showView('catalog');
+    element('licence-table', HTMLElement).hidden = true;
+    element('licence-none', HTMLElement).hidden = true;
   }
   private async load() {
     const generation = ++this.generation;
     this.status.hidden = true;
+    this.forget();
     try {
       const [modules, licences] = await Promise.all([
         this.client.system.modules(),

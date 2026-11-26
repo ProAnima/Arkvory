@@ -283,6 +283,9 @@ body:has(#cluster-panel:not([hidden])) #replication-open {
 .capacity-table progress[data-tone='error']::-moz-progress-bar {
   background: var(--color-error);
 }
+.capacity-table td > .hint {
+  display: block;
+}
 .capacity-table td:not(:first-child, :last-child) {
   white-space: nowrap;
 }

@@ -4916,8 +4916,8 @@
     "text": "스토리지를 읽을 수 있는 저장소가 없습니다."
   },
   "capacityTruncated": {
-    "en": "Only the first 500 repositories in name order are shown.",
-    "text": "이름순으로 처음 500개 저장소만 표시합니다."
+    "en": "Not every repository is listed: the page reads at most 500 of them, in name order.",
+    "text": "모든 저장소가 표시되지는 않습니다. 이 페이지는 이름순으로 최대 500개까지 읽습니다."
   },
   "capacityNoQuota": {
     "en": "No quota",
@@ -4950,5 +4950,13 @@
   "capacityExceeded": {
     "en": "Over the quota",
     "text": "할당량 초과"
+  },
+  "licenseGraceUntil": {
+    "en": "Paid writes until {date}",
+    "text": "유료 쓰기 가능 기한: {date}"
+  },
+  "capacityPartial": {
+    "en": "Left out of the totals because their usage could not be read: {count}.",
+    "text": "사용량을 읽을 수 없는 저장소 {count}개는 합계에서 빠졌습니다."
   }
 }

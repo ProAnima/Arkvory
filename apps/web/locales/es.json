@@ -4916,8 +4916,8 @@
     "text": "No hay ningún repositorio cuyo almacenamiento pueda leer."
   },
   "capacityTruncated": {
-    "en": "Only the first 500 repositories in name order are shown.",
-    "text": "Solo se muestran los primeros 500 repositorios por nombre."
+    "en": "Not every repository is listed: the page reads at most 500 of them, in name order.",
+    "text": "No se muestran todos los repositorios: la página lee como máximo 500, por orden de nombre."
   },
   "capacityNoQuota": {
     "en": "No quota",
@@ -4950,5 +4950,13 @@
   "capacityExceeded": {
     "en": "Over the quota",
     "text": "Por encima de la cuota"
+  },
+  "licenseGraceUntil": {
+    "en": "Paid writes until {date}",
+    "text": "Escrituras de pago hasta {date}"
+  },
+  "capacityPartial": {
+    "en": "Left out of the totals because their usage could not be read: {count}.",
+    "text": "Los totales no incluyen {count} repositorios cuyo uso no se pudo leer."
   }
 }

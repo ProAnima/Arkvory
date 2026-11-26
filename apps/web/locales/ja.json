@@ -4916,8 +4916,8 @@
     "text": "ストレージを読み取れるリポジトリがありません。"
   },
   "capacityTruncated": {
-    "en": "Only the first 500 repositories in name order are shown.",
-    "text": "名前順で最初の 500 リポジトリのみ表示しています。"
+    "en": "Not every repository is listed: the page reads at most 500 of them, in name order.",
+    "text": "すべてのリポジトリは表示されていません。このページは名前順に最大 500 件まで読み取ります。"
   },
   "capacityNoQuota": {
     "en": "No quota",
@@ -4950,5 +4950,13 @@
   "capacityExceeded": {
     "en": "Over the quota",
     "text": "クォータ超過"
+  },
+  "licenseGraceUntil": {
+    "en": "Paid writes until {date}",
+    "text": "有料の書き込みは {date} まで"
+  },
+  "capacityPartial": {
+    "en": "Left out of the totals because their usage could not be read: {count}.",
+    "text": "使用量を読み取れなかった {count} 件のリポジトリは合計に含まれていません。"
   }
 }

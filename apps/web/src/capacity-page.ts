@@ -12,6 +12,15 @@ type Entry = { readonly id: string; readonly usage: Usage | null };
 /** Bounds of one pass: how many repositories are read and how many reads run at once. */
 const MAX_REPOSITORIES = 500;
 const PARALLEL_READS = 4;
+/** Repository cards scanned at most, as `readableRepositories` does at sign-in. */
+const MAX_SCANNED = 10000;
+const FACTS = [
+  'capacity-count',
+  'capacity-total',
+  'capacity-published',
+  'capacity-retired',
+  'capacity-attention',
+] as const;
 
 const states: Readonly<Record<Usage['state'], readonly [MessageKey, Tone]>> = {
   unlimited: ['capacityUnlimited', 'neutral'],
@@ -23,7 +32,8 @@ const states: Readonly<Record<Usage['state'], readonly [MessageKey, Tone]>> = {
 
 /**
  * Repositories this account may read the storage of, in id order, at most `limit`; paging stops
- * as soon as more are found, so deciding whether to show the entry reads one match only.
+ * as soon as more are found, so deciding whether to show the entry reads one match only, and
+ * after MAX_SCANNED cards. `truncated`: more matches exist; `partial`: not every card was read.
  */
 async function storageRepositories(
   client: ArkvoryClient,
@@ -32,12 +42,15 @@ async function storageRepositories(
 ) {
   const ids: string[] = [];
   let after: string | undefined;
+  let scanned = 0;
   for (;;) {
     const page = await client.repositories({ limit: 100, ...(after ? { after } : {}) }, signal);
     if (page.next && after && page.next <= after) throw new Error('Invalid repository pagination');
+    scanned += page.items.length;
     for (const card of page.items) if (card.permissions.includes('storage.read')) ids.push(card.id);
-    if (ids.length > limit) return { ids: ids.slice(0, limit), truncated: true };
-    if (!page.next) return { ids, truncated: false };
+    if (ids.length > limit) return { ids: ids.slice(0, limit), truncated: true, partial: false };
+    if (!page.next) return { ids, truncated: false, partial: false };
+    if (scanned >= MAX_SCANNED) return { ids, truncated: false, partial: true };
     after = page.next;
   }
 }
@@ -118,8 +131,20 @@ export class CapacityPage {
     this.nav.hidden = true;
     this.status.hidden = true;
     clearMessage(this.status);
-    this.rows.replaceChildren();
+    this.forget();
     if (!element('capacity-panel', HTMLElement).hidden) showView('catalog');
+  }
+  /** Totals and rows of an earlier account or pass never stay next to a new one. */
+  private forget() {
+    for (const id of FACTS) {
+      const fact = element(id, HTMLElement);
+      clearMessage(fact);
+      fact.textContent = '—';
+    }
+    this.rows.replaceChildren();
+    element('capacity-table', HTMLElement).hidden = false;
+    for (const id of ['capacity-empty', 'capacity-truncated', 'capacity-partial'])
+      element(id, HTMLElement).hidden = true;
   }
   private async load() {
     this.controller.abort();
@@ -128,11 +153,12 @@ export class CapacityPage {
     const refresh = element('capacity-refresh', HTMLButtonElement);
     refresh.disabled = true;
     this.status.hidden = true;
+    this.forget();
     try {
-      const { ids, truncated } = await storageRepositories(this.client, signal);
+      const { ids, truncated, partial } = await storageRepositories(this.client, signal);
       const entries = await readUsage(this.client, ids, signal);
       if (signal.aborted) return;
-      this.render(entries, truncated);
+      this.render(entries, truncated || partial);
     } catch (error) {
       if (signal.aborted) return;
       this.status.hidden = false;
@@ -161,6 +187,11 @@ export class CapacityPage {
     element('capacity-empty', HTMLElement).hidden = entries.length > 0;
     element('capacity-table', HTMLElement).hidden = entries.length === 0;
     element('capacity-truncated', HTMLElement).hidden = !truncated;
+    // The totals cover readable repositories only; say how many were left out.
+    const unread = entries.length - read.length;
+    const partial = element('capacity-partial', HTMLElement);
+    partial.hidden = unread === 0;
+    if (unread > 0) message(partial, 'capacityPartial', { count: unread });
     const sorted = [...entries].sort((a, b) => {
       const difference = used(b) - used(a);
       return difference === 0n ? a.id.localeCompare(b.id) : difference > 0n ? 1 : -1;
@@ -193,13 +224,17 @@ export class CapacityPage {
     const inUse = bytesCell(usage.reservedBytes);
     const percent = share(usage);
     if (percent !== null) {
+      // The bar repeats the visible percentage below it, so assistive technology skips it.
       const bar = document.createElement('progress');
       bar.max = 100;
       bar.value = percent;
+      bar.setAttribute('aria-hidden', 'true');
       const [, tone] = states[usage.state];
       bar.dataset['tone'] = tone;
-      message(bar, 'capacityShare', { percent });
-      inUse.append(bar);
+      const share = document.createElement('span');
+      share.className = 'hint';
+      message(share, 'capacityShare', { percent });
+      inUse.append(bar, share);
     }
     const [key, tone] = states[usage.state];
     const state = document.createElement('td');

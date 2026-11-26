@@ -49,6 +49,23 @@ export async function exerciseCapacity(browser, origin, f) {
       await row.locator('.badge').innerText(),
       /^(Below thresholds|Near the quota|Almost full|Over the quota)$/,
     );
+    // A repository whose usage cannot be read stays a row, and the totals say they leave it out.
+    const usage = '**/api/v1/repositories/releases/storage/usage';
+    await page.route(usage, (route) =>
+      route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 'forbidden', message: 'Forbidden' }),
+      }),
+    );
+    await page.locator('#capacity-refresh').click();
+    await page.locator('#capacity-partial').waitFor();
+    assert.match(await page.locator('#capacity-partial').innerText(), /could not be read: 1\./);
+    assert.ok((await row.innerText()).includes('Cannot read usage'));
+    await page.unroute(usage);
+    await page.locator('#capacity-refresh').click();
+    await row.locator('progress').waitFor();
+    assert.equal(await page.locator('#capacity-partial').isVisible(), false);
     await page.setViewportSize({ width: 390, height: 844 });
     await chooseLanguage(page, 'ar');
     assert.equal(await page.locator('#page-title').innerText(), 'نظرة عامة على التخزين');
