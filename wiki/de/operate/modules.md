@@ -11,7 +11,7 @@ Die Dienste prüfen die installierten Module bei jedem Start erneut und laden si
 
 ## Arkvory Pro {#pro}
 
-Arkvory Pro ist ein optionales Paket kostenpflichtiger, signierter ProAnimaStudio-Module für den kostenlosen Arkvory-Kern. Pro 0.1.0 läuft mit Arkvory 0.6.3 auf Windows/Linux x64. Pakete und Lizenz erhalten Sie von ProAnimaStudio; die Module werden getrennt vom Kern installiert. Siehe [Installation](#install) und [Lizenzen](licenses).
+Arkvory Pro ist ein optionales Paket kostenpflichtiger, signierter ProAnimaStudio-Module für den kostenlosen Arkvory-Kern. Pro 0.1.1 läuft mit Arkvory 0.6.3 bis 0.7.0 (Erweiterungs-API 0.13) auf Windows/Linux x64. Pakete und Lizenz erhalten Sie von ProAnimaStudio; die Module werden getrennt vom Kern installiert. Siehe [Installation](#install) und [Lizenzen](licenses).
 
 - **Deduplizierung:** speichert gemeinsame Chunks einmal und verwendet sie für mehrere Objekte. Der gemeinsame Katalog stimmt die Speicherbereinigung mit Veröffentlichung, Lesern und Backups ab.
 - **Delta-Übertragungen:** verwenden Inhalte eines kompatiblen Clients erneut und übertragen fehlende Daten oder Patches. Das Paket enthält serverseitige Speicher- und Übertragungsmodule sowie ein Delta-Client-Modul. Die Einsparung hängt von Daten und Client ab; gewöhnliche HTTP-Downloads werden nicht automatisch zu Delta-Übertragungen.

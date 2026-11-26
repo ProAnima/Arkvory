@@ -11,7 +11,7 @@ The services check the installed modules again and load them each time they star
 
 ## Arkvory Pro {#pro}
 
-Arkvory Pro is an optional set of paid, signed ProAnimaStudio modules for the free Arkvory core. Pro 0.1.0 works with Arkvory 0.6.3 on Windows/Linux x64. Obtain the module packages and licence from ProAnimaStudio; they are installed separately from the core. See [installation](#install) and [licences](licenses).
+Arkvory Pro is an optional set of paid, signed ProAnimaStudio modules for the free Arkvory core. Pro 0.1.1 works with Arkvory 0.6.3 to 0.7.0 (extension API 0.13) on Windows/Linux x64. Obtain the module packages and licence from ProAnimaStudio; they are installed separately from the core. See [installation](#install) and [licences](licenses).
 
 - **Deduplication** stores shared chunks once and reuses them across objects. The shared catalog coordinates garbage collection with publication, readers and backups.
 - **Delta transfers** reuse content already available to a compatible client and transfer the missing data or patches. The bundle contains server storage/transfer modules and a delta client module. Savings depend on the data and client; ordinary HTTP downloads do not automatically become delta transfers.

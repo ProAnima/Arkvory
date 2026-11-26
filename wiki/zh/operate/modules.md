@@ -11,7 +11,7 @@ description: 在主机上安装、启用、检查和移除已签名的模块包�
 
 ## Arkvory Pro {#pro}
 
-Arkvory Pro 是用于免费 Arkvory 核心的可选付费模块集，由 ProAnimaStudio 签名。Pro 0.1.0 可配合 Arkvory 0.6.3 在 Windows/Linux x64 上使用。请向 ProAnimaStudio 获取模块包和许可证；模块与核心分别安装。参见[安装](#install)和[许可证](licenses)。
+Arkvory Pro 是用于免费 Arkvory 核心的可选付费模块集，由 ProAnimaStudio 签名。Pro 0.1.1 可配合 Arkvory 0.6.3 至 0.7.0（扩展 API 0.13）在 Windows/Linux x64 上使用。请向 ProAnimaStudio 获取模块包和许可证；模块与核心分别安装。参见[安装](#install)和[许可证](licenses)。
 
 - **去重：**共享数据块只存储一次，并在多个对象间复用。共享目录协调垃圾回收与发布、读取和备份。
 - **增量传输：**复用兼容客户端已有的内容，只传输缺少的数据或补丁。模块集包含服务端存储和传输模块以及增量客户端模块。节省量取决于数据和客户端；普通 HTTP 下载不会自动变成增量传输。

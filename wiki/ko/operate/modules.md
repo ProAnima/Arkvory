@@ -11,7 +11,7 @@ description: 호스트에 서명된 모듈 패키지를 설치하고 활성화�
 
 ## Arkvory Pro {#pro}
 
-Arkvory Pro는 무료 Arkvory 코어에 추가하는 선택적 유료 모듈 모음이며 ProAnimaStudio가 서명합니다. Pro 0.1.0은 Windows/Linux x64에서 Arkvory 0.6.3과 함께 작동합니다. 모듈 패키지와 라이선스는 ProAnimaStudio에서 받으며 코어와 별도로 설치합니다. [설치](#install)와 [라이선스](licenses)를 참고하세요.
+Arkvory Pro는 무료 Arkvory 코어에 추가하는 선택적 유료 모듈 모음이며 ProAnimaStudio가 서명합니다. Pro 0.1.1은 Windows/Linux x64에서 Arkvory 0.6.3부터 0.7.0까지(확장 API 0.13) 함께 작동합니다. 모듈 패키지와 라이선스는 ProAnimaStudio에서 받으며 코어와 별도로 설치합니다. [설치](#install)와 [라이선스](licenses)를 참고하세요.
 
 - **중복 제거:** 공유 청크를 한 번 저장하고 여러 객체에서 재사용합니다. 공유 카탈로그가 게시, 읽기, 백업과 가비지 수집을 조정합니다.
 - **델타 전송:** 호환 클라이언트에 이미 있는 내용을 재사용하고 없는 데이터나 패치를 전송합니다. 모음에는 서버 저장소·전송 모듈과 델타 클라이언트 모듈이 포함됩니다. 절감량은 데이터와 클라이언트에 따라 다르며 일반 HTTP 다운로드가 자동으로 델타 전송이 되지는 않습니다.
