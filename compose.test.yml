@@ -7,7 +7,10 @@ services:
       POSTGRES_PASSWORD: arkvory_test
       POSTGRES_DB: arkvory_test
     ports:
-      - '127.0.0.1:54329:5432'
+      # Below the Windows dynamic range (49152-65535), where outbound connections of other
+      # programs (VPN clients) and Hyper-V/WinNAT reservations take ports; outside 45329-45348,
+      # which installed Arkvory databases use.
+      - '127.0.0.1:45432:5432'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U arkvory_test -d arkvory_test']
       interval: 3s
