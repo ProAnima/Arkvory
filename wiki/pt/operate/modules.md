@@ -163,6 +163,10 @@ O comando verifica de novo cada pacote instalado, como os serviços fazem antes 
 
 Um pacote recusado nunca é usado. Para repará-lo, instale o arquivo do pacote de novo.
 
+### No console {#console}
+
+Um administrador global encontra [[ui:modules]] no menu do console. A página mostra cada módulo com sua versão, ponto de extensão, origem e estado no processo que respondeu, e as licenças com seu estado e prazo. Ela apenas lê: instale, ative e remova módulos com os comandos desta página.
+
 ## Remover um módulo {#remove}
 
 ```bash

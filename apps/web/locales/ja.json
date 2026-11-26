@@ -4694,5 +4694,169 @@
   "fleetAlertVersionSkew": {
     "en": "runs another version than this controller.",
     "text": "はこのコントローラーとは異なるバージョンで動作しています。"
+  },
+  "modules": {
+    "en": "Modules & licence",
+    "text": "モジュールとライセンス"
+  },
+  "modulesInstalled": {
+    "en": "Installed modules",
+    "text": "インストール済みモジュール"
+  },
+  "modulesApi": {
+    "en": "Extension API {version}",
+    "text": "拡張 API {version}"
+  },
+  "modulesName": {
+    "en": "Module",
+    "text": "モジュール"
+  },
+  "modulesVersion": {
+    "en": "Version",
+    "text": "バージョン"
+  },
+  "modulesKind": {
+    "en": "Extension point",
+    "text": "拡張ポイント"
+  },
+  "modulesSource": {
+    "en": "Source",
+    "text": "提供元"
+  },
+  "modulesState": {
+    "en": "State",
+    "text": "状態"
+  },
+  "modulesCore": {
+    "en": "Free core",
+    "text": "無料コア"
+  },
+  "modulesSourceBuiltin": {
+    "en": "Built in",
+    "text": "組み込み"
+  },
+  "modulesSourceSigned": {
+    "en": "Signed package",
+    "text": "署名済みパッケージ"
+  },
+  "moduleOk": {
+    "en": "Running",
+    "text": "実行中"
+  },
+  "moduleDegraded": {
+    "en": "Degraded",
+    "text": "機能低下"
+  },
+  "moduleFailed": {
+    "en": "Failed to start",
+    "text": "起動に失敗"
+  },
+  "moduleRevoked": {
+    "en": "Revoked",
+    "text": "失効"
+  },
+  "moduleUnavailable": {
+    "en": "Unavailable",
+    "text": "利用不可"
+  },
+  "moduleNotOk": {
+    "en": "Not ok: {status}",
+    "text": "異常: {status}"
+  },
+  "moduleIdle": {
+    "en": "Not running in this process",
+    "text": "このプロセスでは実行されていません"
+  },
+  "moduleOff": {
+    "en": "Off",
+    "text": "オフ"
+  },
+  "licenses": {
+    "en": "Licence",
+    "text": "ライセンス"
+  },
+  "licenseType": {
+    "en": "Type",
+    "text": "種類"
+  },
+  "licensee": {
+    "en": "Licensee",
+    "text": "ライセンシー"
+  },
+  "licenseState": {
+    "en": "State",
+    "text": "状態"
+  },
+  "licenseUntil": {
+    "en": "Valid until",
+    "text": "有効期限"
+  },
+  "licenseFeatures": {
+    "en": "Features",
+    "text": "機能"
+  },
+  "licensePerpetual": {
+    "en": "No end date",
+    "text": "期限なし"
+  },
+  "licenseValid": {
+    "en": "Valid",
+    "text": "有効"
+  },
+  "licenseOfflineGrace": {
+    "en": "Offline, within the grace window",
+    "text": "オフライン、猶予期間内"
+  },
+  "licenseGrace": {
+    "en": "Term ended, renewal grace",
+    "text": "期間終了、更新猶予中"
+  },
+  "licenseMismatch": {
+    "en": "Belongs to another installation",
+    "text": "別のインストールのものです"
+  },
+  "licenseExpired": {
+    "en": "Expired",
+    "text": "期限切れ"
+  },
+  "licenseRevoked": {
+    "en": "Revoked",
+    "text": "失効"
+  },
+  "licenseInvalid": {
+    "en": "Does not verify",
+    "text": "検証に失敗"
+  },
+  "licenseUnknown": {
+    "en": "Not valid: {state}",
+    "text": "無効: {state}"
+  },
+  "licenseRefreshFailing": {
+    "en": "The hub has not answered lately.",
+    "text": "ハブからしばらく応答がありません。"
+  },
+  "licenseNone": {
+    "en": "No licence is activated. The free core works without one.",
+    "text": "ライセンスは有効化されていません。無料コアはライセンスなしで動作します。"
+  },
+  "modulesManage": {
+    "en": "Install, enable or remove",
+    "text": "インストール、有効化、削除"
+  },
+  "modulesManageText": {
+    "en": "The console only shows modules: they are installed on the server host, so a stolen console account cannot run code there. Check the installed packages on the host:",
+    "text": "コンソールはモジュールを表示するだけです。モジュールはサーバーのホストでインストールするため、盗まれたコンソールのアカウントでそこにコードを実行することはできません。ホストでインストール済みのパッケージを確認するには:"
+  },
+  "modulesListCommand": {
+    "en": "sudo arkvory module list --root /opt/proanima-arkvory",
+    "text": "sudo arkvory module list --root /opt/proanima-arkvory"
+  },
+  "modulesGuide": {
+    "en": "Modules guide",
+    "text": "モジュールガイド"
+  },
+  "licenseGuide": {
+    "en": "Licence guide",
+    "text": "ライセンスガイド"
   }
 }

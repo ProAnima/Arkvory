@@ -13,7 +13,7 @@
     width: 100%;
     padding: 0 var(--page-gutter);
     border-inline-end: 0;
-    border-bottom: var(--border-width) solid var(--color-border);
+    border-bottom: var(--border-width) solid var(--color-sidebar-border);
     column-gap: var(--space-3);
   }
   .brand {

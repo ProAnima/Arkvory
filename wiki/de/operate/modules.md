@@ -163,6 +163,10 @@ Der Befehl prüft jedes installierte Paket erneut, so wie die Dienste es vor dem
 
 Ein abgelehntes Paket wird nie verwendet. Installieren Sie die Paketdatei erneut, um es zu reparieren.
 
+### In der Konsole {#console}
+
+Ein globaler Administrator findet [[ui:modules]] im Menü der Konsole. Die Seite zeigt jedes Modul mit Version, Erweiterungspunkt, Quelle und Zustand im antwortenden Prozess sowie die Lizenzen mit Zustand und Laufzeit. Sie liest nur: Module installieren, aktivieren und entfernen Sie mit den Befehlen dieser Seite.
+
 ## Ein Modul entfernen {#remove}
 
 ```bash

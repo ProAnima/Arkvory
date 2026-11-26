@@ -4694,5 +4694,169 @@
   "fleetAlertVersionSkew": {
     "en": "runs another version than this controller.",
     "text": "يعمل بإصدار مختلف عن إصدار وحدة التحكم هذه."
+  },
+  "modules": {
+    "en": "Modules & licence",
+    "text": "الوحدات والترخيص"
+  },
+  "modulesInstalled": {
+    "en": "Installed modules",
+    "text": "الوحدات المثبّتة"
+  },
+  "modulesApi": {
+    "en": "Extension API {version}",
+    "text": "واجهة الإضافات {version}"
+  },
+  "modulesName": {
+    "en": "Module",
+    "text": "الوحدة"
+  },
+  "modulesVersion": {
+    "en": "Version",
+    "text": "الإصدار"
+  },
+  "modulesKind": {
+    "en": "Extension point",
+    "text": "نقطة الإضافة"
+  },
+  "modulesSource": {
+    "en": "Source",
+    "text": "المصدر"
+  },
+  "modulesState": {
+    "en": "State",
+    "text": "الحالة"
+  },
+  "modulesCore": {
+    "en": "Free core",
+    "text": "النواة المجانية"
+  },
+  "modulesSourceBuiltin": {
+    "en": "Built in",
+    "text": "مدمجة"
+  },
+  "modulesSourceSigned": {
+    "en": "Signed package",
+    "text": "حزمة موقّعة"
+  },
+  "moduleOk": {
+    "en": "Running",
+    "text": "تعمل"
+  },
+  "moduleDegraded": {
+    "en": "Degraded",
+    "text": "تعمل بشكل محدود"
+  },
+  "moduleFailed": {
+    "en": "Failed to start",
+    "text": "تعذّر التشغيل"
+  },
+  "moduleRevoked": {
+    "en": "Revoked",
+    "text": "مُلغاة"
+  },
+  "moduleUnavailable": {
+    "en": "Unavailable",
+    "text": "غير متاحة"
+  },
+  "moduleNotOk": {
+    "en": "Not ok: {status}",
+    "text": "ليست سليمة: {status}"
+  },
+  "moduleIdle": {
+    "en": "Not running in this process",
+    "text": "لا تعمل في هذه العملية"
+  },
+  "moduleOff": {
+    "en": "Off",
+    "text": "متوقفة"
+  },
+  "licenses": {
+    "en": "Licence",
+    "text": "الترخيص"
+  },
+  "licenseType": {
+    "en": "Type",
+    "text": "النوع"
+  },
+  "licensee": {
+    "en": "Licensee",
+    "text": "صاحب الترخيص"
+  },
+  "licenseState": {
+    "en": "State",
+    "text": "الحالة"
+  },
+  "licenseUntil": {
+    "en": "Valid until",
+    "text": "صالح حتى"
+  },
+  "licenseFeatures": {
+    "en": "Features",
+    "text": "الميزات"
+  },
+  "licensePerpetual": {
+    "en": "No end date",
+    "text": "بلا تاريخ انتهاء"
+  },
+  "licenseValid": {
+    "en": "Valid",
+    "text": "صالح"
+  },
+  "licenseOfflineGrace": {
+    "en": "Offline, within the grace window",
+    "text": "غير متصل، ضمن فترة السماح"
+  },
+  "licenseGrace": {
+    "en": "Term ended, renewal grace",
+    "text": "انتهت المدة، فترة سماح للتجديد"
+  },
+  "licenseMismatch": {
+    "en": "Belongs to another installation",
+    "text": "يخص تثبيتًا آخر"
+  },
+  "licenseExpired": {
+    "en": "Expired",
+    "text": "منتهٍ"
+  },
+  "licenseRevoked": {
+    "en": "Revoked",
+    "text": "مُلغى"
+  },
+  "licenseInvalid": {
+    "en": "Does not verify",
+    "text": "لا يجتاز التحقق"
+  },
+  "licenseUnknown": {
+    "en": "Not valid: {state}",
+    "text": "غير صالح: {state}"
+  },
+  "licenseRefreshFailing": {
+    "en": "The hub has not answered lately.",
+    "text": "لم يستجب المركز منذ مدة."
+  },
+  "licenseNone": {
+    "en": "No licence is activated. The free core works without one.",
+    "text": "لا يوجد ترخيص مفعّل. تعمل النواة المجانية من دونه."
+  },
+  "modulesManage": {
+    "en": "Install, enable or remove",
+    "text": "التثبيت أو التفعيل أو الإزالة"
+  },
+  "modulesManageText": {
+    "en": "The console only shows modules: they are installed on the server host, so a stolen console account cannot run code there. Check the installed packages on the host:",
+    "text": "تعرض وحدة التحكم الوحدات فقط: تُثبَّت الوحدات على مضيف الخادم، لذلك لا يستطيع حساب وحدة تحكم مسروق تشغيل شيفرة هناك. تحقّق من الحزم المثبّتة على المضيف:"
+  },
+  "modulesListCommand": {
+    "en": "sudo arkvory module list --root /opt/proanima-arkvory",
+    "text": "sudo arkvory module list --root /opt/proanima-arkvory"
+  },
+  "modulesGuide": {
+    "en": "Modules guide",
+    "text": "دليل الوحدات"
+  },
+  "licenseGuide": {
+    "en": "Licence guide",
+    "text": "دليل التراخيص"
   }
 }

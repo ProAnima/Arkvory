@@ -4694,5 +4694,169 @@
   "fleetAlertVersionSkew": {
     "en": "runs another version than this controller.",
     "text": "运行的版本与此控制站点不同。"
+  },
+  "modules": {
+    "en": "Modules & licence",
+    "text": "模块与许可证"
+  },
+  "modulesInstalled": {
+    "en": "Installed modules",
+    "text": "已安装的模块"
+  },
+  "modulesApi": {
+    "en": "Extension API {version}",
+    "text": "扩展 API {version}"
+  },
+  "modulesName": {
+    "en": "Module",
+    "text": "模块"
+  },
+  "modulesVersion": {
+    "en": "Version",
+    "text": "版本"
+  },
+  "modulesKind": {
+    "en": "Extension point",
+    "text": "扩展点"
+  },
+  "modulesSource": {
+    "en": "Source",
+    "text": "来源"
+  },
+  "modulesState": {
+    "en": "State",
+    "text": "状态"
+  },
+  "modulesCore": {
+    "en": "Free core",
+    "text": "免费核心"
+  },
+  "modulesSourceBuiltin": {
+    "en": "Built in",
+    "text": "内置"
+  },
+  "modulesSourceSigned": {
+    "en": "Signed package",
+    "text": "已签名的包"
+  },
+  "moduleOk": {
+    "en": "Running",
+    "text": "运行中"
+  },
+  "moduleDegraded": {
+    "en": "Degraded",
+    "text": "降级"
+  },
+  "moduleFailed": {
+    "en": "Failed to start",
+    "text": "启动失败"
+  },
+  "moduleRevoked": {
+    "en": "Revoked",
+    "text": "已吊销"
+  },
+  "moduleUnavailable": {
+    "en": "Unavailable",
+    "text": "不可用"
+  },
+  "moduleNotOk": {
+    "en": "Not ok: {status}",
+    "text": "异常：{status}"
+  },
+  "moduleIdle": {
+    "en": "Not running in this process",
+    "text": "未在此进程中运行"
+  },
+  "moduleOff": {
+    "en": "Off",
+    "text": "已关闭"
+  },
+  "licenses": {
+    "en": "Licence",
+    "text": "许可证"
+  },
+  "licenseType": {
+    "en": "Type",
+    "text": "类型"
+  },
+  "licensee": {
+    "en": "Licensee",
+    "text": "持有人"
+  },
+  "licenseState": {
+    "en": "State",
+    "text": "状态"
+  },
+  "licenseUntil": {
+    "en": "Valid until",
+    "text": "有效期至"
+  },
+  "licenseFeatures": {
+    "en": "Features",
+    "text": "功能"
+  },
+  "licensePerpetual": {
+    "en": "No end date",
+    "text": "无截止日期"
+  },
+  "licenseValid": {
+    "en": "Valid",
+    "text": "有效"
+  },
+  "licenseOfflineGrace": {
+    "en": "Offline, within the grace window",
+    "text": "离线，处于宽限期内"
+  },
+  "licenseGrace": {
+    "en": "Term ended, renewal grace",
+    "text": "期限已到，续期宽限中"
+  },
+  "licenseMismatch": {
+    "en": "Belongs to another installation",
+    "text": "属于另一个安装"
+  },
+  "licenseExpired": {
+    "en": "Expired",
+    "text": "已过期"
+  },
+  "licenseRevoked": {
+    "en": "Revoked",
+    "text": "已吊销"
+  },
+  "licenseInvalid": {
+    "en": "Does not verify",
+    "text": "验证未通过"
+  },
+  "licenseUnknown": {
+    "en": "Not valid: {state}",
+    "text": "无效：{state}"
+  },
+  "licenseRefreshFailing": {
+    "en": "The hub has not answered lately.",
+    "text": "中心服务最近没有响应。"
+  },
+  "licenseNone": {
+    "en": "No licence is activated. The free core works without one.",
+    "text": "尚未激活许可证。免费核心无需许可证即可使用。"
+  },
+  "modulesManage": {
+    "en": "Install, enable or remove",
+    "text": "安装、启用或移除"
+  },
+  "modulesManageText": {
+    "en": "The console only shows modules: they are installed on the server host, so a stolen console account cannot run code there. Check the installed packages on the host:",
+    "text": "控制台只显示模块：模块在服务器主机上安装，因此被盗的控制台账户无法在那里运行代码。在主机上检查已安装的包："
+  },
+  "modulesListCommand": {
+    "en": "sudo arkvory module list --root /opt/proanima-arkvory",
+    "text": "sudo arkvory module list --root /opt/proanima-arkvory"
+  },
+  "modulesGuide": {
+    "en": "Modules guide",
+    "text": "模块指南"
+  },
+  "licenseGuide": {
+    "en": "Licence guide",
+    "text": "许可证指南"
   }
 }
